@@ -1,0 +1,8 @@
+backend/node_modules/
+backend/db/fendor.sqlite
+backend/fendor.db
+.env
+.DS_Store
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*

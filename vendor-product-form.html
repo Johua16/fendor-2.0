@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Vendor Product Form | Fendor</title>
+    <meta
+      name="description"
+      content="Create or edit a vendor product on Fendor."
+    />
+    <link rel="stylesheet" href="assets/css/style.css" />
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="site-header" data-site-header>
+        <div class="container">
+          <div class="nav-wrap">
+            <a class="brand-mark" href="vendor-dashboard.html" aria-label="Vendor dashboard">
+              <span class="brand-mark__badge" aria-hidden="true">F</span>
+              <span class="brand-mark__text">
+                <span class="brand-mark__name">Fendor</span>
+                <span class="brand-mark__tag">Vendor workspace</span>
+              </span>
+            </a>
+
+            <nav class="nav-links" aria-label="Vendor primary">
+              <a class="nav-link" href="vendor-dashboard.html" data-nav-link>Dashboard</a>
+              <a class="nav-link" href="vendor-products.html" data-nav-link>Products</a>
+              <a class="nav-link" href="vendor-orders.html" data-nav-link>Orders</a>
+              <a class="nav-link" href="index.html" data-nav-link>Public Site</a>
+            </nav>
+
+            <div class="nav-actions" data-vendor-auth-slot></div>
+
+            <button
+              class="nav-toggle"
+              type="button"
+              aria-expanded="false"
+              aria-controls="mobile-navigation"
+              data-nav-toggle
+            >
+              <span class="sr-only">Toggle navigation</span>
+              <span class="nav-toggle__line"></span>
+              <span class="nav-toggle__line"></span>
+              <span class="nav-toggle__line"></span>
+            </button>
+          </div>
+
+          <div class="nav-panel" id="mobile-navigation">
+            <nav class="nav-links" aria-label="Vendor mobile primary">
+              <a class="nav-link" href="vendor-dashboard.html" data-nav-link>Dashboard</a>
+              <a class="nav-link" href="vendor-products.html" data-nav-link>Products</a>
+              <a class="nav-link" href="vendor-orders.html" data-nav-link>Orders</a>
+              <a class="nav-link" href="index.html" data-nav-link>Public Site</a>
+            </nav>
+            <div class="nav-actions" data-vendor-auth-slot></div>
+          </div>
+        </div>
+      </header>
+
+      <main class="account-shell" data-vendor-product-form-page>
+        <div class="container">
+          <div class="page-toolbar">
+            <div>
+              <span class="eyebrow">Vendor products</span>
+              <h1 class="title-lg" data-vendor-product-form-title>Add a new product.</h1>
+              <p class="section-subtitle">
+                Use this form to create or update the core details customers should eventually see in the marketplace.
+              </p>
+            </div>
+            <div class="toolbar-actions">
+              <a class="btn btn-secondary" href="vendor-products.html">Back to products</a>
+            </div>
+          </div>
+
+          <div class="auth-grid">
+            <section class="auth-card">
+              <form class="auth-form" data-vendor-product-form>
+                <div class="form-field">
+                  <label class="form-label" for="vendor-product-name">Product name</label>
+                  <input class="form-input" id="vendor-product-name" name="name" type="text" placeholder="Lagos Luxe Gift Basket" required />
+                </div>
+
+                <div class="form-grid">
+                  <div class="form-field">
+                    <label class="form-label" for="vendor-product-category">Category</label>
+                    <input class="form-input" id="vendor-product-category" name="category" type="text" placeholder="Gift Box" required />
+                  </div>
+                  <div class="form-field">
+                    <label class="form-label" for="vendor-product-price">Unit price</label>
+                    <input class="form-input" id="vendor-product-price" name="unit_price" type="number" min="0" step="0.01" placeholder="45000" required />
+                  </div>
+                </div>
+
+                <div class="form-field">
+                  <label class="form-label" for="vendor-product-image-file">Upload product image</label>
+                  <input id="vendor-product-image-data" name="image_url" type="hidden" />
+                  <input
+                    class="sr-only"
+                    id="vendor-product-image-file"
+                    name="product_image_file"
+                    type="file"
+                    accept="image/*"
+                    data-vendor-product-image-file
+                  />
+                  <div class="vendor-image-upload">
+                    <div class="vendor-image-upload__preview" data-vendor-product-image-preview>
+                      <span class="vendor-image-upload__placeholder">No product image selected yet</span>
+                    </div>
+                    <div class="vendor-image-upload__actions">
+                      <label class="btn btn-secondary" for="vendor-product-image-file">
+                        Add Picture
+                      </label>
+                      <button
+                        class="btn btn-secondary"
+                        type="button"
+                        data-vendor-product-image-clear
+                        hidden
+                      >
+                        Remove picture
+                      </button>
+                    </div>
+                  </div>
+                  <p class="form-hint">
+                    Choose an image from your device. For now, the picture is saved directly with the product record for MVP use.
+                  </p>
+                </div>
+
+                <div class="form-field">
+                  <label class="form-label" for="vendor-product-description">Description</label>
+                  <textarea class="form-textarea" id="vendor-product-description" name="description" placeholder="Describe the product clearly for future customer display." required></textarea>
+                </div>
+
+                <div class="form-field">
+                  <label class="form-label" for="vendor-product-availability">Availability note</label>
+                  <textarea class="form-textarea" id="vendor-product-availability" name="availability_note" placeholder="For example: Available weekly, festive packaging optional, 48-hour prep window."></textarea>
+                  <p class="form-hint">Keep this practical. Customers will see this as your live availability guidance.</p>
+                </div>
+
+                <label class="form-hint">
+                  <input type="checkbox" name="is_active" checked />
+                  Keep this product active
+                </label>
+
+                <p class="form-hint" data-vendor-product-form-feedback hidden></p>
+
+                <div class="toolbar-actions">
+                  <button class="btn btn-primary" type="submit" data-vendor-product-submit>Save product</button>
+                  <a class="btn btn-secondary" href="vendor-products.html">Cancel</a>
+                </div>
+              </form>
+            </section>
+
+            <aside class="auth-panel">
+              <span class="eyebrow">Product guidance</span>
+              <h2 class="title-md">Keep product details clear and practical.</h2>
+              <div class="detail-list">
+                <div class="detail-row">
+                  <span class="detail-icon">1</span>
+                  <div>
+                    <strong>Name it simply</strong>
+                    <p class="card-copy">Use the product name customers would easily understand and search for.</p>
+                  </div>
+                </div>
+                <div class="detail-row">
+                  <span class="detail-icon">2</span>
+                  <div>
+                    <strong>Add a clear product photo</strong>
+                    <p class="card-copy">Choose a clean image from your phone or computer so customers can recognize the product easily.</p>
+                  </div>
+                </div>
+                <div class="detail-row">
+                  <span class="detail-icon">3</span>
+                  <div>
+                    <strong>Control visibility with active state</strong>
+                    <p class="card-copy">Inactive products stay in your list without being treated as deleted.</p>
+                  </div>
+                </div>
+              </div>
+            </aside>
+          </div>
+        </div>
+      </main>
+
+      <footer class="site-footer">
+        <div class="container">
+          <div class="footer-grid">
+            <div class="footer-card">
+              <a class="brand-mark" href="vendor-dashboard.html" aria-label="Vendor dashboard">
+                <span class="brand-mark__badge" aria-hidden="true">F</span>
+                <span class="brand-mark__text">
+                  <span class="brand-mark__name">Fendor</span>
+                  <span class="brand-mark__tag">Vendor workspace</span>
+                </span>
+              </a>
+              <p class="footer-copy">
+                Build your vendor catalog carefully now so your products are ready for customer demand and assigned fulfillment later.
+              </p>
+            </div>
+            <div>
+              <h3 class="footer-title">Workspace</h3>
+              <nav class="footer-nav" aria-label="Footer workspace">
+                <a href="vendor-dashboard.html">Dashboard</a>
+                <a href="vendor-products.html">Products</a>
+                <a href="vendor-orders.html">Orders</a>
+                <a href="vendor-login.html">Vendor Login</a>
+              </nav>
+            </div>
+            <div>
+              <h3 class="footer-title">Support</h3>
+              <div class="footer-nav">
+                <a href="https://wa.me/2348069135853">+2348069135853</a>
+                <a href="mailto:delematthewsjoshua@gmail.com">delematthewsjoshua@gmail.com</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </footer>
+    </div>
+
+    <script src="assets/js/main.js"></script>
+    <script src="assets/js/vendor-auth.js"></script>
+    <script src="assets/js/vendor-products.js"></script>
+  </body>
+</html>

@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Order Detail | Fendor</title>
+    <meta
+      name="description"
+      content="View your Fendor order detail, recipient information, and delivery tracking timeline."
+    />
+    <link rel="stylesheet" href="assets/css/style.css" />
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="site-header" data-site-header>
+        <div class="container">
+          <div class="nav-wrap">
+            <a class="brand-mark" href="index.html" aria-label="Fendor home">
+              <span class="brand-mark__badge" aria-hidden="true">F</span>
+              <span class="brand-mark__text">
+                <span class="brand-mark__name">Fendor</span>
+                <span class="brand-mark__tag">Diaspora gifting, coordinated in Nigeria</span>
+              </span>
+            </a>
+
+            <nav class="nav-links" aria-label="Primary">
+              <a class="nav-link" href="index.html" data-nav-link>Home</a>
+              <a class="nav-link" href="shop.html" data-nav-link>Shop</a>
+              <a class="nav-link" href="account.html" data-nav-link>Dashboard</a>
+              <a class="nav-link" href="orders.html" data-nav-link>Orders</a>
+              <a class="nav-link" href="recipients.html" data-nav-link>Recipients</a>
+            </nav>
+
+            <div class="nav-actions" data-auth-slot></div>
+
+            <button
+              class="nav-toggle"
+              type="button"
+              aria-expanded="false"
+              aria-controls="mobile-navigation"
+              data-nav-toggle
+            >
+              <span class="sr-only">Toggle navigation</span>
+              <span class="nav-toggle__line"></span>
+              <span class="nav-toggle__line"></span>
+              <span class="nav-toggle__line"></span>
+            </button>
+          </div>
+
+          <div class="nav-panel" id="mobile-navigation">
+            <nav class="nav-links" aria-label="Mobile primary">
+              <a class="nav-link" href="index.html" data-nav-link>Home</a>
+              <a class="nav-link" href="shop.html" data-nav-link>Shop</a>
+              <a class="nav-link" href="account.html" data-nav-link>Dashboard</a>
+              <a class="nav-link" href="orders.html" data-nav-link>Orders</a>
+              <a class="nav-link" href="recipients.html" data-nav-link>Recipients</a>
+            </nav>
+            <div class="nav-actions" data-auth-slot></div>
+          </div>
+        </div>
+      </header>
+
+      <main class="account-shell">
+        <div class="container">
+          <div class="page-toolbar">
+            <div>
+              <span class="eyebrow">Order detail</span>
+              <h1 class="title-lg">Follow one order from confirmation to delivery.</h1>
+              <p class="section-subtitle">
+                Review the recipient, payment state, and latest delivery coordination updates in one place.
+              </p>
+            </div>
+            <div class="toolbar-actions">
+              <a class="btn btn-secondary" href="orders.html">Back to orders</a>
+              <a class="btn btn-primary" href="shop.html">Continue shopping</a>
+            </div>
+          </div>
+
+          <p class="form-hint" data-orders-feedback hidden></p>
+
+          <div data-order-detail></div>
+
+          <div class="empty-state" data-order-detail-empty hidden>
+            <h2 class="title-md">Order not found</h2>
+            <p class="card-copy">
+              We could not find that order for your account. Go back to your orders list and choose another one.
+            </p>
+            <a class="btn btn-primary" href="orders.html">View all orders</a>
+          </div>
+        </div>
+      </main>
+
+      <footer class="site-footer">
+        <div class="container">
+          <div class="footer-grid">
+            <div class="footer-card">
+              <a class="brand-mark" href="index.html" aria-label="Fendor home">
+                <span class="brand-mark__badge" aria-hidden="true">F</span>
+                <span class="brand-mark__text">
+                  <span class="brand-mark__name">Fendor</span>
+                  <span class="brand-mark__tag">Premium gifting with local coordination</span>
+                </span>
+              </a>
+              <p class="footer-copy">
+                Fendor helps Nigerians abroad buy authentic Nigerian goods and gifts from verified local vendors, with delivery coordinated inside Nigeria.
+              </p>
+            </div>
+            <div>
+              <h3 class="footer-title">Account</h3>
+              <nav class="footer-nav" aria-label="Footer account">
+                <a href="account.html">Dashboard</a>
+                <a href="orders.html">Orders</a>
+                <a href="recipients.html">Recipients</a>
+              </nav>
+            </div>
+            <div>
+              <h3 class="footer-title">Contact</h3>
+              <div class="footer-nav">
+                <a href="https://wa.me/2348069135853">+2348069135853</a>
+                <a href="mailto:delematthewsjoshua@gmail.com">delematthewsjoshua@gmail.com</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </footer>
+    </div>
+
+    <script src="assets/js/main.js"></script>
+    <script src="assets/js/auth.js"></script>
+    <script src="assets/js/orders.js"></script>
+  </body>
+</html>

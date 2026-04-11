@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin Vendor Applications | Fendor</title>
+    <meta
+      name="description"
+      content="Review incoming vendor applications across the Fendor marketplace."
+    />
+    <link rel="stylesheet" href="assets/css/style.css" />
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="site-header" data-site-header>
+        <div class="container">
+          <div class="nav-wrap">
+            <a class="brand-mark" href="admin-dashboard.html" aria-label="Admin dashboard">
+              <span class="brand-mark__badge" aria-hidden="true">F</span>
+              <span class="brand-mark__text">
+                <span class="brand-mark__name">Fendor</span>
+                <span class="brand-mark__tag">Admin workspace</span>
+              </span>
+            </a>
+
+            <nav class="nav-links" aria-label="Admin primary">
+              <a class="nav-link" href="admin-dashboard.html" data-nav-link>Dashboard</a>
+              <a class="nav-link" href="admin-vendors.html" data-nav-link>Vendor Applications</a>
+              <a class="nav-link" href="admin-products.html" data-nav-link>Products</a>
+              <a class="nav-link" href="admin-orders.html" data-nav-link>Orders</a>
+              <a class="nav-link" href="index.html" data-nav-link>Public Site</a>
+            </nav>
+
+            <div class="nav-actions" data-admin-auth-slot></div>
+
+            <button
+              class="nav-toggle"
+              type="button"
+              aria-expanded="false"
+              aria-controls="mobile-navigation"
+              data-nav-toggle
+            >
+              <span class="sr-only">Toggle navigation</span>
+              <span class="nav-toggle__line"></span>
+              <span class="nav-toggle__line"></span>
+              <span class="nav-toggle__line"></span>
+            </button>
+          </div>
+
+          <div class="nav-panel" id="mobile-navigation">
+            <nav class="nav-links" aria-label="Admin mobile primary">
+              <a class="nav-link" href="admin-dashboard.html" data-nav-link>Dashboard</a>
+              <a class="nav-link" href="admin-vendors.html" data-nav-link>Vendor Applications</a>
+              <a class="nav-link" href="admin-products.html" data-nav-link>Products</a>
+              <a class="nav-link" href="admin-orders.html" data-nav-link>Orders</a>
+              <a class="nav-link" href="index.html" data-nav-link>Public Site</a>
+            </nav>
+            <div class="nav-actions" data-admin-auth-slot></div>
+          </div>
+        </div>
+      </header>
+
+      <main class="account-shell" data-admin-vendors-page>
+        <div class="container">
+          <div class="page-toolbar">
+            <div>
+              <span class="eyebrow">Vendor applications</span>
+              <h1 class="title-lg">Review incoming vendor applications in one place.</h1>
+              <p class="section-subtitle">
+                Filter applications by status, review submissions in detail, and move each one through the onboarding decision flow.
+              </p>
+            </div>
+            <div class="toolbar-actions">
+              <a class="btn btn-secondary" href="admin-dashboard.html">Back to dashboard</a>
+              <a class="btn btn-primary" href="vendor-apply.html">Open public application page</a>
+            </div>
+          </div>
+
+          <p class="form-hint" data-admin-vendors-feedback hidden></p>
+
+          <div class="summary-grid">
+            <div class="summary-card">
+              <p class="summary-value" data-admin-application-total>0</p>
+              <p class="summary-label">Applications currently in this view.</p>
+            </div>
+            <div class="summary-card">
+              <p class="summary-value" data-admin-application-pending>0</p>
+              <p class="summary-label">Applications waiting for review.</p>
+            </div>
+            <div class="summary-card">
+              <p class="summary-value" data-admin-application-reviewed>0</p>
+              <p class="summary-label">Applications already reviewed.</p>
+            </div>
+          </div>
+
+          <section class="table-card admin-filter-card">
+            <div class="page-toolbar">
+              <div>
+                <h2 class="title-md">Application queue</h2>
+                <p class="section-subtitle">
+                  Filter by status to focus on the applications you need to review next.
+                </p>
+              </div>
+            </div>
+
+            <form class="auth-form admin-filter-form" data-admin-application-filter>
+              <label class="field-group">
+                <span>Status</span>
+                <select name="status">
+                  <option value="">All applications</option>
+                  <option value="pending">Pending</option>
+                  <option value="approved">Approved</option>
+                  <option value="rejected">Rejected</option>
+                </select>
+              </label>
+              <div class="toolbar-actions">
+                <button class="btn btn-primary" type="submit">Apply filter</button>
+                <button class="btn btn-secondary" type="button" data-admin-filter-reset>
+                  Reset
+                </button>
+              </div>
+            </form>
+          </section>
+
+          <div class="orders-stack" data-admin-applications-list></div>
+
+          <div class="empty-state" data-admin-applications-empty hidden>
+            <h2 class="title-md">No applications found</h2>
+            <p class="card-copy">
+              There are no vendor applications matching this view yet. Try another filter or wait for a new submission.
+            </p>
+          </div>
+        </div>
+      </main>
+
+      <footer class="site-footer">
+        <div class="container">
+          <div class="footer-grid">
+            <div class="footer-card">
+              <a class="brand-mark" href="admin-dashboard.html" aria-label="Admin dashboard">
+                <span class="brand-mark__badge" aria-hidden="true">F</span>
+                <span class="brand-mark__text">
+                  <span class="brand-mark__name">Fendor</span>
+                  <span class="brand-mark__tag">Admin workspace</span>
+                </span>
+              </a>
+              <p class="footer-copy">
+                Review vendor onboarding activity and keep the marketplace pipeline visible from one admin area.
+              </p>
+            </div>
+            <div>
+              <h3 class="footer-title">Workspace</h3>
+              <nav class="footer-nav" aria-label="Footer workspace">
+                <a href="admin-dashboard.html">Dashboard</a>
+                <a href="admin-vendors.html">Vendor Applications</a>
+                <a href="admin-products.html">Products</a>
+                <a href="admin-orders.html">Orders</a>
+                <a href="admin-login.html">Admin Login</a>
+              </nav>
+            </div>
+            <div>
+              <h3 class="footer-title">Support</h3>
+              <div class="footer-nav">
+                <a href="https://wa.me/2348069135853">+2348069135853</a>
+                <a href="mailto:delematthewsjoshua@gmail.com">delematthewsjoshua@gmail.com</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </footer>
+    </div>
+
+    <script src="assets/js/main.js"></script>
+    <script src="assets/js/admin-auth.js"></script>
+    <script src="assets/js/admin-vendors.js"></script>
+  </body>
+</html>
