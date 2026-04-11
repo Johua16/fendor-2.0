@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Fendor Product | View Product</title>
+    <meta
+      name="description"
+      content="View a live Fendor product and place an order with saved recipients and local delivery coordination in Nigeria."
+    />
+    <link rel="stylesheet" href="assets/css/style.css" />
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="site-header" data-site-header>
+        <div class="container">
+          <div class="nav-wrap">
+            <a class="brand-mark" href="index.html" aria-label="Fendor home">
+              <span class="brand-mark__badge" aria-hidden="true">F</span>
+              <span class="brand-mark__text">
+                <span class="brand-mark__name">Fendor</span>
+                <span class="brand-mark__tag">Diaspora gifting, coordinated in Nigeria</span>
+              </span>
+            </a>
+
+            <nav class="nav-links" aria-label="Primary">
+              <a class="nav-link" href="index.html" data-nav-link>Home</a>
+              <a class="nav-link" href="shop.html" data-nav-link>Shop</a>
+              <a class="nav-link" href="about.html" data-nav-link>About</a>
+              <a class="nav-link" href="contact.html" data-nav-link>Contact</a>
+            </nav>
+
+            <div class="nav-actions" data-auth-slot></div>
+
+            <button
+              class="nav-toggle"
+              type="button"
+              aria-expanded="false"
+              aria-controls="mobile-navigation"
+              data-nav-toggle
+            >
+              <span class="sr-only">Toggle navigation</span>
+              <span class="nav-toggle__line"></span>
+              <span class="nav-toggle__line"></span>
+              <span class="nav-toggle__line"></span>
+            </button>
+          </div>
+
+          <div class="nav-panel" id="mobile-navigation">
+            <nav class="nav-links" aria-label="Mobile primary">
+              <a class="nav-link" href="index.html" data-nav-link>Home</a>
+              <a class="nav-link" href="shop.html" data-nav-link>Shop</a>
+              <a class="nav-link" href="about.html" data-nav-link>About</a>
+              <a class="nav-link" href="contact.html" data-nav-link>Contact</a>
+            </nav>
+
+            <div class="nav-actions" data-auth-slot></div>
+          </div>
+        </div>
+      </header>
+
+      <main data-product-page>
+        <section class="page-hero">
+          <div class="container">
+            <p class="form-hint" data-product-page-feedback hidden></p>
+
+            <div class="empty-state" data-product-page-empty hidden>
+              <h2 class="title-md">Product not available</h2>
+              <p class="card-copy">
+                That product could not be found or is no longer active. Browse the current shop to find another option.
+              </p>
+              <a class="btn btn-primary" href="shop.html">Back to shop</a>
+            </div>
+
+            <div class="product-layout">
+              <div class="product-gallery">
+                <div class="product-gallery__main">
+                  <img
+                    class="card-photo"
+                    data-product-main-image
+                    src="https://images.unsplash.com/photo-1513475382585-d06e58bcb0e0?auto=format&fit=crop&w=1400&q=80"
+                    alt="Fendor product image"
+                  />
+                </div>
+
+                <!-- Future expansion: replace with real gallery images or image slider. -->
+                <div class="product-gallery__thumbs">
+                  <div class="product-thumb">
+                    <img
+                      class="card-photo"
+                      data-product-thumb
+                      src="https://images.unsplash.com/photo-1549465220-1a8b9238cd48?auto=format&fit=crop&w=700&q=80"
+                      alt="Fendor product image detail"
+                    />
+                  </div>
+                  <div class="product-thumb">
+                    <img
+                      class="card-photo"
+                      data-product-thumb
+                      src="https://images.unsplash.com/photo-1513885535751-8b9238bd345a?auto=format&fit=crop&w=700&q=80"
+                      alt="Fendor product image detail"
+                    />
+                  </div>
+                  <div class="product-thumb">
+                    <img
+                      class="card-photo"
+                      data-product-thumb
+                      src="https://images.unsplash.com/photo-1607344645866-009c320c5ab8?auto=format&fit=crop&w=700&q=80"
+                      alt="Fendor product image detail"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div class="product-details">
+                <article
+                  class="product-summary"
+                  data-product-config
+                  data-unit-price="45000"
+                  data-delivery-fee="5000"
+                >
+                  <span class="eyebrow" data-product-eyebrow>Featured product</span>
+                  <h1 class="title-lg" data-product-name>Lagos Luxe Gift Basket</h1>
+                  <p class="lead" data-product-description>
+                    A premium, thoughtfully arranged basket for birthdays, appreciation, festive
+                    moments, and meaningful family gifting in Nigeria.
+                  </p>
+
+                  <div class="product-kicker">
+                    <span class="trust-badge" data-product-status-badge>Active product</span>
+                    <span class="trust-badge trust-badge--highlight">Verified vendor sourcing</span>
+                    <span class="trust-badge">Delivery coordinated locally</span>
+                    <span class="trust-badge">Proof of delivery support</span>
+                  </div>
+
+                  <p class="product-price" data-product-price-wrap>
+                    <span data-product-price>From N45,000</span>
+                    <small>Final pricing may vary slightly based on item mix, packaging, and delivery location.</small>
+                  </p>
+
+                  <div class="product-order-card">
+                    <div class="page-toolbar product-order-card__header">
+                      <div>
+                        <h2 class="title-md">Place this order</h2>
+                        <p class="form-copy">
+                          Choose a saved recipient, confirm quantity, and create your order in one step.
+                        </p>
+                      </div>
+                      <a class="btn btn-secondary" href="recipients.html">Manage recipients</a>
+                    </div>
+
+                    <div class="product-auth-prompt" data-product-auth-prompt hidden>
+                      <p class="form-hint">
+                        Sign in to choose a saved recipient and place this order from your Fendor account.
+                      </p>
+                      <div class="product-actions">
+                        <a class="btn btn-primary" href="login.html">Login to order</a>
+                        <a class="btn btn-secondary" href="signup.html">Create account</a>
+                      </div>
+                    </div>
+
+                    <form class="product-order-form" data-product-order-form hidden>
+                      <div class="form-grid">
+                        <div class="form-field">
+                          <label class="form-label" for="product-quantity">Quantity</label>
+                          <input
+                            class="form-input"
+                            id="product-quantity"
+                            name="quantity"
+                            type="number"
+                            min="1"
+                            value="1"
+                            required
+                            data-order-quantity
+                          />
+                        </div>
+
+                        <div class="form-field">
+                          <label class="form-label" for="product-recipient">Saved recipient</label>
+                          <select class="form-select" id="product-recipient" name="recipient_id" required data-order-recipient>
+                            <option value="">Select a recipient</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <div class="form-field">
+                        <label class="form-label" for="product-note">Order note</label>
+                        <textarea
+                          class="form-textarea"
+                          id="product-note"
+                          name="order_note"
+                          placeholder="Add a delivery note, celebration context, or anything helpful for this order"
+                          data-order-note
+                        ></textarea>
+                      </div>
+
+                      <div class="order-cost-card">
+                        <div class="spec-item">
+                          <strong>Unit price</strong>
+                          <span data-order-unit-price>N45,000</span>
+                        </div>
+                        <div class="spec-item">
+                          <strong>Delivery fee</strong>
+                          <span data-order-delivery-fee>N5,000</span>
+                        </div>
+                        <div class="spec-item">
+                          <strong>Total amount</strong>
+                          <span data-order-total>N50,000</span>
+                        </div>
+                      </div>
+
+                      <p class="form-hint" data-product-order-feedback hidden></p>
+
+                      <div class="product-actions">
+                        <button class="btn btn-primary" type="submit" data-place-order>
+                          Place order
+                        </button>
+                        <a class="btn btn-secondary" href="contact.html">Ask about customization</a>
+                      </div>
+                    </form>
+                  </div>
+                </article>
+
+                <div class="info-grid">
+                  <article class="info-card">
+                    <h2 class="title-md">What’s included</h2>
+                    <div class="detail-list">
+                      <div class="detail-row">
+                        <span class="detail-icon">+</span>
+                        <div>
+                          <strong>Curated premium items</strong>
+                          <p class="card-copy">A refined mix of treats, pantry picks, and quality presentation items.</p>
+                        </div>
+                      </div>
+                      <div class="detail-row">
+                        <span class="detail-icon">+</span>
+                        <div>
+                          <strong>Elegant packaging</strong>
+                          <p class="card-copy">Assembled to feel gift-worthy, polished, and suitable for special moments.</p>
+                        </div>
+                      </div>
+                      <div class="detail-row">
+                        <span class="detail-icon">+</span>
+                        <div>
+                          <strong>Account-based ordering</strong>
+                          <p class="card-copy">Place an order from your Fendor account, then let manual fulfillment coordination take over behind the scenes.</p>
+                        </div>
+                      </div>
+                    </div>
+                  </article>
+
+                  <article class="info-card">
+                    <h2 class="title-md">Product details</h2>
+                    <div class="spec-list">
+                      <div class="spec-item">
+                        <strong>Category</strong>
+                        <span data-product-category>Gift Box / Premium Basket</span>
+                      </div>
+                      <div class="spec-item">
+                        <strong>Ideal for</strong>
+                        <span data-product-ideal-for>Thoughtful gifting and family support</span>
+                      </div>
+                      <div class="spec-item">
+                        <strong>Availability</strong>
+                        <span data-product-availability>Manual confirmation before fulfillment</span>
+                      </div>
+                      <div class="spec-item">
+                        <strong>Fulfillment</strong>
+                        <span>Vendor coordination handled in Nigeria</span>
+                      </div>
+                    </div>
+                  </article>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="section section-warm">
+          <div class="container">
+            <div class="split-panel">
+              <article class="notice-card">
+                <span class="eyebrow">Why diaspora buyers choose this</span>
+                <h2 class="title-lg">A gift that feels intentional, not generic.</h2>
+                <p class="section-copy">
+                  For customers in London, Birmingham, Manchester, Toronto, Calgary, Houston,
+                  Maryland, Atlanta, and elsewhere, this kind of product works because it balances
+                  elegance with confidence. You are not just sending items, you are sending care in
+                  a way that feels premium and dependable.
+                </p>
+                <p class="section-copy">
+                  Fendor’s role is to bridge the distance by making sure vendor quality, packaging,
+                  and delivery coordination are handled with more visibility than a typical informal order.
+                </p>
+              </article>
+
+              <article class="info-card">
+                <span class="eyebrow">Good to know</span>
+                <h2 class="title-md">Customization and manual confirmation</h2>
+                <div class="detail-list">
+                  <div class="detail-row">
+                    <span class="detail-icon">1</span>
+                    <div>
+                      <strong>Item mix can vary</strong>
+                      <p class="card-copy">Depending on stock and your recipient’s needs, we may confirm equivalent premium substitutions.</p>
+                    </div>
+                  </div>
+                  <div class="detail-row">
+                    <span class="detail-icon">2</span>
+                    <div>
+                      <strong>Delivery area matters</strong>
+                      <p class="card-copy">We confirm the recipient’s location before finalizing delivery pricing or timelines.</p>
+                    </div>
+                  </div>
+                  <div class="detail-row">
+                    <span class="detail-icon">3</span>
+                    <div>
+                      <strong>Support stays human</strong>
+                      <p class="card-copy">Phase 1 uses manual coordination so orders are checked carefully rather than processed blindly.</p>
+                    </div>
+                  </div>
+                </div>
+              </article>
+            </div>
+          </div>
+        </section>
+
+        <section class="section-tight">
+          <div class="container">
+            <div class="section-heading">
+              <span class="eyebrow">How ordering works</span>
+              <h2 class="title-lg">A clear product-to-delivery flow for Phase 1.</h2>
+              <p class="section-copy">
+                The product page is designed to make ordering feel simple while being transparent
+                about what stays manual at this stage of the MVP.
+              </p>
+            </div>
+
+            <!-- Future expansion: this can later evolve into add-to-cart, checkout, and payment integration. -->
+            <div class="split-panel">
+              <article class="info-card">
+                <h3 class="title-md">Order steps</h3>
+                  <div class="steps-list">
+                    <div class="step-row">
+                      <span class="step-number">1</span>
+                      <div>
+                        <strong>Choose a saved recipient</strong>
+                        <p class="card-copy">Select the family member or recipient you want this order delivered to.</p>
+                      </div>
+                    </div>
+                    <div class="step-row">
+                      <span class="step-number">2</span>
+                      <div>
+                        <strong>Submit the order in-app</strong>
+                        <p class="card-copy">Set quantity, add an order note if needed, and place the order directly from this page.</p>
+                      </div>
+                    </div>
+                    <div class="step-row">
+                      <span class="step-number">3</span>
+                      <div>
+                        <strong>Fendor confirms fulfillment</strong>
+                        <p class="card-copy">We coordinate with the assigned vendor and keep the order moving through the fulfillment stages.</p>
+                      </div>
+                    </div>
+                    <div class="step-row">
+                      <span class="step-number">4</span>
+                      <div>
+                        <strong>Track progress from your account</strong>
+                        <p class="card-copy">Once the order is created, status changes and tracking notes appear in your Fendor order detail view.</p>
+                      </div>
+                    </div>
+                  </div>
+              </article>
+
+              <article class="notice-card">
+                <h3 class="title-md">Operationally simple, customer-facing clear</h3>
+                <p class="section-copy">
+                  This product page now creates a real order in the Fendor system, while fulfillment
+                  coordination remains deliberately hands-on behind the scenes.
+                </p>
+                <p class="section-copy">
+                  That means customers get a cleaner digital experience, while Fendor and the vendor
+                  still keep the operational side careful and controlled during this stage of the MVP.
+                </p>
+
+                <div class="product-actions">
+                  <a class="btn btn-primary" href="orders.html">View my orders</a>
+                  <a class="btn btn-accent" href="shop.html">Browse more products</a>
+                </div>
+              </article>
+            </div>
+          </div>
+        </section>
+
+        <section class="section-tight">
+          <div class="container">
+            <div class="section-heading">
+              <span class="eyebrow">Trust and reassurance</span>
+              <h2 class="title-lg">What gives customers peace of mind on this page.</h2>
+            </div>
+
+            <div class="trust-grid">
+              <article class="trust-card">
+                <div class="card-icon">V</div>
+                <h3 class="title-md">Verified vendor network</h3>
+                <p class="card-copy">Products are sourced through trusted local vendors rather than unknown open-market listings.</p>
+              </article>
+              <article class="trust-card">
+                <div class="card-icon">Q</div>
+                <h3 class="title-md">Quality and availability checks</h3>
+                <p class="card-copy">We confirm stock and details manually so customers abroad are not left guessing after payment.</p>
+              </article>
+              <article class="trust-card">
+                <div class="card-icon">D</div>
+                <h3 class="title-md">Coordinated local delivery</h3>
+                <p class="card-copy">Fendor follows up within Nigeria to help reduce the friction of buying from abroad.</p>
+              </article>
+              <article class="trust-card">
+                <div class="card-icon">P</div>
+                <h3 class="title-md">Proof of delivery support</h3>
+                <p class="card-copy">We close the loop after fulfillment so you feel more confident the order arrived properly.</p>
+              </article>
+            </div>
+          </div>
+        </section>
+
+        <section class="section-tight">
+          <div class="container">
+            <div class="cta-panel">
+              <span class="eyebrow">Ready to order?</span>
+              <h2 class="title-lg">Need help before ordering?</h2>
+              <p class="section-copy">
+                If you want a different variation, a custom note, or support choosing the right basket,
+                Fendor can still help you confirm the best option for your recipient.
+              </p>
+              <div class="btn-group">
+                <a class="btn btn-primary" href="contact.html">Contact Fendor</a>
+                <a class="btn btn-accent" href="shop.html">Back to Shop</a>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <footer class="site-footer">
+        <div class="container">
+          <div class="footer-grid">
+            <div class="footer-card">
+              <a class="brand-mark" href="index.html" aria-label="Fendor home">
+                <span class="brand-mark__badge" aria-hidden="true">F</span>
+                <span class="brand-mark__text">
+                  <span class="brand-mark__name">Fendor</span>
+                  <span class="brand-mark__tag">Premium gifting with local coordination</span>
+                </span>
+              </a>
+              <p class="footer-copy">
+                Fendor helps Nigerians abroad buy authentic Nigerian goods and gifts from verified
+                local vendors, with delivery coordinated inside Nigeria.
+              </p>
+              <div class="footer-trust">
+                <span class="trust-badge">Verified vendors</span>
+                <span class="trust-badge">Manual order confirmation</span>
+              </div>
+            </div>
+
+            <div>
+              <h3 class="footer-title">Explore</h3>
+              <nav class="footer-nav" aria-label="Footer explore">
+                <a href="index.html">Home</a>
+                <a href="shop.html">Shop</a>
+                <a href="about.html">About</a>
+                <a href="contact.html">Contact</a>
+              </nav>
+            </div>
+
+            <div>
+              <h3 class="footer-title">Trust</h3>
+              <div class="footer-nav">
+                <a href="about.html">Verified vendors</a>
+                <a href="about.html">Quality control</a>
+                <a href="contact.html">Delivery coordination</a>
+                <a href="contact.html">Proof of delivery</a>
+              </div>
+            </div>
+
+            <div>
+              <h3 class="footer-title">Support</h3>
+              <div class="footer-nav">
+                <a href="contact.html">Order via WhatsApp</a>
+                <a href="mailto:delematthewsjoshua@gmail.com">delematthewsjoshua@gmail.com</a>
+                <a href="contact.html">Nigeria delivery support</a>
+              </div>
+            </div>
+          </div>
+
+          <div class="footer-bottom">
+            <p>© 2026 Fendor. Built for diaspora-to-Nigeria gifting and commerce.</p>
+            <p>Phase 1 MVP with manual payment confirmation, vendor coordination, and delivery support.</p>
+          </div>
+        </div>
+      </footer>
+    </div>
+
+    <script src="assets/js/main.js"></script>
+    <script src="assets/js/auth.js"></script>
+    <script src="assets/js/product.js"></script>
+  </body>
+</html>

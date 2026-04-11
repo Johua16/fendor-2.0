@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Shop Fendor | Curated Nigerian Gifts and Goods</title>
+    <meta
+      name="description"
+      content="Browse curated Nigerian gifts, groceries, and celebration packages from verified local vendors. Fendor helps Nigerians abroad shop with confidence and coordinate delivery within Nigeria."
+    />
+    <link rel="stylesheet" href="assets/css/style.css" />
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="site-header" data-site-header>
+        <div class="container">
+          <div class="nav-wrap">
+            <a class="brand-mark" href="index.html" aria-label="Fendor home">
+              <span class="brand-mark__badge" aria-hidden="true">F</span>
+              <span class="brand-mark__text">
+                <span class="brand-mark__name">Fendor</span>
+                <span class="brand-mark__tag">Diaspora gifting, coordinated in Nigeria</span>
+              </span>
+            </a>
+
+            <nav class="nav-links" aria-label="Primary">
+              <a class="nav-link" href="index.html" data-nav-link>Home</a>
+              <a class="nav-link" href="shop.html" data-nav-link>Shop</a>
+              <a class="nav-link" href="about.html" data-nav-link>About</a>
+              <a class="nav-link" href="contact.html" data-nav-link>Contact</a>
+            </nav>
+
+            <div class="nav-actions shop-nav-actions">
+              <a class="btn btn-secondary" href="contact.html">Need help choosing?</a>
+              <div data-auth-slot></div>
+            </div>
+
+            <button
+              class="nav-toggle"
+              type="button"
+              aria-expanded="false"
+              aria-controls="mobile-navigation"
+              data-nav-toggle
+            >
+              <span class="sr-only">Toggle navigation</span>
+              <span class="nav-toggle__line"></span>
+              <span class="nav-toggle__line"></span>
+              <span class="nav-toggle__line"></span>
+            </button>
+          </div>
+
+          <div class="nav-panel" id="mobile-navigation">
+            <nav class="nav-links" aria-label="Mobile primary">
+              <a class="nav-link" href="index.html" data-nav-link>Home</a>
+              <a class="nav-link" href="shop.html" data-nav-link>Shop</a>
+              <a class="nav-link" href="about.html" data-nav-link>About</a>
+              <a class="nav-link" href="contact.html" data-nav-link>Contact</a>
+            </nav>
+
+            <div class="nav-actions shop-nav-actions">
+              <a class="btn btn-secondary" href="contact.html">Need help choosing?</a>
+              <div data-auth-slot></div>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main>
+        <section class="page-hero">
+          <div class="container">
+            <div class="shop-hero-shell">
+              <div class="shop-hero-grid">
+                <div class="shop-hero-copy" data-reveal>
+                  <span class="eyebrow">Shop Fendor</span>
+                  <h1 class="title-lg">Send authentic Nigerian gifts and essentials with more confidence.</h1>
+                  <p class="lead">
+                    Fendor brings verified local vendor products into one calmer, more trustworthy
+                    storefront for Nigerians abroad. Browse what is live, pick the right product,
+                    and place your order with recipient details already built into the flow.
+                  </p>
+
+                  <div class="btn-group">
+                    <a class="btn btn-primary" href="#shop-products">Browse active products</a>
+                    <a class="btn btn-secondary" href="contact.html">Need help choosing?</a>
+                  </div>
+
+                  <div class="shop-hero-badges">
+                    <span class="trust-badge trust-badge--highlight">Curated for diaspora buyers</span>
+                    <span class="trust-badge">Live vendor products only</span>
+                    <span class="trust-badge">Local coordination in Nigeria</span>
+                    <span class="trust-badge">Concierge-style support</span>
+                  </div>
+                </div>
+
+                <div class="shop-hero-stage" data-reveal>
+                  <div class="shop-live-card" data-shop-hero-featured>
+                    <p class="muted-label">Loading live featured product...</p>
+                  </div>
+                </div>
+              </div>
+
+              <div class="shop-hero-stats">
+                <article class="shop-stat-card" data-reveal>
+                  <p class="shop-stat-card__value" data-shop-product-count>0</p>
+                  <p class="shop-stat-card__label">Active products</p>
+                </article>
+                <article class="shop-stat-card" data-reveal>
+                  <p class="shop-stat-card__value" data-shop-category-count>0</p>
+                  <p class="shop-stat-card__label">Live collections</p>
+                </article>
+                <article class="shop-stat-card" data-reveal>
+                  <p class="shop-stat-card__value">Direct</p>
+                  <p class="shop-stat-card__label">Order flow from product page</p>
+                </article>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="section-tight">
+          <div class="container">
+            <div class="catalog-toolbar">
+              <div class="catalog-toolbar__intro">
+                <span class="eyebrow">Browse live collections</span>
+                <h2 class="title-md">Everything here is arranged from real active vendor products.</h2>
+              </div>
+              <div class="chip-group" aria-label="Product categories" data-shop-chip-group></div>
+              <p class="catalog-toolbar__copy">Browse by collection and jump directly to the kinds of products you want to send.</p>
+            </div>
+          </div>
+        </section>
+
+        <section class="section section-warm">
+          <div class="container">
+            <div class="catalog-grid">
+              <aside class="catalog-sidebar" data-reveal>
+                <div class="sidebar-block">
+                  <span class="eyebrow">Trust and support</span>
+                  <h2 class="title-md">Shop with more peace of mind.</h2>
+                  <p class="sidebar-note">
+                    Every product here is coming from the live vendor catalog and fits the current
+                    Fendor model: clean ordering online, with fulfillment coordination still handled carefully in Nigeria.
+                  </p>
+                </div>
+
+                <div class="sidebar-block">
+                  <h3 class="title-sm">What Fendor handles</h3>
+                  <div class="sidebar-list">
+                    <div class="sidebar-item"><strong>Vendor checks</strong><span>Included</span></div>
+                    <div class="sidebar-item"><strong>Payment review</strong><span>Manual</span></div>
+                    <div class="sidebar-item"><strong>Delivery follow-up</strong><span>Handled locally</span></div>
+                    <div class="sidebar-item"><strong>Proof of delivery</strong><span>Shared after drop-off</span></div>
+                  </div>
+                </div>
+
+                <div class="sidebar-block">
+                  <h3 class="title-sm">Best use cases</h3>
+                  <div class="sidebar-list">
+                    <div class="sidebar-item"><strong>Celebrations</strong><span>Easy to send</span></div>
+                    <div class="sidebar-item"><strong>Family support</strong><span>Practical picks</span></div>
+                    <div class="sidebar-item"><strong>Premium gifting</strong><span>Curated options</span></div>
+                  </div>
+                </div>
+
+                <div class="sidebar-block">
+                  <h3 class="title-sm">Need a custom order?</h3>
+                  <p class="sidebar-note">
+                    If you do not see exactly what you want, <a class="inline-link" href="contact.html">message Fendor directly</a>
+                    and we can help coordinate a suitable option manually.
+                  </p>
+                </div>
+              </aside>
+
+              <div class="section-stack" id="shop-products">
+                <p class="form-hint" data-shop-feedback hidden></p>
+
+                <section class="section-anchor">
+                  <div class="catalog-header">
+                    <div>
+                      <span class="eyebrow">Featured picks</span>
+                      <h2 class="title-lg">Start with our top active products.</h2>
+                    </div>
+                    <p class="catalog-meta">Live items from verified Fendor vendors.</p>
+                  </div>
+
+                  <div class="featured-spotlight" data-shop-featured></div>
+                </section>
+
+                <div data-shop-sections></div>
+
+                <div class="empty-state" data-shop-empty hidden>
+                  <h2 class="title-md">No active products yet</h2>
+                  <p class="card-copy">
+                    Vendor products will appear here as soon as active items are ready for customers to browse and order.
+                  </p>
+                  <a class="btn btn-secondary" href="contact.html">Contact Fendor</a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="section-tight">
+          <div class="container">
+            <div class="cta-panel" data-reveal>
+              <span class="eyebrow">Need help deciding?</span>
+              <h2 class="title-lg">Tell us who you are shopping for and we’ll help you choose the right option.</h2>
+              <p class="section-copy">
+                Phase 1 is designed to feel supported, not complicated. If you want guidance on what to
+                send, Fendor can help you narrow the options and coordinate the order manually.
+              </p>
+              <div class="btn-group">
+                <a class="btn btn-primary" href="contact.html">Order via WhatsApp</a>
+                <a class="btn btn-accent" href="#shop-products">View product details</a>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <footer class="site-footer">
+        <div class="container">
+          <div class="footer-grid">
+            <div class="footer-card">
+              <a class="brand-mark" href="index.html" aria-label="Fendor home">
+                <span class="brand-mark__badge" aria-hidden="true">F</span>
+                <span class="brand-mark__text">
+                  <span class="brand-mark__name">Fendor</span>
+                  <span class="brand-mark__tag">Premium gifting with local coordination</span>
+                </span>
+              </a>
+              <p class="footer-copy">
+                Fendor helps Nigerians abroad buy authentic Nigerian goods and gifts from verified
+                local vendors, with delivery coordinated inside Nigeria.
+              </p>
+              <div class="footer-trust">
+                <span class="trust-badge">Verified vendors</span>
+                <span class="trust-badge">Manual order confirmation</span>
+              </div>
+            </div>
+
+            <div>
+              <h3 class="footer-title">Explore</h3>
+              <nav class="footer-nav" aria-label="Footer explore">
+                <a href="index.html">Home</a>
+                <a href="shop.html">Shop</a>
+                <a href="about.html">About</a>
+                <a href="contact.html">Contact</a>
+              </nav>
+            </div>
+
+            <div>
+              <h3 class="footer-title">Trust</h3>
+              <div class="footer-nav">
+                <a href="about.html">Verified vendors</a>
+                <a href="about.html">Quality control</a>
+                <a href="contact.html">Delivery coordination</a>
+                <a href="contact.html">Proof of delivery</a>
+              </div>
+            </div>
+
+            <div>
+              <h3 class="footer-title">Support</h3>
+              <div class="footer-nav">
+                <a href="contact.html">Order via WhatsApp</a>
+                <a href="mailto:delematthewsjoshua@gmail.com">delematthewsjoshua@gmail.com</a>
+                <a href="contact.html">Nigeria delivery support</a>
+              </div>
+            </div>
+          </div>
+
+          <div class="footer-bottom">
+            <p>© 2026 Fendor. Built for diaspora-to-Nigeria gifting and commerce.</p>
+            <p>Phase 1 MVP with manual payment confirmation, vendor coordination, and delivery support.</p>
+          </div>
+        </div>
+      </footer>
+    </div>
+
+    <script src="assets/js/main.js"></script>
+    <script src="assets/js/auth.js"></script>
+    <script src="assets/js/shop.js"></script>
+  </body>
+</html>

@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Saved Recipients | Fendor</title>
+    <meta
+      name="description"
+      content="Manage your saved recipients for future Fendor orders and repeat gifting to Nigeria."
+    />
+    <link rel="stylesheet" href="assets/css/style.css" />
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="site-header" data-site-header>
+        <div class="container">
+          <div class="nav-wrap">
+            <a class="brand-mark" href="index.html" aria-label="Fendor home">
+              <span class="brand-mark__badge" aria-hidden="true">F</span>
+              <span class="brand-mark__text">
+                <span class="brand-mark__name">Fendor</span>
+                <span class="brand-mark__tag">Diaspora gifting, coordinated in Nigeria</span>
+              </span>
+            </a>
+
+            <nav class="nav-links" aria-label="Primary">
+              <a class="nav-link" href="index.html" data-nav-link>Home</a>
+              <a class="nav-link" href="shop.html" data-nav-link>Shop</a>
+              <a class="nav-link" href="account.html" data-nav-link>Dashboard</a>
+              <a class="nav-link" href="orders.html" data-nav-link>Orders</a>
+              <a class="nav-link" href="recipients.html" data-nav-link>Recipients</a>
+            </nav>
+
+            <div class="nav-actions" data-auth-slot></div>
+
+            <button
+              class="nav-toggle"
+              type="button"
+              aria-expanded="false"
+              aria-controls="mobile-navigation"
+              data-nav-toggle
+            >
+              <span class="sr-only">Toggle navigation</span>
+              <span class="nav-toggle__line"></span>
+              <span class="nav-toggle__line"></span>
+              <span class="nav-toggle__line"></span>
+            </button>
+          </div>
+
+          <div class="nav-panel" id="mobile-navigation">
+            <nav class="nav-links" aria-label="Mobile primary">
+              <a class="nav-link" href="index.html" data-nav-link>Home</a>
+              <a class="nav-link" href="shop.html" data-nav-link>Shop</a>
+              <a class="nav-link" href="account.html" data-nav-link>Dashboard</a>
+              <a class="nav-link" href="orders.html" data-nav-link>Orders</a>
+              <a class="nav-link" href="recipients.html" data-nav-link>Recipients</a>
+            </nav>
+            <div class="nav-actions" data-auth-slot></div>
+          </div>
+        </div>
+      </header>
+
+      <main class="account-shell">
+        <div class="container">
+          <div class="recipient-layout">
+            <div class="recipient-stack">
+              <div class="recipient-toolbar">
+                <div>
+                  <span class="eyebrow">Saved recipients</span>
+                  <h1 class="title-lg">Keep delivery details ready for future orders.</h1>
+                  <p class="section-subtitle">
+                    Save recipient information once so it is easier to place thoughtful orders again later.
+                  </p>
+                </div>
+                <button class="btn btn-primary" type="button" data-add-recipient>Add recipient</button>
+              </div>
+
+              <p class="form-hint" data-recipient-feedback hidden></p>
+
+              <div class="recipient-list" data-recipient-list></div>
+
+              <div class="empty-state" data-recipient-empty hidden>
+                <h2 class="title-md">No recipients saved yet</h2>
+                <p class="card-copy">Add your first recipient to make future Fendor orders much easier.</p>
+                <button class="btn btn-primary" type="button" data-add-recipient>Add recipient</button>
+              </div>
+            </div>
+
+            <aside class="recipient-form-panel" data-recipient-form-panel hidden>
+              <span class="eyebrow">Recipient details</span>
+              <h2 class="title-md" data-recipient-form-title>Add recipient</h2>
+              <p class="form-copy">
+                Use this panel to save the recipient information you will reuse for future orders.
+              </p>
+
+              <form class="recipient-form" data-recipient-form>
+                <input type="hidden" name="recipient_id" />
+                <div class="form-field">
+                  <label class="form-label" for="recipient-name">Full name</label>
+                  <input class="form-input" id="recipient-name" name="full_name" type="text" placeholder="Recipient full name" required />
+                </div>
+                <div class="form-grid">
+                  <div class="form-field">
+                    <label class="form-label" for="recipient-phone">Phone</label>
+                    <input class="form-input" id="recipient-phone" name="phone" type="tel" placeholder="+234..." required />
+                  </div>
+                  <div class="form-field">
+                    <label class="form-label" for="recipient-email">Email</label>
+                    <input class="form-input" id="recipient-email" name="email" type="email" placeholder="Optional" />
+                  </div>
+                </div>
+                <div class="form-field">
+                  <label class="form-label" for="recipient-address-1">Address line 1</label>
+                  <input class="form-input" id="recipient-address-1" name="address_line_1" type="text" placeholder="Street address" required />
+                </div>
+                <div class="form-field">
+                  <label class="form-label" for="recipient-address-2">Address line 2</label>
+                  <input class="form-input" id="recipient-address-2" name="address_line_2" type="text" placeholder="Area, landmark, estate" />
+                </div>
+                <div class="form-grid">
+                  <div class="form-field">
+                    <label class="form-label" for="recipient-city">City</label>
+                    <input class="form-input" id="recipient-city" name="city" type="text" placeholder="Lagos" required />
+                  </div>
+                  <div class="form-field">
+                    <label class="form-label" for="recipient-state">State</label>
+                    <input class="form-input" id="recipient-state" name="state" type="text" placeholder="Lagos" required />
+                  </div>
+                </div>
+                <div class="form-field">
+                  <label class="form-label" for="recipient-notes">Delivery notes</label>
+                  <textarea class="form-textarea" id="recipient-notes" name="delivery_notes" placeholder="Gate color, best delivery window, or any helpful note"></textarea>
+                </div>
+                <label class="form-hint">
+                  <input type="checkbox" name="is_default" />
+                  Set as default recipient
+                </label>
+                <div class="toolbar-actions">
+                  <button class="btn btn-primary" type="submit">Save recipient</button>
+                  <button class="btn btn-secondary" type="button" data-cancel-recipient>Cancel</button>
+                </div>
+              </form>
+            </aside>
+          </div>
+        </div>
+      </main>
+
+      <footer class="site-footer">
+        <div class="container">
+          <div class="footer-grid">
+            <div class="footer-card">
+              <a class="brand-mark" href="index.html" aria-label="Fendor home">
+                <span class="brand-mark__badge" aria-hidden="true">F</span>
+                <span class="brand-mark__text">
+                  <span class="brand-mark__name">Fendor</span>
+                  <span class="brand-mark__tag">Premium gifting with local coordination</span>
+                </span>
+              </a>
+              <p class="footer-copy">
+                Fendor helps Nigerians abroad buy authentic Nigerian goods and gifts from verified local vendors, with delivery coordinated inside Nigeria.
+              </p>
+            </div>
+            <div>
+              <h3 class="footer-title">Account</h3>
+              <nav class="footer-nav" aria-label="Footer account">
+                <a href="account.html">Dashboard</a>
+                <a href="orders.html">Orders</a>
+                <a href="recipients.html">Recipients</a>
+              </nav>
+            </div>
+            <div>
+              <h3 class="footer-title">Contact</h3>
+              <div class="footer-nav">
+                <a href="https://wa.me/2348069135853">+2348069135853</a>
+                <a href="mailto:delematthewsjoshua@gmail.com">delematthewsjoshua@gmail.com</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </footer>
+    </div>
+
+    <script src="assets/js/main.js"></script>
+    <script src="assets/js/auth.js"></script>
+    <script src="assets/js/recipients.js"></script>
+  </body>
+</html>

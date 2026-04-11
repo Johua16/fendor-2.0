@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin Login | Fendor</title>
+    <meta
+      name="description"
+      content="Log in to the Fendor admin workspace to review vendor onboarding and operational controls."
+    />
+    <link rel="stylesheet" href="assets/css/style.css" />
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="site-header" data-site-header>
+        <div class="container">
+          <div class="nav-wrap">
+            <a class="brand-mark" href="index.html" aria-label="Fendor home">
+              <span class="brand-mark__badge" aria-hidden="true">F</span>
+              <span class="brand-mark__text">
+                <span class="brand-mark__name">Fendor</span>
+                <span class="brand-mark__tag">Admin workspace access</span>
+              </span>
+            </a>
+
+            <nav class="nav-links" aria-label="Admin primary">
+              <a class="nav-link" href="index.html" data-nav-link>Public Site</a>
+              <a class="nav-link" href="admin-login.html" data-nav-link>Admin Login</a>
+            </nav>
+
+            <div class="nav-actions" data-admin-auth-slot></div>
+
+            <button
+              class="nav-toggle"
+              type="button"
+              aria-expanded="false"
+              aria-controls="mobile-navigation"
+              data-nav-toggle
+            >
+              <span class="sr-only">Toggle navigation</span>
+              <span class="nav-toggle__line"></span>
+              <span class="nav-toggle__line"></span>
+              <span class="nav-toggle__line"></span>
+            </button>
+          </div>
+
+          <div class="nav-panel" id="mobile-navigation">
+            <nav class="nav-links" aria-label="Admin mobile primary">
+              <a class="nav-link" href="index.html" data-nav-link>Public Site</a>
+              <a class="nav-link" href="admin-login.html" data-nav-link>Admin Login</a>
+            </nav>
+            <div class="nav-actions" data-admin-auth-slot></div>
+          </div>
+        </div>
+      </header>
+
+      <main class="auth-shell">
+        <div class="container">
+          <div class="auth-grid">
+            <section class="auth-panel">
+              <span class="eyebrow">Admin access</span>
+              <h1 class="title-lg">Log in to the Fendor admin workspace.</h1>
+              <p class="lead">
+                Access the Phase 4 admin area for vendor onboarding, operational oversight, and
+                platform-level visibility across the marketplace.
+              </p>
+              <div class="summary-grid">
+                <div class="summary-card">
+                  <p class="summary-value">Separate</p>
+                  <p class="summary-label">Admin auth is fully separate from customer and vendor access.</p>
+                </div>
+                <div class="summary-card">
+                  <p class="summary-value">Operational</p>
+                  <p class="summary-label">Use this workspace to review vendor applications, products, and orders from one protected area.</p>
+                </div>
+              </div>
+            </section>
+
+            <section class="auth-card">
+              <span class="eyebrow">Admin login</span>
+              <h2 class="title-md">Access the admin workspace</h2>
+              <p class="form-copy">
+                Use the admin account created for your operations team to access the protected admin area.
+              </p>
+
+              <form class="auth-form" data-admin-login-form>
+                <div class="form-field">
+                  <label class="form-label" for="admin-email">Email address</label>
+                  <input
+                    class="form-input"
+                    id="admin-email"
+                    name="email"
+                    type="email"
+                    placeholder="admin@example.com"
+                    autocomplete="email"
+                    required
+                  />
+                </div>
+
+                <div class="form-field">
+                  <label class="form-label" for="admin-password">Password</label>
+                  <input
+                    class="form-input"
+                    id="admin-password"
+                    name="password"
+                    type="password"
+                    placeholder="Enter your admin password"
+                    autocomplete="current-password"
+                    required
+                  />
+                </div>
+
+                <button class="btn btn-primary" type="submit">Admin Login</button>
+                <p class="form-hint" data-admin-auth-feedback></p>
+              </form>
+
+              <div class="form-help-row auth-note">
+                <span>Admin accounts are currently created manually by Fendor.</span>
+                <a class="form-link" href="contact.html">Need help?</a>
+              </div>
+            </section>
+          </div>
+        </div>
+      </main>
+
+      <footer class="site-footer">
+        <div class="container">
+          <div class="footer-grid">
+            <div class="footer-card">
+              <a class="brand-mark" href="index.html" aria-label="Fendor home">
+                <span class="brand-mark__badge" aria-hidden="true">F</span>
+                <span class="brand-mark__text">
+                  <span class="brand-mark__name">Fendor</span>
+                  <span class="brand-mark__tag">Premium gifting with local coordination</span>
+                </span>
+              </a>
+              <p class="footer-copy">
+                The Fendor admin area is designed to support vendor onboarding, approvals, and broader operational visibility.
+              </p>
+            </div>
+            <div>
+              <h3 class="footer-title">Explore</h3>
+              <nav class="footer-nav" aria-label="Footer explore">
+                <a href="index.html">Public Site</a>
+                <a href="shop.html">Shop</a>
+                <a href="contact.html">Contact</a>
+              </nav>
+            </div>
+            <div>
+              <h3 class="footer-title">Support</h3>
+              <div class="footer-nav">
+                <a href="https://wa.me/2348069135853">+2348069135853</a>
+                <a href="mailto:delematthewsjoshua@gmail.com">delematthewsjoshua@gmail.com</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </footer>
+    </div>
+
+    <script src="assets/js/main.js"></script>
+    <script src="assets/js/admin-auth.js"></script>
+  </body>
+</html>

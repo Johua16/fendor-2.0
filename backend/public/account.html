@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>My Fendor Account</title>
+    <meta
+      name="description"
+      content="View your Fendor customer dashboard, recent orders, and saved recipient information."
+    />
+    <link rel="stylesheet" href="assets/css/style.css" />
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="site-header" data-site-header>
+        <div class="container">
+          <div class="nav-wrap">
+            <a class="brand-mark" href="index.html" aria-label="Fendor home">
+              <span class="brand-mark__badge" aria-hidden="true">F</span>
+              <span class="brand-mark__text">
+                <span class="brand-mark__name">Fendor</span>
+                <span class="brand-mark__tag">Diaspora gifting, coordinated in Nigeria</span>
+              </span>
+            </a>
+
+            <nav class="nav-links" aria-label="Primary">
+              <a class="nav-link" href="index.html" data-nav-link>Home</a>
+              <a class="nav-link" href="shop.html" data-nav-link>Shop</a>
+              <a class="nav-link" href="orders.html" data-nav-link>Orders</a>
+              <a class="nav-link" href="recipients.html" data-nav-link>Recipients</a>
+            </nav>
+
+            <div class="nav-actions" data-auth-slot></div>
+
+            <button
+              class="nav-toggle"
+              type="button"
+              aria-expanded="false"
+              aria-controls="mobile-navigation"
+              data-nav-toggle
+            >
+              <span class="sr-only">Toggle navigation</span>
+              <span class="nav-toggle__line"></span>
+              <span class="nav-toggle__line"></span>
+              <span class="nav-toggle__line"></span>
+            </button>
+          </div>
+
+          <div class="nav-panel" id="mobile-navigation">
+            <nav class="nav-links" aria-label="Mobile primary">
+              <a class="nav-link" href="index.html" data-nav-link>Home</a>
+              <a class="nav-link" href="shop.html" data-nav-link>Shop</a>
+              <a class="nav-link" href="orders.html" data-nav-link>Orders</a>
+              <a class="nav-link" href="recipients.html" data-nav-link>Recipients</a>
+            </nav>
+            <div class="nav-actions" data-auth-slot></div>
+          </div>
+        </div>
+      </header>
+
+      <main class="account-shell">
+        <div class="container">
+          <section class="account-hero">
+            <span class="eyebrow">Customer dashboard</span>
+            <h1 class="title-lg">Welcome back, <span data-account-name>Customer</span>.</h1>
+            <p class="lead">
+              Manage your recent orders, saved recipients, and customer details without starting from scratch each time.
+            </p>
+            <p class="section-copy" data-profile-summary></p>
+
+            <div class="summary-grid">
+              <div class="summary-card">
+                <p class="summary-value" data-total-orders>0</p>
+                <p class="summary-label">Total orders</p>
+              </div>
+              <div class="summary-card">
+                <p class="summary-value" data-active-orders>0</p>
+                <p class="summary-label">Active orders</p>
+              </div>
+              <div class="summary-card">
+                <p class="summary-value" data-saved-recipients>0</p>
+                <p class="summary-label">Saved recipients</p>
+              </div>
+            </div>
+
+            <p class="form-hint" data-account-feedback hidden></p>
+          </section>
+
+          <div class="dashboard-grid">
+            <div class="dashboard-stack">
+              <section class="dashboard-card">
+                <span class="eyebrow">Quick actions</span>
+                <h2 class="title-md">Go straight to what you need.</h2>
+                <div class="quick-links">
+                  <article class="quick-link-card">
+                    <h3 class="title-sm">View order history</h3>
+                    <p class="card-copy">See your recent Fendor activity and current order statuses.</p>
+                    <a class="btn btn-secondary" href="orders.html">Open orders</a>
+                  </article>
+                  <article class="quick-link-card">
+                    <h3 class="title-sm">Manage recipients</h3>
+                    <p class="card-copy">Add, edit, and reuse recipient details for future gifting.</p>
+                    <a class="btn btn-secondary" href="recipients.html">Manage recipients</a>
+                  </article>
+                </div>
+              </section>
+
+              <section class="dashboard-card">
+                <span class="eyebrow">Recent orders</span>
+                <h2 class="title-md">Your latest order activity</h2>
+                <div class="order-list" data-recent-orders></div>
+              </section>
+            </div>
+
+            <aside class="dashboard-stack">
+              <section class="dashboard-card">
+                <span class="eyebrow">Helpful reminder</span>
+                <h2 class="title-md">Your customer area is live.</h2>
+                <p class="card-copy">
+                  Your account, saved recipients, and orders now load from the real Fendor backend, with delivery updates ready to grow over time.
+                </p>
+              </section>
+
+              <section class="dashboard-card">
+                <span class="eyebrow">Recommended next step</span>
+                <h2 class="title-md">Keep ordering simple.</h2>
+                <p class="card-copy">
+                  Save your household and family delivery details so placing your next Fendor order takes less time.
+                </p>
+                <a class="btn btn-accent" href="recipients.html">Go to recipients</a>
+              </section>
+            </aside>
+          </div>
+        </div>
+      </main>
+
+      <footer class="site-footer">
+        <div class="container">
+          <div class="footer-grid">
+            <div class="footer-card">
+              <a class="brand-mark" href="index.html" aria-label="Fendor home">
+                <span class="brand-mark__badge" aria-hidden="true">F</span>
+                <span class="brand-mark__text">
+                  <span class="brand-mark__name">Fendor</span>
+                  <span class="brand-mark__tag">Premium gifting with local coordination</span>
+                </span>
+              </a>
+              <p class="footer-copy">
+                Fendor helps Nigerians abroad buy authentic Nigerian goods and gifts from verified local vendors, with delivery coordinated inside Nigeria.
+              </p>
+            </div>
+            <div>
+              <h3 class="footer-title">Account</h3>
+              <nav class="footer-nav" aria-label="Footer account">
+                <a href="account.html">Dashboard</a>
+                <a href="orders.html">Orders</a>
+                <a href="recipients.html">Recipients</a>
+              </nav>
+            </div>
+            <div>
+              <h3 class="footer-title">Contact</h3>
+              <div class="footer-nav">
+                <a href="https://wa.me/2348069135853">+2348069135853</a>
+                <a href="mailto:delematthewsjoshua@gmail.com">delematthewsjoshua@gmail.com</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </footer>
+    </div>
+
+    <script src="assets/js/main.js"></script>
+    <script src="assets/js/auth.js"></script>
+    <script src="assets/js/account.js"></script>
+  </body>
+</html>

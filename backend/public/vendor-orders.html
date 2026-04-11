@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Vendor Orders | Fendor</title>
+    <meta
+      name="description"
+      content="View and manage the orders assigned to your vendor business on Fendor."
+    />
+    <link rel="stylesheet" href="assets/css/style.css" />
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="site-header" data-site-header>
+        <div class="container">
+          <div class="nav-wrap">
+            <a class="brand-mark" href="vendor-dashboard.html" aria-label="Vendor dashboard">
+              <span class="brand-mark__badge" aria-hidden="true">F</span>
+              <span class="brand-mark__text">
+                <span class="brand-mark__name">Fendor</span>
+                <span class="brand-mark__tag">Vendor workspace</span>
+              </span>
+            </a>
+
+            <nav class="nav-links" aria-label="Vendor primary">
+              <a class="nav-link" href="vendor-dashboard.html" data-nav-link>Dashboard</a>
+              <a class="nav-link" href="vendor-products.html" data-nav-link>Products</a>
+              <a class="nav-link" href="vendor-orders.html" data-nav-link>Orders</a>
+              <a class="nav-link" href="index.html" data-nav-link>Public Site</a>
+            </nav>
+
+            <div class="nav-actions" data-vendor-auth-slot></div>
+
+            <button
+              class="nav-toggle"
+              type="button"
+              aria-expanded="false"
+              aria-controls="mobile-navigation"
+              data-nav-toggle
+            >
+              <span class="sr-only">Toggle navigation</span>
+              <span class="nav-toggle__line"></span>
+              <span class="nav-toggle__line"></span>
+              <span class="nav-toggle__line"></span>
+            </button>
+          </div>
+
+          <div class="nav-panel" id="mobile-navigation">
+            <nav class="nav-links" aria-label="Vendor mobile primary">
+              <a class="nav-link" href="vendor-dashboard.html" data-nav-link>Dashboard</a>
+              <a class="nav-link" href="vendor-products.html" data-nav-link>Products</a>
+              <a class="nav-link" href="vendor-orders.html" data-nav-link>Orders</a>
+              <a class="nav-link" href="index.html" data-nav-link>Public Site</a>
+            </nav>
+            <div class="nav-actions" data-vendor-auth-slot></div>
+          </div>
+        </div>
+      </header>
+
+      <main class="account-shell" data-vendor-orders-page>
+        <div class="container">
+          <div class="page-toolbar">
+            <div>
+              <span class="eyebrow">Vendor orders</span>
+              <h1 class="title-lg">Manage the orders assigned to your business.</h1>
+              <p class="section-subtitle">
+                Review recipient details, payment state, order status, and the latest fulfillment updates from one place.
+              </p>
+            </div>
+            <div class="toolbar-actions">
+              <a class="btn btn-secondary" href="vendor-dashboard.html">Back to dashboard</a>
+              <a class="btn btn-primary" href="vendor-products.html">Manage products</a>
+            </div>
+          </div>
+
+          <p class="form-hint" data-vendor-orders-feedback hidden></p>
+
+          <div class="orders-stack" data-vendor-orders-list></div>
+
+          <div class="empty-state" data-vendor-orders-empty hidden>
+            <h2 class="title-md">No assigned orders yet</h2>
+            <p class="card-copy">
+              Once Fendor assigns customer orders to your products, they will appear here for status updates and tracking.
+            </p>
+            <a class="btn btn-secondary" href="vendor-products.html">Review your products</a>
+          </div>
+        </div>
+      </main>
+
+      <footer class="site-footer">
+        <div class="container">
+          <div class="footer-grid">
+            <div class="footer-card">
+              <a class="brand-mark" href="vendor-dashboard.html" aria-label="Vendor dashboard">
+                <span class="brand-mark__badge" aria-hidden="true">F</span>
+                <span class="brand-mark__text">
+                  <span class="brand-mark__name">Fendor</span>
+                  <span class="brand-mark__tag">Vendor workspace</span>
+                </span>
+              </a>
+              <p class="footer-copy">
+                Stay on top of assigned customer orders and keep delivery coordination visible through clear status updates.
+              </p>
+            </div>
+            <div>
+              <h3 class="footer-title">Workspace</h3>
+              <nav class="footer-nav" aria-label="Footer workspace">
+                <a href="vendor-dashboard.html">Dashboard</a>
+                <a href="vendor-products.html">Products</a>
+                <a href="vendor-orders.html">Orders</a>
+                <a href="vendor-login.html">Vendor Login</a>
+              </nav>
+            </div>
+            <div>
+              <h3 class="footer-title">Support</h3>
+              <div class="footer-nav">
+                <a href="https://wa.me/2348069135853">+2348069135853</a>
+                <a href="mailto:delematthewsjoshua@gmail.com">delematthewsjoshua@gmail.com</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </footer>
+    </div>
+
+    <script src="assets/js/main.js"></script>
+    <script src="assets/js/vendor-auth.js"></script>
+    <script src="assets/js/vendor-orders.js"></script>
+  </body>
+</html>

@@ -17,34 +17,7 @@ const recipientRoutes = require("./routes/recipient.routes");
 const orderRoutes = require("./routes/order.routes");
 
 const app = express();
-const FRONTEND_ROOT = path.resolve(__dirname, "..");
-const ASSETS_ROOT = path.join(FRONTEND_ROOT, "assets");
-const STATIC_PAGES = [
-  "index.html",
-  "shop.html",
-  "product.html",
-  "about.html",
-  "contact.html",
-  "signup.html",
-  "login.html",
-  "account.html",
-  "orders.html",
-  "order-detail.html",
-  "recipients.html",
-  "vendor-login.html",
-  "vendor-dashboard.html",
-  "vendor-products.html",
-  "vendor-product-form.html",
-  "vendor-orders.html",
-  "vendor-order-detail.html",
-  "vendor-apply.html",
-  "admin-login.html",
-  "admin-dashboard.html",
-  "admin-vendors.html",
-  "admin-vendor-detail.html",
-  "admin-products.html",
-  "admin-orders.html",
-];
+const PUBLIC_ROOT = path.join(__dirname, "public");
 
 app.use(
   cors({
@@ -78,21 +51,7 @@ app.use("/api/user", userRoutes);
 app.use("/api/recipients", recipientRoutes);
 app.use("/api/orders", orderRoutes);
 
-app.use("/assets", express.static(ASSETS_ROOT));
-
-app.get("/", (req, res) => {
-  res.sendFile(path.join(FRONTEND_ROOT, "index.html"));
-});
-
-STATIC_PAGES.forEach((pageName) => {
-  if (pageName === "index.html") {
-    return;
-  }
-
-  app.get("/" + pageName, (req, res) => {
-    res.sendFile(path.join(FRONTEND_ROOT, pageName));
-  });
-});
+app.use(express.static(PUBLIC_ROOT));
 
 app.use((req, res) => {
   res.status(404).json({

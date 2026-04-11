@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Apply as a Vendor | Fendor</title>
+    <meta
+      name="description"
+      content="Apply to become a Fendor vendor and submit your business for review."
+    />
+    <link rel="stylesheet" href="assets/css/style.css" />
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="site-header" data-site-header>
+        <div class="container">
+          <div class="nav-wrap">
+            <a class="brand-mark" href="index.html" aria-label="Fendor home">
+              <span class="brand-mark__badge" aria-hidden="true">F</span>
+              <span class="brand-mark__text">
+                <span class="brand-mark__name">Fendor</span>
+                <span class="brand-mark__tag">Vendor application</span>
+              </span>
+            </a>
+
+            <nav class="nav-links" aria-label="Primary">
+              <a class="nav-link" href="index.html" data-nav-link>Home</a>
+              <a class="nav-link" href="shop.html" data-nav-link>Shop</a>
+              <a class="nav-link" href="vendor-apply.html" data-nav-link>Become a Vendor</a>
+              <a class="nav-link" href="vendor-login.html" data-nav-link>Vendor Login</a>
+            </nav>
+
+            <div class="nav-actions">
+              <a class="btn btn-secondary" href="contact.html">Need help?</a>
+              <a class="btn btn-primary" href="vendor-login.html">Vendor Login</a>
+            </div>
+
+            <button
+              class="nav-toggle"
+              type="button"
+              aria-expanded="false"
+              aria-controls="mobile-navigation"
+              data-nav-toggle
+            >
+              <span class="sr-only">Toggle navigation</span>
+              <span class="nav-toggle__line"></span>
+              <span class="nav-toggle__line"></span>
+              <span class="nav-toggle__line"></span>
+            </button>
+          </div>
+
+          <div class="nav-panel" id="mobile-navigation">
+            <nav class="nav-links" aria-label="Mobile primary">
+              <a class="nav-link" href="index.html" data-nav-link>Home</a>
+              <a class="nav-link" href="shop.html" data-nav-link>Shop</a>
+              <a class="nav-link" href="vendor-apply.html" data-nav-link>Become a Vendor</a>
+              <a class="nav-link" href="vendor-login.html" data-nav-link>Vendor Login</a>
+            </nav>
+
+            <div class="nav-actions">
+              <a class="btn btn-secondary" href="contact.html">Need help?</a>
+              <a class="btn btn-primary" href="vendor-login.html">Vendor Login</a>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main class="auth-shell">
+        <div class="container">
+          <div class="auth-grid">
+            <section class="auth-panel">
+              <span class="eyebrow">Vendor application</span>
+              <h1 class="title-lg">Apply to join Fendor as a verified local vendor.</h1>
+              <p class="lead">
+                Submit your business details for review. This is an application for approval, not
+                an instant vendor signup or login.
+              </p>
+
+              <div class="summary-grid">
+                <div class="summary-card">
+                  <p class="summary-value">Review</p>
+                  <p class="summary-label">Applications are reviewed by the Fendor admin team before access is granted.</p>
+                </div>
+                <div class="summary-card">
+                  <p class="summary-value">Separate</p>
+                  <p class="summary-label">Vendor application is separate from vendor login and account activation.</p>
+                </div>
+              </div>
+            </section>
+
+            <section class="auth-card">
+              <span class="eyebrow">Apply now</span>
+              <h2 class="title-md">Tell us about your business</h2>
+              <p class="form-copy">
+                Share your business details, product focus, and contact information so we can review your fit for the platform.
+              </p>
+
+              <p class="form-hint form-hint--loading vendor-apply-note">
+                Application review is manual. Submitting this form does not create a live vendor login yet.
+              </p>
+
+              <form class="auth-form" data-vendor-application-form>
+                <div class="form-field">
+                  <label class="form-label" for="vendor-business-name">Business name</label>
+                  <input class="form-input" id="vendor-business-name" name="business_name" type="text" placeholder="Lagos Luxe Hampers" required />
+                </div>
+
+                <div class="form-grid">
+                  <div class="form-field">
+                    <label class="form-label" for="vendor-contact-name">Contact name</label>
+                    <input class="form-input" id="vendor-contact-name" name="contact_name" type="text" placeholder="Dele Matthews" required />
+                  </div>
+                  <div class="form-field">
+                    <label class="form-label" for="vendor-email">Email address</label>
+                    <input class="form-input" id="vendor-email" name="email" type="email" placeholder="vendor@example.com" autocomplete="email" required />
+                  </div>
+                </div>
+
+                <div class="form-grid">
+                  <div class="form-field">
+                    <label class="form-label" for="vendor-phone">Phone number</label>
+                    <input class="form-input" id="vendor-phone" name="phone" type="tel" placeholder="+2348012345678" required />
+                  </div>
+                  <div class="form-field">
+                    <label class="form-label" for="vendor-categories">Product categories</label>
+                    <input class="form-input" id="vendor-categories" name="product_categories" type="text" placeholder="Gift boxes, groceries, celebration packages" />
+                  </div>
+                </div>
+
+                <div class="form-field">
+                  <label class="form-label" for="vendor-address">Business address</label>
+                  <textarea class="form-textarea" id="vendor-address" name="business_address" placeholder="Enter your business address in Nigeria" required></textarea>
+                </div>
+
+                <div class="form-field">
+                  <label class="form-label" for="vendor-description">Business description</label>
+                  <textarea class="form-textarea" id="vendor-description" name="business_description" placeholder="Describe what your business sells, the kinds of customers you serve, and what makes your products dependable." required></textarea>
+                </div>
+
+                <div class="form-field">
+                  <label class="form-label" for="vendor-note">Application note</label>
+                  <textarea class="form-textarea" id="vendor-note" name="application_note" placeholder="Optional: share anything helpful for review, such as delivery capacity, premium packaging, or category strengths."></textarea>
+                </div>
+
+                <button class="btn btn-primary" type="submit">Submit application</button>
+                <p class="form-hint" data-vendor-application-feedback></p>
+              </form>
+
+              <div class="form-help-row auth-note">
+                <span>Already approved as a vendor?</span>
+                <a class="form-link" href="vendor-login.html">Go to vendor login</a>
+              </div>
+            </section>
+          </div>
+        </div>
+      </main>
+
+      <footer class="site-footer">
+        <div class="container">
+          <div class="footer-grid">
+            <div class="footer-card">
+              <a class="brand-mark" href="index.html" aria-label="Fendor home">
+                <span class="brand-mark__badge" aria-hidden="true">F</span>
+                <span class="brand-mark__text">
+                  <span class="brand-mark__name">Fendor</span>
+                  <span class="brand-mark__tag">Premium gifting with local coordination</span>
+                </span>
+              </a>
+              <p class="footer-copy">
+                Fendor works with trusted local vendors to serve diaspora customers through a more structured gifting and commerce experience.
+              </p>
+            </div>
+            <div>
+              <h3 class="footer-title">Explore</h3>
+              <nav class="footer-nav" aria-label="Footer explore">
+                <a href="index.html">Home</a>
+                <a href="shop.html">Shop</a>
+                <a href="vendor-login.html">Vendor Login</a>
+              </nav>
+            </div>
+            <div>
+              <h3 class="footer-title">Support</h3>
+              <div class="footer-nav">
+                <a href="https://wa.me/2348069135853">+2348069135853</a>
+                <a href="mailto:delematthewsjoshua@gmail.com">delematthewsjoshua@gmail.com</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </footer>
+    </div>
+
+    <script src="assets/js/main.js"></script>
+    <script src="assets/js/vendor-apply.js"></script>
+  </body>
+</html>
