@@ -11,15 +11,24 @@
     "build": "next build --webpack",
     "start": "next start",
     "typecheck": "tsc --noEmit",
-    "test": "node --test ../../server/test/*.test.ts"
+    "test": "node --test ../../server/test/*.test.ts test/*.test.ts",
+    "db:migrate": "node --env-file-if-exists=.env.local scripts/migrate.ts",
+    "admin:grant": "node --env-file-if-exists=.env.local scripts/grant-admin.ts",
+    "mail:preview": "node --env-file-if-exists=.env.local scripts/dev-inbox.ts",
+    "mail:send": "node --env-file-if-exists=.env.local scripts/send-mail.ts"
   },
   "dependencies": {
     "next": "16.4.2",
+    "nodemailer": "10.2.1",
+    "pg": "8.23.1",
     "react": "19.3.1",
     "react-dom": "19.3.1"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "0.5.11",
     "@types/node": "24.19.2",
+    "@types/nodemailer": "8.0.2",
+    "@types/pg": "8.23.1",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
     "typescript": "7.0.2"

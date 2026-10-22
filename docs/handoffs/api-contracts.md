@@ -1,13 +1,13 @@
 # API contracts and integration status
 
-Only these HTTP endpoints currently exist in the new app:
+Foundation endpoints:
 
 | Method | Path | Result |
 | --- | --- | --- |
 | GET | /api/health | 200: { service: "fendor", status: "running", stage: "foundation" } |
-| GET | /api/ready | 503: { status: "not_ready", reason: string } |
+| GET | /api/ready | 200 after identity configuration/migrations; otherwise 503 |
 
-No signup, login, product, order, payment or vendor approval APIs are ready. The legacy backend is not the new API contract. Health does not imply readiness.
+Identity and vendor approval endpoints are implemented in the accounts feature branch; see [identity contract](identity-api.md) and [setup](../identity-setup.md). Product, order and payment APIs are not implemented. The legacy backend is not the new API contract. Health does not imply readiness.
 
 Before each feature, jointly specify method/path, input/output types, validation errors, authentication/session handling, role and ownership checks, state transitions, pagination and retry/idempotency behaviour. Record accepted contracts here; mark drafts as proposals.
 
