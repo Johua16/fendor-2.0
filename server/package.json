@@ -1,0 +1,12 @@
+{
+  "name": "fendor-server",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "engines": { "node": ">=24 <25" },
+  "scripts": {
+    "dev": "node --watch src/http.ts",
+    "start": "node src/http.ts",
+    "test": "node --test test/*.test.ts"
+  }
+}
