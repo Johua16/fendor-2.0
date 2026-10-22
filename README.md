@@ -12,7 +12,7 @@ Root HTML/assets and **backend/** are the preserved legacy prototype; do not use
 4. Open http://localhost:3000.
 
 The home screen is a temporary development placeholder, not the final Figma implementation.
-No external account or database credentials are required for this foundation.
+The placeholder homepage needs no credentials. Backend accounts and catalogue require database configuration; see [setup](docs/identity-setup.md).
 
 ## Verify
 
@@ -28,10 +28,10 @@ Use npm and the committed **apps/web/package-lock.json** for the new app. Legacy
 
 - `/`: development foundation page.
 - `GET /api/health`: HTTP 200, process health.
-- `GET /api/ready`: HTTP 503, deliberately not ready until database and identity are connected.
+- `GET /api/ready`: HTTP 200 only after required configuration and database migrations; otherwise HTTP 503.
 - Backend order transitions tested independently. These are not exposed as public mutation APIs.
 
-Database migration is a draft, not applied. Accounts, checkout, emails, payments and delivery are not live. See [backend limitations](server/README.md).
+This branch implements persistent accounts, vendor approval, and the initial product catalogue. See [identity endpoints](docs/handoffs/identity-api.md) and [catalogue endpoints](docs/handoffs/catalogue-api.md). These features are not deployed: frontend integration, database provisioning and scheduled email delivery are still required. Checkout, payments and delivery APIs are not live.
 
 ## Collaboration
 

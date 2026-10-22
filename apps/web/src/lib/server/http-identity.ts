@@ -1,3 +1,5 @@
+import { body } from './http-input.ts';
+import { catalogueResponse } from './http-catalogue.ts';
 import { database, type Database } from './database.ts';
 import { config } from './config.ts';
 import { identity, ApiError, fail } from './identity.ts';
@@ -8,19 +10,6 @@ function sessionCookie(req: Request) {
 function cookie(value: string, secure: boolean, clear = false) {
   return `${COOKIE}=${value}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${clear ? 0 : 604800}${secure ? '; Secure' : ''}`;
 }
-async function body(req: Request): Promise<Record<string, unknown>> {
-  if (!req.headers.get('content-type')?.toLowerCase().startsWith('application/json')) fail(415, 'JSON_REQUIRED', 'Send JSON.');
-  const reader = req.body?.getReader(); if (!reader) fail(400, 'INVALID_JSON', 'JSON body required.');
-  const chunks: Uint8Array[] = []; let size = 0;
-  while (true) {
-    const { done, value } = await reader.read(); if (done) break;
-    size += value.length; if (size > 16384) { await reader.cancel(); fail(413, 'BODY_TOO_LARGE', 'Request is too large.'); }
-    chunks.push(value);
-  }
-  let parsed: unknown; try { parsed = JSON.parse(Buffer.concat(chunks).toString('utf8')); } catch { fail(400, 'INVALID_JSON', 'Invalid JSON.'); }
-  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) fail(400, 'INVALID_JSON', 'JSON object required.');
-  return parsed as Record<string, unknown>;
-}
 export async function handleIdentity(req: Request, path: string[], dependencies?: {db: Database; settings: ReturnType<typeof config>}) {
   const headers = new Headers({ 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' });
   try {
@@ -28,6 +17,8 @@ export async function handleIdentity(req: Request, path: string[], dependencies?
     if (!['GET', 'POST'].includes(req.method)) fail(405, 'METHOD_NOT_ALLOWED', 'Method not allowed.');
     if (req.method === 'POST' && req.headers.get('origin') !== settings.origin) fail(403, 'INVALID_ORIGIN', 'Request origin is not allowed.');
     const service = identity(dependencies?.db ?? database(), settings), secret = sessionCookie(req), key = path.join('/');
+    const catalogueResult = await catalogueResponse(req,path,dependencies?.db ?? database(),secret,headers);
+    if(catalogueResult) return catalogueResult;
     if (req.method === 'GET') {
       let data: unknown;
       if (key === 'auth/me') data = { user: await service.me(secret) };

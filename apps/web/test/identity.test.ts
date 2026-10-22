@@ -1,18 +1,15 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { resolve } from 'node:path';
-import { PGlite } from '@electric-sql/pglite';
+import { testDatabase } from './database.ts';
 import { handleIdentity } from '../src/lib/server/http-identity.ts';
 import { deliverOne } from '../src/lib/server/mail.ts';
 import { identity } from '../src/lib/server/identity.ts';
 import { migrate } from '../src/lib/server/migrations.ts';
 import { unseal, digest } from '../src/lib/server/security.ts';
-import { postgres, type Database, type Sql } from '../src/lib/server/database.ts';
 
 test('database-backed identity and vendor lifecycle', async () => {
-  const pg = new PGlite();
-  const adapt = (client: Pick<PGlite, 'query' | 'exec'>): Sql => ({query: (q,v) => client.query(q,v), exec:q=>client.exec(q)});
-  const db: Database = process.env.TEST_DATABASE_URL ? postgres(process.env.TEST_DATABASE_URL) : {...adapt(pg), transaction: fn=>pg.transaction(tx=>fn(adapt(tx))),close:()=>pg.close()};
+  const db = await testDatabase();
   let time = Date.now();
   const key = 'ab'.repeat(32);
   const api = identity(db, {origin:'http://localhost:3000',outboxKey:key,now:()=>time});
@@ -73,5 +70,5 @@ test('database-backed identity and vendor lifecycle', async () => {
     assert.equal((await db.query("SELECT * FROM email_outbox WHERE sent_at IS NOT NULL AND payload='' ")).rows.length,1);
     time+=8*86400000;
     await assert.rejects(api.me(fresh.secret),{code:'UNAUTHENTICATED'});
-  } finally {await db.close(); if(process.env.TEST_DATABASE_URL) await pg.close();}
+  } finally {await db.close();}
 });
