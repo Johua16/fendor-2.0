@@ -29,9 +29,9 @@ Use npm and the committed **apps/web/package-lock.json** for the new app. Legacy
 - `/`: development foundation page.
 - `GET /api/health`: HTTP 200, process health.
 - `GET /api/ready`: HTTP 200 only after required configuration and database migrations; otherwise HTTP 503.
-- Backend order transitions tested independently. These are not exposed as public mutation APIs.
+- Customer order requests, saved personalisation and vendor stock reservations are exposed on the orders feature branch; full checkout is not implemented.
 
-This branch implements persistent accounts, vendor approval, and the initial product catalogue. See [identity endpoints](docs/handoffs/identity-api.md) and [catalogue endpoints](docs/handoffs/catalogue-api.md). These features are not deployed: frontend integration, database provisioning and scheduled email delivery are still required. Checkout, payments and delivery APIs are not live.
+This branch implements persistent accounts, vendor approval, the initial product catalogue, and order requests with stock reservations. See [identity endpoints](docs/handoffs/identity-api.md) and [catalogue endpoints](docs/handoffs/catalogue-api.md). See [order request endpoints](docs/handoffs/orders-api.md). These features are not deployed: frontend integration, database provisioning and scheduled email delivery are still required. Checkout, payments and delivery APIs are not live.
 
 ## Collaboration
 

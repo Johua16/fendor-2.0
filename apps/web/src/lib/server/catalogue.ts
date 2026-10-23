@@ -21,7 +21,7 @@ function content(input:Record<string,unknown>) {
   if(imagePath && !/^\/media\/catalogue\/[a-zA-Z0-9_-]+\.(jpg|jpeg|png|webp)$/.test(imagePath)) fail(400,'INVALID_INPUT','Use an approved catalogue media path.');
   return {title,description,category,imagePath,sku:text(input.sku,'SKU',1,80),priceKobo:integer(input.priceKobo,'price',1,Number.MAX_SAFE_INTEGER),stockQuantity:integer(input.stockQuantity,'stock')};
 }
-async function actor(tx:Sql,secret:string|undefined,role:'admin'|'vendor') {
+export async function actor(tx:Sql,secret:string|undefined,role:'admin'|'vendor'|'customer') {
   if(!secret || !/^[A-Za-z0-9_-]{43}$/.test(secret)) fail(401,'UNAUTHENTICATED','Sign in to continue.');
   const user=(await tx.query<{id:string;verified:boolean;allowed:boolean}>(`SELECT u.id,u.email_verified_at IS NOT NULL AS verified,
     EXISTS(SELECT 1 FROM user_roles r WHERE r.user_id=u.id AND r.role=$3) AS allowed
