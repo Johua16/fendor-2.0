@@ -1,6 +1,8 @@
-/* Initial founder/handoff tokens. Frontend owner verifies final tokens and fonts against Figma. */
 :root {
   --color-accent: #fd7a49;
-  --color-text: #2f2623;
+  --color-text: #19120f;
   --color-background: #fff8f6;
+  --color-charcoal: #2f2623;
+  --color-muted: #807571;
+  --color-soft: #fdeae3;
 }
