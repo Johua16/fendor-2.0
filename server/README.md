@@ -1,9 +1,9 @@
 # Fendor backend foundation
 
-This is the first new backend increment, not a complete marketplace API.
+This directory contains database migrations and order domain rules; it is not a complete marketplace API. Persistent identity and catalogue services live in apps/web/src/lib/server.
 The legacy backend/ directory is preserved as a reference. The active Next.js application is apps/web; it imports these domain rules server-side. Do not run the legacy backend to serve the new application.
 
-## Run locally
+## Domain harness only
 
 Requires Node.js 24. No external packages are needed for this foundation.
 
@@ -14,7 +14,7 @@ Requires Node.js 24. No external packages are needed for this foundation.
 
 `GET /api/health` reports the HTTP process is alive.
 `GET /api/ready` deliberately returns 503 until persistent storage and identity are wired.
-There are no public order or identity mutation endpoints yet.
+This harness has no mutation endpoints. Run the active Next.js app for identity and catalogue APIs; see the repository README and docs/handoffs/api-contracts.md.
 
 ## Implemented
 
@@ -22,14 +22,14 @@ TypeScript domain transitions cover draft, availability check, reservation, quot
 
 A stock reservation does not confirm an order. Quote creation is an admin action: its future service must validate packaging, delivery and preparation feasibility before calling it. `verify_payment` is only called after checking actual bank receipt, never a customer screenshot alone. Fulfilment permission here uses the vendor as the assigned preparer; partner assembly assignment remains an explicit future extension.
 
-## Database draft
+## Database migrations
 
-`db/001-foundation.sql` targets PostgreSQL. It is not applied or database-tested yet. It models identity, vendor approval, products, variant stock, order requests, payment records and audit events. This increment supports one variant/vendor per request, not an implemented multi-vendor basket.
+The versioned SQL migrations target PostgreSQL. The apps/web migration runner applies them; integration tests exercise them locally and against PostgreSQL in CI. It models identity, vendor approval, products, variant stock, order requests, payment records and audit events. This increment supports one variant/vendor per request, not an implemented multi-vendor basket.
 
 Before exposing mutation APIs:
 
-1. Provision development PostgreSQL and add a versioned migration runner; validate this migration against a real database.
-2. Add persistent identity with password hashing, verification, expiring sessions, rate limits and role checks. Never accept actor roles from the request body.
+1. Provision the deployment database and run the implemented migrations.
+2. Use the implemented persistent identity/session service. Never accept actor roles from the request body.
 3. Add transactional repository operations. Reserve stock with a conditional update/row lock, reject insufficient available stock, and save the order plus audit event in the same transaction.
 4. Enforce optimistic order version checks and idempotency keys. Retry responses must not charge or reserve twice.
 5. Atomically release expired/declined/cancelled holds. Convert reservations to allocated stock on verified payment. Recheck live stock and fulfilment feasibility before confirmation.
