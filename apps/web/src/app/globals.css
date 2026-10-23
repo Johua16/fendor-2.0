@@ -1,10 +1,8 @@
 @import '../styles/tokens.css';
+
 * { box-sizing: border-box; }
-body { margin: 0; background: var(--color-background); color: var(--color-text); font-family: Arial, sans-serif; line-height: 1.6; }
-main { max-width: 780px; margin: 0 auto; padding: 64px 24px; }
-h1 { font-size: clamp(2.2rem, 7vw, 4rem); line-height: 1.12; letter-spacing: -.04em; }
-h2 { font-size: 1.25rem; }
-.eyebrow { font-size: .8rem; font-weight: 700; letter-spacing: .12em; }
-section { border: 1px solid #e6dedb; border-radius: 16px; padding: 24px; margin: 32px 0; background: white; }
-a { color: #90350f; font-weight: 700; }
-a:focus-visible { outline: 3px solid var(--color-accent); outline-offset: 5px; }
+html { scroll-behavior: smooth; }
+body { margin: 0; background: var(--color-background); color: var(--color-text); font-family: Arial, Helvetica, sans-serif; line-height: 1.5; }
+button, input { font: inherit; }
+a:focus-visible, button:focus-visible, input:focus-visible { outline: 3px solid var(--color-accent); outline-offset: 3px; }
+img { max-width: 100%; }
