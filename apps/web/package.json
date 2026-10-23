@@ -15,7 +15,8 @@
     "db:migrate": "node --env-file-if-exists=.env.local scripts/migrate.ts",
     "admin:grant": "node --env-file-if-exists=.env.local scripts/grant-admin.ts",
     "mail:preview": "node --env-file-if-exists=.env.local scripts/dev-inbox.ts",
-    "mail:send": "node --env-file-if-exists=.env.local scripts/send-mail.ts"
+    "mail:send": "node --env-file-if-exists=.env.local scripts/send-mail.ts",
+    "orders:expire": "node --env-file-if-exists=.env.local scripts/expire-reservations.ts"
   },
   "dependencies": {
     "next": "16.4.2",

@@ -1,3 +1,4 @@
+import { orderResponse } from './http-orders.ts';
 import { body } from './http-input.ts';
 import { catalogueResponse } from './http-catalogue.ts';
 import { database, type Database } from './database.ts';
@@ -17,6 +18,8 @@ export async function handleIdentity(req: Request, path: string[], dependencies?
     if (!['GET', 'POST'].includes(req.method)) fail(405, 'METHOD_NOT_ALLOWED', 'Method not allowed.');
     if (req.method === 'POST' && req.headers.get('origin') !== settings.origin) fail(403, 'INVALID_ORIGIN', 'Request origin is not allowed.');
     const service = identity(dependencies?.db ?? database(), settings), secret = sessionCookie(req), key = path.join('/');
+    const orderResult=await orderResponse(req,path,dependencies?.db ?? database(),secret,headers);
+    if(orderResult) return orderResult;
     const catalogueResult = await catalogueResponse(req,path,dependencies?.db ?? database(),secret,headers);
     if(catalogueResult) return catalogueResult;
     if (req.method === 'GET') {
