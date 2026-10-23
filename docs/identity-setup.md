@@ -11,7 +11,7 @@ Requires Node 24, PostgreSQL 17, and the existing Next.js app. Legacy accounts a
 
 The outbox is encrypted at rest; tokens and session secrets are stored as hashes. Successfully sent payloads are erased. SMTP delivery is at-least-once: a crash after delivery but before transaction commit can cause a duplicate email. Retrying the link is safe because tokens are single-use. Losing OUTBOX_KEY makes queued messages unreadable; rotate deliberately and reissue outstanding links.
 
-The orders increment also requires RESERVATION_MINUTES (an agreed integer duration of 1–1,440 minutes) and a scheduled `npm run orders:expire` worker; see the orders API handoff.
+The full operations increment also requires `RESERVATION_MINUTES` and `VENDOR_RESPONSE_MINUTES` (agreed integer durations of 1–1,440 minutes) plus the continuously running `npm run worker -- --loop` process; see the orders and operations API handoffs.
 
 Health only confirms app execution. Readiness verifies configuration, reservation policy and migrated database, not email delivery or full marketplace readiness. An unset database returns 503 rather than fake success. Production requires HTTPS APP_ORIGIN, managed secrets, TLS database connections, backups, a monitored mail worker, and edge/IP abuse protection. Database email/global rate limits are basic protection, not a substitute for edge controls. Add scheduled cleanup for expired sessions/tokens/rate-limit rows as part of deployment operations.
 

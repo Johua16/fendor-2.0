@@ -5,7 +5,7 @@ Foundation endpoints:
 | Method | Path | Result |
 | --- | --- | --- |
 | GET | /api/health | 200: { service: "fendor", status: "running", stage: "foundation" } |
-| GET | /api/ready | 200 after identity configuration/migrations; otherwise 503 |
+| GET | /api/ready | 200 after configuration, migrations and both order timing policies; otherwise 503 |
 
 Identity and vendor approval endpoints are implemented in the accounts feature branch; see [identity contract](identity-api.md) and [setup](../identity-setup.md). The catalogue feature branch adds [vendor listing, product moderation and public browsing APIs](catalogue-api.md). The orders feature branch adds [customer requests and stock reservations](orders-api.md). The checkout feature branch adds [Fendor quotes, customer acceptance and offline bank-receipt verification](checkout-api.md). The payment-exceptions branch adds [recorded refunds and net receipt reconciliation](payment-exceptions-api.md). Fulfilment and paid-order remedies remain unimplemented. The legacy backend is not the new API contract. Health does not imply readiness.
 

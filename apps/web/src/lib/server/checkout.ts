@@ -65,6 +65,7 @@ export function checkout(db:Database,now:()=>number=Date.now) {
      await tx.query('UPDATE order_requests SET version=version+1 WHERE id=$1',[id]);await audit(tx,row,by,row.state,'funds_recorded');
      return {paymentId,orderId:id,version:row.version+1};
     }
+    if(row.financial_hold || (await tx.query("SELECT id FROM order_remedies WHERE order_id=$1 AND status IN ('requested','approved','closed')",[id])).rows.length) fail(409,'FINANCIAL_REVIEW','Resolve financial/remedy review first.');
     if(action==='verify-payment' && row.payment_verified) {
      const payment=(await tx.query('SELECT id FROM payment_records WHERE id=$1 AND order_id=$2 AND status=$3',[uuid(input.paymentId),id,'verified'])).rows[0];
      if(payment) return {orderId:id,state:row.state,version:row.version,orderConfirmed:true};
@@ -75,6 +76,7 @@ export function checkout(db:Database,now:()=>number=Date.now) {
     if(action!=='verify-payment' && receipts.length) fail(409,'PAYMENT_REVIEW_REQUIRED','Resolve recorded funds before changing this quote.');
     if(action==='quote') {
      if(input.fulfilmentChecked!==true) fail(400,'FEASIBILITY_REQUIRED','Confirm packaging, delivery and preparation feasibility.');
+     if(!(await tx.query('SELECT d.order_id FROM order_deliveries d JOIN delivery_zones z ON z.id=d.zone_id WHERE d.order_id=$1 AND z.active',[id])).rows.length) fail(409,'DELIVERY_REQUIRED','Select a supported delivery zone and save delivery details.');
      const plan=text(input.fulfilmentPlan,'fulfilment plan',10,2000);
      const packaging=amount(input.packagingKobo),delivery=amount(input.deliveryKobo),subtotal=amount(row.product_snapshot.unitPriceKobo*row.quantity,1),total=amount(subtotal+packaging+delivery,1);
      next(row,by,'admin',{type:'quote',totalKobo:total});

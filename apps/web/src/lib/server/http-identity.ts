@@ -1,3 +1,4 @@
+import { operationsResponse } from './http-operations.ts';
 import { orderResponse } from './http-orders.ts';
 import { body } from './http-input.ts';
 import { catalogueResponse } from './http-catalogue.ts';
@@ -18,6 +19,9 @@ export async function handleIdentity(req: Request, path: string[], dependencies?
     if (!['GET', 'POST'].includes(req.method)) fail(405, 'METHOD_NOT_ALLOWED', 'Method not allowed.');
     if (req.method === 'POST' && req.headers.get('origin') !== settings.origin) fail(403, 'INVALID_ORIGIN', 'Request origin is not allowed.');
     const service = identity(dependencies?.db ?? database(), settings), secret = sessionCookie(req), key = path.join('/');
+    if(req.method==='POST') await service.throttleWrites();
+    const operationsResult=await operationsResponse(req,path,dependencies?.db ?? database(),secret,headers,settings);
+    if(operationsResult)return operationsResult;
     const orderResult=await orderResponse(req,path,dependencies?.db ?? database(),secret,headers);
     if(orderResult) return orderResult;
     const catalogueResult = await catalogueResponse(req,path,dependencies?.db ?? database(),secret,headers);
@@ -42,7 +46,6 @@ export async function handleIdentity(req: Request, path: string[], dependencies?
     const allowed = reviewing ? ['decision', 'note'] : fields[key];
     if (!allowed) fail(404, 'NOT_FOUND', 'Endpoint not found.');
     if (Object.keys(input).some(k => !allowed.includes(k))) fail(400, 'UNKNOWN_FIELD', 'Unexpected request fields.');
-    await service.throttleWrites();
     let data: unknown, status = 200;
     switch (key) {
       case 'auth/signup': data = await service.signup(input); status = 202; break;

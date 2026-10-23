@@ -41,6 +41,7 @@ test('competing requests cannot oversell; expiry releases once and permits recon
 });
 test('HTTP guards, suspended vendors, missing policy and product changes',async()=>{
   const f=await fixture();const {db,api,customer,vendor,productId,input}=f;
+  const previousResponseMinutes=process.env.VENDOR_RESPONSE_MINUTES;process.env.VENDOR_RESPONSE_MINUTES='30';
   const settings={origin:'http://localhost:3000',secure:false,outboxKey:'ab'.repeat(32)};
   async function call(path:string,body:unknown,origin=settings.origin) {
     return handleIdentity(new Request(`${settings.origin}/api/${path}`,{method:'POST',headers:{origin,'content-type':'application/json',cookie:`fendor_session=${customer.secret}`},body:JSON.stringify(body)}),path.split('/'),{db,settings});
@@ -57,5 +58,5 @@ test('HTTP guards, suspended vendors, missing policy and product changes',async(
     await assert.rejects(api.create(customer.secret,input()),{code:'NOT_FOUND'});
     await assert.rejects(api.change(vendor.secret,order.id,{version:0},'decline'),{code:'VENDOR_NOT_APPROVED'});
     assert.equal((await call(`orders/${order.id}/verify-payment`,{version:0})).status,404);
-  } finally {await db.close();}
+  } finally {if(previousResponseMinutes===undefined)delete process.env.VENDOR_RESPONSE_MINUTES;else process.env.VENDOR_RESPONSE_MINUTES=previousResponseMinutes;await db.close();}
 });

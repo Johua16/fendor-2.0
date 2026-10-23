@@ -5,7 +5,7 @@ import { checkout } from '../src/lib/server/checkout.ts';
 import { refunds } from '../src/lib/server/refunds.ts';
 async function setup() {
  const f=await fixture(),pay=checkout(f.db),refund=refunds(f.db);
- const order=await f.api.create(f.customer.secret,f.input());const id=order.id;
+ const order=await f.api.create(f.customer.secret,f.input());const id=order.id;await f.seedDelivery(id);
  await f.api.change(f.vendor.secret,id,{version:0},'reserve');
  const q=await pay.change(f.admin.secret,id,{version:1,packagingKobo:1000,deliveryKobo:2000,fulfilmentChecked:true,fulfilmentPlan:'Abuja route, standard packaging and preparation checked.'},'quote');
  await pay.change(f.customer.secret,id,{version:2,quoteId:q.quoteId,totalKobo:13000},'accept-quote');

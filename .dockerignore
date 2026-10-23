@@ -1,0 +1,12 @@
+.git
+.env
+.env.*
+!.env.example
+!.env.staging.example
+**/node_modules
+**/.next
+**/*.tsbuildinfo
+backend
+coverage
+backups
+*.log

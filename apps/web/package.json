@@ -16,14 +16,16 @@
     "admin:grant": "node --env-file-if-exists=.env.local scripts/grant-admin.ts",
     "mail:preview": "node --env-file-if-exists=.env.local scripts/dev-inbox.ts",
     "mail:send": "node --env-file-if-exists=.env.local scripts/send-mail.ts",
-    "orders:expire": "node --env-file-if-exists=.env.local scripts/expire-reservations.ts"
+    "orders:expire": "node --env-file-if-exists=.env.local scripts/expire-reservations.ts",
+    "worker": "node --env-file-if-exists=.env.local scripts/worker.ts"
   },
   "dependencies": {
     "next": "16.4.2",
     "nodemailer": "10.2.1",
     "pg": "8.23.1",
     "react": "19.3.1",
-    "react-dom": "19.3.1"
+    "react-dom": "19.3.1",
+    "sharp": "0.35.5"
   },
   "devDependencies": {
     "@electric-sql/pglite": "0.5.11",

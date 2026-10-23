@@ -1,5 +1,5 @@
 // Pure domain rules: callers must load actor identity and order data from trusted storage.
-export type OrderState = 'draft' | 'checking_availability' | 'reserved' | 'awaiting_payment' | 'confirmed' | 'preparing' | 'ready_for_dispatch' | 'out_for_delivery' | 'delivered' | 'unavailable' | 'cancelled';
+export type OrderState = 'draft' | 'checking_availability' | 'reserved' | 'awaiting_payment' | 'confirmed' | 'preparing' | 'ready_for_dispatch' | 'out_for_delivery' | 'delivered' | 'unavailable' | 'cancelled' | 'delivery_failed' | 'returned' | 'refunded';
 export type Actor = { id: string; role: 'customer' | 'vendor' | 'admin' };
 export type Order = {
   id: string; customerId: string; vendorId: string; productVariantId: string;

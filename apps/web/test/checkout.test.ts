@@ -5,7 +5,7 @@ import { fixture } from './order-fixture.ts';
 import { checkout } from '../src/lib/server/checkout.ts';
 const quote={packagingKobo:1000,deliveryKobo:2000,fulfilmentChecked:true,fulfilmentPlan:'Standard gift box, Abuja delivery, preparation and route checked.'};
 async function ready() {
- const f=await fixture(),pay=checkout(f.db);const order=await f.api.create(f.customer.secret,f.input());await f.api.change(f.vendor.secret,order.id,{version:0},'reserve');return {...f,pay,id:order.id};
+ const f=await fixture(),pay=checkout(f.db);const order=await f.api.create(f.customer.secret,f.input());await f.api.change(f.vendor.secret,order.id,{version:0},'reserve');await f.seedDelivery(order.id);return {...f,pay,id:order.id};
 }
 test('quote acceptance, bank receipt and exactly-once stock allocation',async()=>{
  const f=await ready();const {pay,db,id,admin,customer,vendor,other}=f;
