@@ -11,7 +11,7 @@ const categories = [
   ['Computing', '⌘'], ['Kitchenware', '◫'],
 ];
 
-const products = [
+export const products = [
   { name: 'Samsung Galaxy A55 5G', vendor: 'AfriTech Direct', price: '₦385,000', old: '₦440,000', tint: '#dce3df', art: 'phone' },
   { name: 'Vegetable-Tanned Field Satchel', vendor: 'Maro Leather Works', price: '₦48,500', old: '₦55,000', tint: '#ead8c6', art: 'bag' },
   { name: 'Soundcore Space One ANC', vendor: 'Sound District', price: '₦124,900', old: '₦139,000', tint: '#dddde5', art: 'headphones' },
@@ -43,7 +43,7 @@ function ProductArt({ type, tint }: { type: string; tint: string }) {
   return <div className={`${styles.productArt} ${styles[type]}`} style={{ backgroundColor: tint }} aria-hidden="true"><span /></div>;
 }
 
-function ProductCard({ product, compact = false, onAdd }: { product: typeof products[number]; compact?: boolean; onAdd?: () => void }) {
+export function ProductCard({ product, compact = false, onAdd }: { product: typeof products[number]; compact?: boolean; onAdd?: () => void }) {
   return <article className={`${styles.productCard} ${compact ? styles.compactCard : ''}`}>
     <ProductArt type={product.art} tint={product.tint} />
     <div className={styles.vendorLine}><span className={styles.verifiedDot}>✓</span>{product.vendor}</div>
@@ -95,7 +95,7 @@ export function HomePage() {
       </div>
       <nav className={`${styles.shell} ${styles.categoryNav}`} aria-label="Main categories">
         <a href="#categories" className={styles.allCategories}>☰ &nbsp; All Categories</a>
-        {['New Arrivals', 'Phones & Tablets', 'Fashion', 'Home & Living', 'Gifts', 'Deals'].map((item) => <a key={item} href="#popular">{item}</a>)}
+        {['New Arrivals', 'Phones & Tablets', 'Fashion', 'Home & Living', 'Gifts', 'Deals'].map((item) => <Link key={item} href="/shop">{item}</Link>)}
       </nav>
     </header>
 
@@ -107,7 +107,7 @@ export function HomePage() {
           <p className={styles.eyebrow}>{heroSlides[slide].eyebrow}</p>
           <h1>{heroSlides[slide].title}</h1>
           <p>{heroSlides[slide].copy}</p>
-          <div className={styles.heroButtons}><a href="#popular" className={styles.primaryButton}>Start shopping</a><a href="#vendors" className={styles.textButton}>Explore vendors <span>→</span></a></div>
+          <div className={styles.heroButtons}><Link href="/shop" className={styles.primaryButton}>Start shopping</Link><a href="#vendors" className={styles.textButton}>Explore vendors <span>→</span></a></div>
         </div>
         <div className={styles.heroImage}>
           <Image src="/images/home/hero-pottery.png" fill sizes="(max-width: 720px) 100vw, 50vw" alt="A curated handmade pottery collection" priority style={{ objectPosition: heroSlides[slide].position }} />
@@ -124,12 +124,12 @@ export function HomePage() {
       </section>
 
       <section className={`${styles.shell} ${styles.section} ${styles.panel}`}>
-        <div className={styles.sectionHead}><div className={styles.titleWithBadge}><span className={styles.pill}>FLASH WINDOW</span><div><h2>Deals worth discovering</h2><p>Limited offers from verified vendors. Stock is confirmed before payment.</p></div></div><a href="#popular">View all deals <span>→</span></a></div>
+        <div className={styles.sectionHead}><div className={styles.titleWithBadge}><span className={styles.pill}>FLASH WINDOW</span><div><h2>Deals worth discovering</h2><p>Limited offers from verified vendors. Stock is confirmed before payment.</p></div></div><Link href="/shop">View all deals <span>→</span></Link></div>
         <div className={styles.productScroller}>{products.map((product) => <ProductCard key={product.name} product={product} onAdd={() => addToCart(product.name)} />)}</div>
       </section>
 
       <section className={`${styles.shell} ${styles.section}`} id="popular">
-        <div className={styles.sectionHead}><div><p className={styles.kicker}>CUSTOMER FAVOURITES</p><h2>Popular right now</h2></div><a href="#collections">Shop all products <span>→</span></a></div>
+        <div className={styles.sectionHead}><div><p className={styles.kicker}>CUSTOMER FAVOURITES</p><h2>Popular right now</h2></div><Link href="/shop">Shop all products <span>→</span></Link></div>
         <div className={styles.popularGrid}>{products.slice(0, 5).map((product) => <ProductCard key={product.name} product={product} compact onAdd={() => addToCart(product.name)} />)}</div>
       </section>
 
