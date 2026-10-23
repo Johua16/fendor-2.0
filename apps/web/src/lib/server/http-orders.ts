@@ -7,7 +7,7 @@ import { fail } from './identity.ts';
 export async function orderResponse(req:Request,path:string[],db:Database,secret:string|undefined,headers:Headers):Promise<Response|null> {
   const scope=path[0]==='orders'?'customer':path[1]==='orders' && ['vendor','admin'].includes(path[0])?path[0] as 'vendor'|'admin':null;
   if(!scope) return null;
-  const rest=path.slice(scope==='customer'?1:2),service=orders(db,{reservationMinutes:Number(process.env.RESERVATION_MINUTES)});
+  const rest=path.slice(scope==='customer'?1:2),service=orders(db,{reservationMinutes:Number(process.env.RESERVATION_MINUTES),responseMinutes:Number(process.env.VENDOR_RESPONSE_MINUTES)});
   const payments=checkout(db);
   if(req.method==='GET') {
     if(rest.length===2 && rest[1]==='checkout' && scope!=='vendor') return Response.json(await payments.summary(secret,rest[0],scope==='admin'),{headers});

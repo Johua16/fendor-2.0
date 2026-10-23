@@ -3,7 +3,7 @@ import type { Database,Sql } from './database.ts';
 import { actor,uuid } from './catalogue.ts';
 import { fail,text } from './identity.ts';
 export async function balances(tx:Sql,id:string) {
- const rows=(await tx.query<{id:string;received_kobo:string;refunded_kobo:string;status:string}>(`SELECT p.id,p.received_kobo,p.status,COALESCE((SELECT sum(r.amount_kobo) FROM payment_refunds r WHERE r.payment_id=p.id),0)::text AS refunded_kobo FROM payment_records p WHERE p.order_id=$1 ORDER BY p.id`,[id])).rows;
+ const rows=(await tx.query<{id:string;received_kobo:string;refunded_kobo:string;status:string}>(`SELECT p.id,(p.received_kobo+COALESCE((SELECT sum(c.delta_kobo) FROM payment_corrections c WHERE c.payment_id=p.id),0))::text AS received_kobo,p.status,COALESCE((SELECT sum(r.amount_kobo) FROM payment_refunds r WHERE r.payment_id=p.id),0)::text AS refunded_kobo FROM payment_records p WHERE p.order_id=$1 ORDER BY p.id`,[id])).rows;
  const net=rows.reduce((sum,r)=>sum+BigInt(r.received_kobo)-BigInt(r.refunded_kobo),0n);
  return {rows,net};
 }
@@ -31,7 +31,8 @@ export function refunds(db:Database) {
       return {refundId:existing.id,orderId:id,version:row.version};
      }
      if(row.version!==input.version) fail(409,'STALE_VERSION','Reload the order.');
-     if(row.payment_verified && (row.accepted_total_kobo===null || ledger.net-BigInt(input.amountKobo)<BigInt(row.accepted_total_kobo))) fail(409,'PAID_REMEDY_REQUIRED','Only excess funds can be refunded here after confirmation. Principal needs a fulfilment-aware remedy review.');
+     const remedy=(await tx.query<{refund_limit_kobo:string}>("SELECT refund_limit_kobo FROM order_remedies WHERE order_id=$1 AND status='approved'",[id])).rows[0];
+     if(row.payment_verified && (row.accepted_total_kobo===null || ledger.net-BigInt(input.amountKobo)<BigInt(row.accepted_total_kobo)-BigInt(remedy?.refund_limit_kobo??0))) fail(409,'PAID_REMEDY_REQUIRED','Only excess funds can be refunded here after confirmation. Principal needs a fulfilment-aware remedy review.');
      const payment=ledger.rows.find(p=>p.id===paymentId);
      if(!payment) fail(404,'NOT_FOUND','Receipt not found on this order.');
      if(BigInt(input.amountKobo)>BigInt(payment.received_kobo)-BigInt(payment.refunded_kobo)) fail(409,'REFUND_EXCEEDS_RECEIPT','Refund exceeds remaining received funds.');

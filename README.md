@@ -1,7 +1,7 @@
 # Fendor
 
 The new shared application is in **apps/web** (Next.js App Router, React, TypeScript).
-Backend domain logic and the draft PostgreSQL schema live in **server**.
+Backend domain logic and the PostgreSQL migrations live in **server**.
 Root HTML/assets and **backend/** are the preserved legacy prototype; do not use their install instructions for the new app.
 
 ## Start development
@@ -29,12 +29,12 @@ Use npm and the committed **apps/web/package-lock.json** for the new app. Legacy
 - `/`: development foundation page.
 - `GET /api/health`: HTTP 200, process health.
 - `GET /api/ready`: HTTP 200 only after required configuration and database migrations; otherwise HTTP 503.
-- Customer order requests, saved personalisation and vendor stock reservations are exposed on the orders feature branch; full checkout is not implemented.
+- The MVP backend supports accounts, reviewed vendors and products, availability requests, quotes, offline-payment verification, fulfilment, paid-order remedies, support and notifications.
 
-This branch implements persistent accounts, vendor approval, the initial product catalogue, and order requests with stock reservations. See [identity endpoints](docs/handoffs/identity-api.md) and [catalogue endpoints](docs/handoffs/catalogue-api.md). See [order request endpoints](docs/handoffs/orders-api.md). These features are not deployed: frontend integration, database provisioning and scheduled email delivery are still required. The checkout branch adds quotes, acceptance and admin offline-payment verification; see [checkout contract](docs/handoffs/checkout-api.md). Nothing is deployed. Financial exceptions/refunds and delivery APIs remain incomplete.
+See the [identity endpoints](docs/handoffs/identity-api.md), [catalogue endpoints](docs/handoffs/catalogue-api.md), [order requests](docs/handoffs/orders-api.md), [checkout contract](docs/handoffs/checkout-api.md) and [operations contract](docs/handoffs/operations-api.md). The APIs are implemented but not deployed, and the final frontend screens are not yet integrated. Use the [portable staging and production handoff](docs/deployment.md) for the next release step.
 
 ## Collaboration
 
 Read [folder ownership](docs/handoffs/ownership.md), [API policy](docs/handoffs/api-contracts.md), [frontend brief](docs/handoffs/frontend-codex-brief.md) and [business decisions](docs/product-decisions.md).
 
-After this foundation PR merges, frontend development starts from updated `main` on `codex/frontend-foundation`. Until merge, the foundation PR branch can be checked out for review only. Do not start a second Next.js scaffold.
+Frontend development uses the same **apps/web** project and consumes the documented APIs. Merge the stacked backend pull requests in order, then rebase the frontend branch on updated `main`. Do not start a second Next.js scaffold.

@@ -18,7 +18,7 @@ function content(input:Record<string,unknown>) {
   if(!categories.includes(category as typeof categories[number])) fail(400,'INVALID_INPUT','Choose a supported category.');
   const imagePath=input.imagePath===null ? null : text(input.imagePath,'image path',1,300);
   // Only controlled, same-origin media. Never fetch arbitrary vendor URLs or render uploaded HTML/SVG.
-  if(imagePath && !/^\/media\/catalogue\/[a-zA-Z0-9_-]+\.(jpg|jpeg|png|webp)$/.test(imagePath)) fail(400,'INVALID_INPUT','Use an approved catalogue media path.');
+  if(imagePath && !/^\/media\/catalogue\/[a-zA-Z0-9_-]+\.(jpg|jpeg|png|webp)$/.test(imagePath) && !/^\/api\/media\/[0-9a-f-]{36}$/.test(imagePath)) fail(400,'INVALID_INPUT','Use an approved catalogue media path.');
   return {title,description,category,imagePath,sku:text(input.sku,'SKU',1,80),priceKobo:integer(input.priceKobo,'price',1,Number.MAX_SAFE_INTEGER),stockQuantity:integer(input.stockQuantity,'stock')};
 }
 export async function actor(tx:Sql,secret:string|undefined,role:'admin'|'vendor'|'customer') {
@@ -79,6 +79,7 @@ export function catalogue(db:Database) {
       if(old.version!==version) fail(409,'STALE_VERSION','Product changed. Reload before saving.');
       let status=old.status, note='';
       if(edited) {
+        if(edited.imagePath?.startsWith('/api/media/') && !(await tx.query("SELECT id FROM uploads WHERE id=$1 AND owner_id=$2 AND purpose='product' AND status='approved'",[edited.imagePath.split('/').pop(),by])).rows.length) fail(400,'IMAGE_REQUIRED','Approved owned product image required.');
         if(old.reserved_quantity>0) fail(409,'ACTIVE_RESERVATIONS','Product has active reservations. Contact Fendor before editing.');
         status='draft'; note='Product edited; fresh review required';
         await tx.query('UPDATE products SET title=$2,description=$3,category=$4,image_path=$5 WHERE id=$1',[id,edited.title,edited.description,edited.category,edited.imagePath]);
@@ -108,6 +109,7 @@ export function catalogue(db:Database) {
       const data=content(input);
       return db.transaction(async tx=>{
         const by=await actor(tx,secret,'vendor');
+        if(data.imagePath?.startsWith('/api/media/') && !(await tx.query("SELECT id FROM uploads WHERE id=$1 AND owner_id=$2 AND purpose='product' AND status='approved'",[data.imagePath.split('/').pop(),by])).rows.length) fail(400,'IMAGE_REQUIRED','Approved owned product image required.');
         // Serialize creates/edits for a vendor's SKU uniqueness and predictable conflicts.
         await tx.query('SELECT id FROM users WHERE id=$1 FOR UPDATE',[by]);
         if((await tx.query('SELECT id FROM product_variants WHERE vendor_user_id=$1 AND sku=$2',[by,data.sku])).rows.length) fail(409,'SKU_EXISTS','SKU already exists.');

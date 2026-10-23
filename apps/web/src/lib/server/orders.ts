@@ -19,11 +19,11 @@ function gifts(value:unknown) {
   }
   return result;
 }
-export function orders(db:Database,options:{now?:()=>number;reservationMinutes?:number}={}) {
+export function orders(db:Database,options:{now?:()=>number;reservationMinutes?:number;responseMinutes?:number}={}) {
   const now=options.now??Date.now;
   function present(row:Stored,scope:Scope) {
     const base={id:row.id,productVariantId:row.product_variant_id,quantity:row.quantity,state:row.state,version:row.version,product:row.product_snapshot,
-      reservationExpiresAt:row.reservation_expires_at, reservationExpired:row.stock_held && !!row.reservation_expires_at && new Date(row.reservation_expires_at).getTime()<=now(),orderConfirmed:row.payment_verified};
+      reservationExpiresAt:row.reservation_expires_at, reservationExpired:row.stock_held && !!row.reservation_expires_at && new Date(row.reservation_expires_at).getTime()<=now(),financialHold:row.financial_hold,orderConfirmed:row.payment_verified&&!['refunded','cancelled','returned'].includes(row.state)};
     // Vendors only need the item/quantity to answer availability; personalisation stays with Fendor.
     return scope==='vendor'?base:{...base,giftDetails:row.gift_details,quoteId:row.quote_id??null,acceptedQuoteId:row.accepted_quote_id??null,totalKobo:row.total_kobo==null?null:Number(row.total_kobo)};
   }
@@ -41,7 +41,7 @@ export function orders(db:Database,options:{now?:()=>number;reservationMinutes?:
       const expired=(await tx.query<Stored>('SELECT * FROM order_requests WHERE product_variant_id=$1 AND stock_held AND reservation_expires_at<=$2 ORDER BY id FOR UPDATE',[variantId,new Date(now())])).rows;
       for(const row of expired) {
         await tx.query('UPDATE product_variants SET reserved_quantity=reserved_quantity-$2 WHERE id=$1',[variantId,row.quantity]);
-        await tx.query("UPDATE order_requests SET stock_held=false,state='checking_availability',reservation_expires_at=NULL,total_kobo=NULL,accepted_total_kobo=NULL,quote_id=NULL,accepted_quote_id=NULL,version=version+1 WHERE id=$1",[row.id]);
+        await tx.query("UPDATE order_requests SET stock_held=false,state='checking_availability',reservation_expires_at=NULL,total_kobo=NULL,accepted_total_kobo=NULL,quote_id=NULL,accepted_quote_id=NULL,availability_deadline=now(),reminder_sent=false,escalated_at=NULL,version=version+1 WHERE id=$1",[row.id]);
         await event(tx,row,null,'checking_availability','reservation_expired');
       }
       return expired.length;
@@ -63,9 +63,15 @@ export function orders(db:Database,options:{now?:()=>number;reservationMinutes?:
           WHERE v.id=$1 AND p.status='approved' AND EXISTS(SELECT 1 FROM vendor_applications a WHERE a.user_id=p.vendor_user_id AND a.status='approved')
           AND EXISTS(SELECT 1 FROM user_roles r WHERE r.user_id=p.vendor_user_id AND r.role='vendor') FOR SHARE OF p,v`,[variant])).rows[0];
         if(!product) fail(404,'NOT_FOUND','Product is not available to request.');
+        const window=(await tx.query<{window_start:Date;window_end:Date}>('SELECT window_start,window_end FROM vendor_profiles WHERE user_id=$1',[product.vendor_user_id])).rows[0];
+        if(!window||new Date(window.window_start).getTime()>now()||new Date(window.window_end).getTime()<=now()) fail(409,'VENDOR_OFFLINE','Vendor is outside its declared selling window.');
+        const responseMinutes=Number(options.responseMinutes);
+        if(!Number.isInteger(responseMinutes)||responseMinutes<1||responseMinutes>1440)fail(503,'RESPONSE_POLICY_REQUIRED','Configure vendor response policy.');
+        const deadline=new Date(Math.min(now()+responseMinutes*60000,new Date(window.window_end).getTime()));
         const id=randomUUID();
         const snapshot={title:product.title,imagePath:product.image_path,unitPriceKobo:Number(product.price_kobo),currency:'NGN',productVersion:product.version};
         await tx.query("INSERT INTO order_requests(id,customer_id,vendor_id,product_variant_id,quantity,state,client_request_id,product_snapshot) VALUES($1,$2,$3,$4,$5,'checking_availability',$6,$7)",[id,by,product.vendor_user_id,variant,quantity,key,JSON.stringify(snapshot)]);
+        await tx.query('UPDATE order_requests SET availability_deadline=$2 WHERE id=$1',[id,deadline]);
         await tx.query("INSERT INTO order_events(id,order_id,actor_id,from_state,to_state,order_version,event_type) VALUES($1,$2,$3,'draft','checking_availability',0,'request_created')",[randomUUID(),id,by]);
         return present(await owned(tx,id,by,'customer'),'customer');
       });

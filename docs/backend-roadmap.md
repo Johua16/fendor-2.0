@@ -1,12 +1,12 @@
-# MVP backend remaining work
+# MVP backend delivery status
 
-Planning estimate, not a fixed PR count or delivery commitment. Shared frontend integration and design approval are additional work. Several PRs remain open; merge reviewed dependencies in order instead of growing the stack indefinitely.
+The six completion areas are implemented on the backend-completion branch and covered by integrated PostgreSQL tests. They remain unmerged and undeployed. Shared frontend integration, production accounts and design approval are separate release work.
 
-1. **Financial exceptions and paid-order remedies.** Partial receipts, pre-confirmation refunds, excess refunds and refunded closure are implemented in the payment-exceptions branch. Still needed: paid principal cancellations/returns, receipt corrections/reversals, operator reconciliation tools and procedures.
-2. **Delivery and fulfilment.** Recipient delivery details, service coverage, packaging selections, assignments, preparation, dispatch, proof of delivery, failed delivery and returned stock. Integrate paid-order remedies here.
-3. **Notifications and response deadlines.** Vendor/customer messages through Fendor, worker retries, agreed business-hour deadlines, reminders, escalation and recovery when vendors do not respond.
-4. **Media and vendor onboarding completion.** Secure uploads, document/image validation, review details, remaining approved onboarding fields and supported product options.
-5. **Support and admin operations.** Customer issue reporting, case history, operational queues, reviewed exception handling and audit visibility.
-6. **Production readiness.** Deploy databases and workers, secrets, backups/restore checks, monitoring, abuse controls, operational permissions and full frontend-to-backend acceptance tests.
+1. **Financial exceptions and paid-order remedies — implemented.** Paid cancellation/return review, refund controls, immutable receipt corrections, reconciliation holds and explicit restocking.
+2. **Delivery and fulfilment — implemented.** Encrypted recipient details, service zones, preparation, dispatch, failed attempts, proof-gated delivery and returns.
+3. **Notifications and response deadlines — implemented.** Durable in-app/email notifications, vendor reminders, escalation, retry backoff and a leased worker.
+4. **Media and vendor onboarding completion — implemented.** Validated image decoding/re-encoding, encrypted storage, reviewed access and protected vendor profile updates.
+5. **Support and admin operations — implemented.** Isolated customer cases, private internal notes, operational queues and append-only audit records.
+6. **Production readiness — portable baseline implemented.** Containerised staging, readiness checks, backup/restore scripts, monitoring contract and full backend integration tests. A real deployment still requires hosting, SMTP, managed database, secrets, alerts and a successful production-like restore drill.
 
-Current PR sequence: #1 foundation (merged), #2 identity, #3 catalogue, #4 order requests/reservations, #5 quotes/payment verification. Payment exceptions follows #5. These are backend APIs, not evidence that the screens are integrated or the app is deployed. Review and merge each dependency before retargeting the next stacked PR to main.
+Current merge sequence: #1 foundation (merged), #2 identity, #3 catalogue, #4 order requests/reservations, #5 quotes/payment verification, #6 payment exceptions, then backend completion. These APIs do not mean the screens are integrated or the app is deployed. Review and merge each dependency before retargeting the next stacked PR to `main`.
