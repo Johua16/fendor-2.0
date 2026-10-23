@@ -1,6 +1,18 @@
-/* Initial founder/handoff tokens. Frontend owner verifies final tokens and fonts against Figma. */
 :root {
   --color-accent: #fd7a49;
-  --color-text: #2f2623;
+  --color-accent-soft: #fdeae3;
+  --color-accent-pale: #fff1ec;
+  --color-ink: #19120f;
+  --color-text: #4e4542;
+  --color-muted: #807571;
+  --color-border: #e8e1de;
+  --color-surface: #ffffff;
+  --color-surface-subtle: #fafafa;
   --color-background: #fff8f6;
+  --color-dark: #0b0908;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --shadow-card: 0 1px 2px rgb(25 18 15 / 8%);
+  --page-width: 1184px;
 }
