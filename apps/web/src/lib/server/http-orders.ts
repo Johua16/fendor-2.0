@@ -1,3 +1,4 @@
+import { refunds } from './refunds.ts';
 import { checkout } from './checkout.ts';
 import type { Database } from './database.ts';
 import { orders } from './orders.ts';
@@ -13,6 +14,12 @@ export async function orderResponse(req:Request,path:string[],db:Database,secret
     if(rest.length===0) return Response.json(await service.list(secret,scope,new URL(req.url).searchParams),{headers});
     if(rest.length===1) return Response.json({order:await service.detail(secret,rest[0],scope)},{headers});
   } else if(req.method==='POST') {
+    if(scope==='admin' && rest.length===2 && ['record-refund','close-refunded'].includes(rest[1])) {
+      const input=await body(req);
+      const allowed=rest[1]==='record-refund'?['version','paymentId','bankReference','amountKobo','note','bankRefundChecked']:['version','note'];
+      if(Object.keys(input).some(k=>!allowed.includes(k))) fail(400,'UNKNOWN_FIELD','Unexpected request fields.');
+      return Response.json(await refunds(db).change(secret,rest[0],input,rest[1] as 'record-refund'|'close-refunded'),{headers});
+    }
     const paymentAction=rest[1];
     if(rest.length===2 && (scope==='admin'?['quote','record-payment','verify-payment'].includes(paymentAction):scope==='customer'&&paymentAction==='accept-quote')) {
       const input=await body(req);

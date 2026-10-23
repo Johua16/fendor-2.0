@@ -1,3 +1,4 @@
+import { balances } from './refunds.ts';
 import { randomUUID } from 'node:crypto';
 import type { Database, Sql } from './database.ts';
 import { actor, uuid } from './catalogue.ts';
@@ -33,8 +34,10 @@ export function checkout(db:Database,now:()=>number=Date.now) {
     if(!admin && row.customer_id!==by) fail(404,'NOT_FOUND','Order not found.');
     const quote=row.quote_id?(await tx.query('SELECT id,details FROM order_quotes WHERE id=$1',[row.quote_id])).rows[0]:null;
     const payments=admin?(await tx.query('SELECT id,bank_reference,received_kobo,status,receipt_note,received_at FROM payment_records WHERE order_id=$1 ORDER BY received_at,id',[id])).rows:undefined;
+    const ledger=await balances(tx,id);
+    const refundRows=admin?(await tx.query('SELECT r.id,r.payment_id,r.bank_reference,r.amount_kobo,r.note,r.created_at FROM payment_refunds r JOIN payment_records p ON p.id=r.payment_id WHERE p.order_id=$1 ORDER BY r.created_at,r.id',[id])).rows:undefined;
     const recorded=(await tx.query('SELECT id FROM payment_records WHERE order_id=$1 LIMIT 1',[id])).rows.length>0;
-    return {orderId:id,version:row.version,state:row.state,quote,acceptedQuoteId:row.accepted_quote_id,orderConfirmed:row.payment_verified,reservationExpiresAt:row.reservation_expires_at,reservationActive:row.stock_held && !!row.reservation_expires_at && new Date(row.reservation_expires_at).getTime()>now(),fundsRecorded:recorded,...(admin?{payments}:{})};
+    return {orderId:id,version:row.version,state:row.state,quote,acceptedQuoteId:row.accepted_quote_id,orderConfirmed:row.payment_verified,reservationExpiresAt:row.reservation_expires_at,reservationActive:row.stock_held && !!row.reservation_expires_at && new Date(row.reservation_expires_at).getTime()>now(),fundsRecorded:recorded,netReceivedKobo:ledger.net.toString(),refundedKobo:ledger.rows.reduce((sum,p)=>sum+BigInt(p.refunded_kobo),0n).toString(),...(admin?{payments,refunds:refundRows}:{})};
    });
   },
   async change(secret:string|undefined,id:string,input:Record<string,unknown>,action:'quote'|'accept-quote'|'record-payment'|'verify-payment') {
@@ -89,12 +92,14 @@ export function checkout(db:Database,now:()=>number=Date.now) {
     }
     const paymentId=uuid(input.paymentId);
     if(input.bankReceiptChecked!==true) fail(400,'BANK_CHECK_REQUIRED','Verify actual receipt in Fendor’s bank account.');
-    if(receipts.length!==1||receipts[0].id!==paymentId) fail(409,'PAYMENT_REVIEW_REQUIRED','Resolve missing, multiple or additional receipts manually.');
+    const ledger=await balances(tx,id);
+    if(!ledger.rows.some(p=>p.id===paymentId && BigInt(p.received_kobo)>BigInt(p.refunded_kobo))) fail(409,'PAYMENT_REVIEW_REQUIRED','Select an outstanding receipt on this order.');
+    if(ledger.net>BigInt(Number.MAX_SAFE_INTEGER)) fail(409,'PAYMENT_MISMATCH','Received funds exceed the supported quote range.');
     if(!row.quote_id||row.quote_id!==row.accepted_quote_id) fail(409,'QUOTE_CHANGED','Customer must accept the current quote.');
-    next(row,by,'admin',{type:'verify_payment',receivedKobo:Number(receipts[0].received_kobo)});
+    next(row,by,'admin',{type:'verify_payment',receivedKobo:Number(ledger.net)});
     const allocated=(await tx.query('UPDATE product_variants SET stock_quantity=stock_quantity-$2,reserved_quantity=reserved_quantity-$2 WHERE id=$1 AND reserved_quantity>=$2 AND stock_quantity>=$2 RETURNING id',[row.product_variant_id,row.quantity])).rows;
     if(!allocated.length) fail(409,'STOCK_REVIEW_REQUIRED','Resolve the stock discrepancy before confirming.');
-    await tx.query("UPDATE payment_records SET status='verified',verified_by=$2,verified_at=$3 WHERE id=$1",[paymentId,by,new Date(now())]);
+    for(const receipt of ledger.rows) if(BigInt(receipt.received_kobo)>BigInt(receipt.refunded_kobo)) await tx.query("UPDATE payment_records SET status='verified',verified_by=$2,verified_at=$3 WHERE id=$1",[receipt.id,by,new Date(now())]);
     await tx.query("UPDATE order_requests SET payment_verified=true,state='confirmed',stock_held=false,reservation_expires_at=NULL,version=version+1 WHERE id=$1",[id]);
     await audit(tx,row,by,'confirmed','payment_verified');return {orderId:id,state:'confirmed',version:version+1,orderConfirmed:true};
    });

@@ -1,5 +1,7 @@
 # Quotes and offline-payment verification
 
+The payment-exceptions increment extends this contract with multiple-receipt reconciliation and recorded refunds; see [current exception rules](payment-exceptions-api.md). Its rules supersede the single-receipt limitation below.
+
 Backend branch `codex/quotes-offline-payments` builds on order requests. Same-origin JSON/session/origin rules apply. No bank connection, automatic reconciliation, payment collection screen or fulfilment UI is delivered here.
 
 ## Routes and bodies
