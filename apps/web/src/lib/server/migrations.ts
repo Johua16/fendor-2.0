@@ -18,7 +18,7 @@ export async function migrate(db: Database, directory: string) {
   });
 }
 export async function checkDatabase(db: Database) {
-  const result = await db.query<{ name: string }>("SELECT name FROM schema_migrations WHERE name IN ('001-foundation.sql','002-identity.sql','003-catalogue.sql','004-order-requests.sql')");
-  if (result.rows.length !== 4) throw Error('Pending migrations');
+  const result = await db.query<{ name: string }>("SELECT name FROM schema_migrations WHERE name IN ('001-foundation.sql','002-identity.sql','003-catalogue.sql','004-order-requests.sql','005-quotes-payments.sql')");
+  if (result.rows.length !== 5) throw Error('Pending migrations');
   await db.query('SELECT token_hash FROM sessions LIMIT 0');
 }

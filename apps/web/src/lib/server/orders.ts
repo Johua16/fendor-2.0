@@ -25,7 +25,7 @@ export function orders(db:Database,options:{now?:()=>number;reservationMinutes?:
     const base={id:row.id,productVariantId:row.product_variant_id,quantity:row.quantity,state:row.state,version:row.version,product:row.product_snapshot,
       reservationExpiresAt:row.reservation_expires_at, reservationExpired:row.stock_held && !!row.reservation_expires_at && new Date(row.reservation_expires_at).getTime()<=now(),orderConfirmed:row.payment_verified};
     // Vendors only need the item/quantity to answer availability; personalisation stays with Fendor.
-    return scope==='vendor'?base:{...base,giftDetails:row.gift_details};
+    return scope==='vendor'?base:{...base,giftDetails:row.gift_details,quoteId:row.quote_id??null,acceptedQuoteId:row.accepted_quote_id??null,totalKobo:row.total_kobo==null?null:Number(row.total_kobo)};
   }
   async function event(tx:Sql,row:Stored,by:string|null,to:string,type:string) {
     await tx.query('INSERT INTO order_events(id,order_id,actor_id,from_state,to_state,order_version,event_type) VALUES($1,$2,$3,$4,$5,$6,$7)',[randomUUID(),row.id,by,row.state,to,row.version+1,type]);
@@ -41,7 +41,7 @@ export function orders(db:Database,options:{now?:()=>number;reservationMinutes?:
       const expired=(await tx.query<Stored>('SELECT * FROM order_requests WHERE product_variant_id=$1 AND stock_held AND reservation_expires_at<=$2 ORDER BY id FOR UPDATE',[variantId,new Date(now())])).rows;
       for(const row of expired) {
         await tx.query('UPDATE product_variants SET reserved_quantity=reserved_quantity-$2 WHERE id=$1',[variantId,row.quantity]);
-        await tx.query("UPDATE order_requests SET stock_held=false,state='checking_availability',reservation_expires_at=NULL,total_kobo=NULL,accepted_total_kobo=NULL,version=version+1 WHERE id=$1",[row.id]);
+        await tx.query("UPDATE order_requests SET stock_held=false,state='checking_availability',reservation_expires_at=NULL,total_kobo=NULL,accepted_total_kobo=NULL,quote_id=NULL,accepted_quote_id=NULL,version=version+1 WHERE id=$1",[row.id]);
         await event(tx,row,null,'checking_availability','reservation_expired');
       }
       return expired.length;
@@ -99,10 +99,11 @@ export function orders(db:Database,options:{now?:()=>number;reservationMinutes?:
         }
         const stock=(await tx.query<{stock_quantity:number;reserved_quantity:number}>('SELECT stock_quantity,reserved_quantity FROM product_variants WHERE id=$1 FOR UPDATE',[initial.product_variant_id])).rows[0];
         const row=await owned(tx,id,by,scope,true);
+        if((await tx.query('SELECT id FROM payment_records WHERE order_id=$1 LIMIT 1',[id])).rows.length) fail(409,'PAYMENT_REVIEW_REQUIRED','Fendor must review recorded funds before changing this request.');
         if(row.version!==version) fail(409,'STALE_VERSION','Request changed. Reload before continuing.');
         if(details) {
           if(!['checking_availability','reserved'].includes(row.state)) fail(409,'INVALID_STATE','Personalisation cannot be changed now.');
-          await tx.query('UPDATE order_requests SET gift_details=$2,version=version+1,total_kobo=NULL,accepted_total_kobo=NULL WHERE id=$1',[id,JSON.stringify(details)]);
+          await tx.query('UPDATE order_requests SET gift_details=$2,version=version+1,total_kobo=NULL,accepted_total_kobo=NULL,quote_id=NULL,accepted_quote_id=NULL WHERE id=$1',[id,JSON.stringify(details)]);
           await event(tx,row,by,row.state,'personalisation_saved');
         } else {
           if(action==='reserve' && row.state!=='checking_availability') fail(409,'INVALID_STATE','Availability can only be confirmed for pending requests.');
@@ -117,7 +118,7 @@ export function orders(db:Database,options:{now?:()=>number;reservationMinutes?:
             if(stock.stock_quantity-stock.reserved_quantity<row.quantity) fail(409,'INSUFFICIENT_STOCK','Not enough unreserved stock for this request.');
             await tx.query('UPDATE product_variants SET reserved_quantity=reserved_quantity+$2 WHERE id=$1',[row.product_variant_id,row.quantity]);
           } else if(row.stock_held) await tx.query('UPDATE product_variants SET reserved_quantity=reserved_quantity-$2 WHERE id=$1',[row.product_variant_id,row.quantity]);
-          await tx.query('UPDATE order_requests SET state=$2,version=version+1,stock_held=$3,reservation_expires_at=$4,total_kobo=NULL,accepted_total_kobo=NULL WHERE id=$1',[id,next.state,action==='reserve',action==='reserve'?new Date(expiresAt):null]);
+          await tx.query('UPDATE order_requests SET state=$2,version=version+1,stock_held=$3,reservation_expires_at=$4,total_kobo=NULL,accepted_total_kobo=NULL,quote_id=NULL,accepted_quote_id=NULL WHERE id=$1',[id,next.state,action==='reserve',action==='reserve'?new Date(expiresAt):null]);
           await event(tx,row,by,next.state,action);
         }
         return present(await owned(tx,id,by,scope),scope);
