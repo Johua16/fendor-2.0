@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { acceptOrderQuote, cancelOrderRequest, createOrderRequest, getCheckoutSummary, listOrderRequests, listProducts, MarketplaceApiError, saveOrderPersonalisation } from '../src/lib/client/marketplace.ts';
+import { acceptOrderQuote, cancelOrderRequest, createOrderRequest, getCheckoutSummary, getDeliveryDetails, getOrderHistory, listDeliveryZones, listOrderRequests, listProducts, MarketplaceApiError, saveDeliveryDetails, saveOrderPersonalisation } from '../src/lib/client/marketplace.ts';
 
 test('catalogue client sends supported public filters', async () => {
   const originalFetch = globalThis.fetch;
@@ -88,5 +88,23 @@ test('checkout reads the private summary and accepts the exact quoted total', as
       { path: '/api/orders/order-1/checkout', method: undefined, body: undefined },
       { path: '/api/orders/order-1/accept-quote', method: 'POST', body: { version: 6, quoteId: 'quote-1', totalKobo: 18_500_00 } },
     ]);
+  } finally { globalThis.fetch = originalFetch; }
+});
+
+test('delivery client separates public zones from private order details', async () => {
+  const originalFetch = globalThis.fetch;
+  const calls: Array<{ path: string; method?: string; body?: unknown }> = [];
+  globalThis.fetch = async (input, init) => {
+    calls.push({ path: String(input), method: init?.method, body: init?.body ? JSON.parse(String(init.body)) : undefined });
+    if (String(input) === '/api/delivery-zones') return Response.json({ zones: [] });
+    if (String(input).endsWith('/history')) return Response.json({ events: [] });
+    return Response.json(init?.method ? { orderId: 'order-1', state: 'reserved', version: 3 } : null);
+  };
+  try {
+    await listDeliveryZones();
+    await getDeliveryDetails('order-1');
+    await getOrderHistory('order-1');
+    await saveDeliveryDetails('order-1', { version: 2, zoneId: 'zone-1', recipientName: 'Ada', phone: '+234 800 000 0000', address: '12 Example Street, Abuja', instructions: '', deliveryDate: '2026-11-02' });
+    assert.deepEqual(calls[3], { path: '/api/orders/order-1/delivery', method: 'POST', body: { version: 2, zoneId: 'zone-1', recipientName: 'Ada', phone: '+234 800 000 0000', address: '12 Example Street, Abuja', instructions: '', deliveryDate: '2026-11-02' } });
   } finally { globalThis.fetch = originalFetch; }
 });
