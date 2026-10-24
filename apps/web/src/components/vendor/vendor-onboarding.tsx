@@ -101,6 +101,7 @@ export function VendorOnboarding() {
       const result = await uploadBusinessDocument(file);
       setDocument(result);
       setDocumentName(file.name);
+      localStorage.setItem('fendor-pending-vendor-document', result.id);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'Could not upload the document.');
     } finally { setBusy(false); }
