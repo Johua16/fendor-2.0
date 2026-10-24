@@ -3,6 +3,8 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { FormEvent, useEffect, useState } from 'react';
+import { addCartItem, cartItemCount } from '../../lib/client/cart';
+import { useCart } from '../../lib/client/use-cart';
 import styles from './home-page.module.css';
 
 const categories = [
@@ -61,6 +63,22 @@ export function productHref(product: DisplayProduct) {
   return `/product/${product.id ?? product.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')}`;
 }
 
+export function displayProductToCartItem(product: DisplayProduct) {
+  return {
+    id: product.variantId ?? product.id ?? productHref(product),
+    productId: product.id,
+    variantId: product.variantId,
+    name: product.name,
+    vendor: product.vendor,
+    priceKobo: Number(product.price.replace(/\D/g, '')) * 100,
+    oldPriceKobo: product.old ? Number(product.old.replace(/\D/g, '')) * 100 : undefined,
+    art: product.art,
+    tint: product.tint,
+    imagePath: product.imagePath,
+    option: 'Standard finish',
+  };
+}
+
 export function ProductCard({ product, compact = false, onAdd }: { product: DisplayProduct; compact?: boolean; onAdd?: () => void }) {
   return <article className={`${styles.productCard} ${compact ? styles.compactCard : ''}`}>
     {product.imagePath ? <div className={styles.productImage}><Image src={product.imagePath} fill sizes="(max-width: 720px) 55vw, 25vw" alt={product.name} /></div> : <ProductArt type={product.art} tint={product.tint} />}
@@ -75,7 +93,8 @@ export function ProductCard({ product, compact = false, onAdd }: { product: Disp
 
 export function HomePage() {
   const [slide, setSlide] = useState(0);
-  const [cartCount, setCartCount] = useState(0);
+  const { items: cartItems } = useCart();
+  const cartCount = cartItemCount(cartItems);
   const [search, setSearch] = useState('');
   const [notice, setNotice] = useState('');
 
@@ -91,9 +110,9 @@ export function HomePage() {
     document.getElementById('popular')?.scrollIntoView({ behavior: 'smooth' });
   }
 
-  function addToCart(name: string) {
-    setCartCount((count) => count + 1);
-    setNotice(`${name} has been added to your cart.`);
+  function addToCart(product: DisplayProduct) {
+    addCartItem(displayProductToCartItem(product));
+    setNotice(`${product.name} has been added to your cart.`);
   }
 
   return <div className={styles.page}>
@@ -143,12 +162,12 @@ export function HomePage() {
 
       <section className={`${styles.shell} ${styles.section} ${styles.panel}`}>
         <div className={styles.sectionHead}><div className={styles.titleWithBadge}><span className={styles.pill}>FLASH WINDOW</span><div><h2>Deals worth discovering</h2><p>Limited offers from verified vendors. Stock is confirmed before payment.</p></div></div><Link href="/shop">View all deals <span>→</span></Link></div>
-        <div className={styles.productScroller}>{products.map((product) => <ProductCard key={product.name} product={product} onAdd={() => addToCart(product.name)} />)}</div>
+        <div className={styles.productScroller}>{products.map((product) => <ProductCard key={product.name} product={product} onAdd={() => addToCart(product)} />)}</div>
       </section>
 
       <section className={`${styles.shell} ${styles.section}`} id="popular">
         <div className={styles.sectionHead}><div><p className={styles.kicker}>CUSTOMER FAVOURITES</p><h2>Popular right now</h2></div><Link href="/shop">Shop all products <span>→</span></Link></div>
-        <div className={styles.popularGrid}>{products.slice(0, 5).map((product) => <ProductCard key={product.name} product={product} compact onAdd={() => addToCart(product.name)} />)}</div>
+        <div className={styles.popularGrid}>{products.slice(0, 5).map((product) => <ProductCard key={product.name} product={product} compact onAdd={() => addToCart(product)} />)}</div>
       </section>
 
       <section className={`${styles.shell} ${styles.section}`} id="collections">

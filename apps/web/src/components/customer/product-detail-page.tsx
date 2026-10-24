@@ -4,7 +4,9 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { createOrderRequest, getProduct, MarketplaceApiError } from '../../lib/client/marketplace';
-import { DisplayProduct, ProductArt, ProductCard, products } from './home-page';
+import { addCartItem, cartItemCount } from '../../lib/client/cart';
+import { useCart } from '../../lib/client/use-cart';
+import { DisplayProduct, displayProductToCartItem, ProductArt, ProductCard, products } from './home-page';
 import home from './home-page.module.css';
 import styles from './product-detail-page.module.css';
 
@@ -23,6 +25,8 @@ export function ProductDetailPage({ slug }: { slug: string }) {
   const [message, setMessage] = useState('');
   const [notice, setNotice] = useState('');
   const [requesting, setRequesting] = useState(false);
+  const { items: cartItems } = useCart();
+  const cartCount = cartItemCount(cartItems);
   const unitPrice = product ? Number(product.price.replace(/\D/g, '')) : 0;
   const oldUnitPrice = product?.old ? Number(product.old.replace(/\D/g, '')) : null;
 
@@ -63,10 +67,21 @@ export function ProductDetailPage({ slug }: { slug: string }) {
       window.sessionStorage.removeItem(storageKey);
       setNotice('Availability request sent. The vendor will confirm the exact item and quantity.');
     } catch (error) {
-      setNotice(error instanceof MarketplaceApiError && error.status === 401 ? 'Please sign in before sending this availability request.' : error instanceof Error ? error.message : 'Fendor could not send this request.');
+      if (error instanceof MarketplaceApiError && error.status === 401) {
+        window.sessionStorage.setItem('fendor-intended-order', JSON.stringify({ productId: product.id, variantId: product.variantId, quantity, gift, message }));
+        window.location.href = `/login?next=${encodeURIComponent(window.location.pathname)}`;
+        return;
+      }
+      setNotice(error instanceof Error ? error.message : 'Fendor could not send this request.');
     } finally {
       setRequesting(false);
     }
+  }
+
+  function addProductToCart() {
+    if (!product) return;
+    addCartItem({ ...displayProductToCartItem(product), quantity, option: gift === 'gift' ? 'Gift preparation requested' : 'Standard order' });
+    setNotice(`${product.name} added to your cart.`);
   }
 
   if (!product) return <div className={home.page}><main className={`${home.shell} ${styles.remoteState}`} aria-live="polite"><span>{productError ? '!' : ''}</span><h1>{productError ? 'Product unavailable' : 'Loading product details'}</h1>{productError && <><p>{productError}</p><Link href="/shop">Return to the marketplace</Link></>}</main></div>;
@@ -77,7 +92,7 @@ export function ProductDetailPage({ slug }: { slug: string }) {
       <div className={`${home.shell} ${home.mainHeader}`}>
         <Link href="/" className={home.logo} aria-label="Fendor home"><Image src="/icons/home/logo.svg" width={40} height={40} alt="" priority /><span><b>Fendor</b><small>MARKETPLACE</small></span></Link>
         <form className={home.search} onSubmit={runSearch} role="search"><input placeholder="Search products, brands or vendors" aria-label="Search products" /><button aria-label="Submit search"><Image src="/icons/home/search.svg" width={19} height={19} alt="" /></button></form>
-        <nav className={home.actions} aria-label="Account actions"><Link href="/login"><Image src="/icons/home/account.svg" width={21} height={21} alt="" /><span>Account</span></Link><Link href="#support"><Image src="/icons/home/help.svg" width={21} height={21} alt="" /><span>Help</span></Link><Link href="/cart"><Image src="/icons/home/cart.svg" width={23} height={23} alt="" /><span>Cart</span></Link></nav>
+        <nav className={home.actions} aria-label="Account actions"><Link href="/login"><Image src="/icons/home/account.svg" width={21} height={21} alt="" /><span>Account</span></Link><Link href="#support"><Image src="/icons/home/help.svg" width={21} height={21} alt="" /><span>Help</span></Link><Link href="/cart" className={home.cart}><Image src="/icons/home/cart.svg" width={23} height={23} alt="" /><span>Cart</span>{cartCount > 0 && <b>{cartCount}</b>}</Link></nav>
       </div>
       <nav className={`${home.shell} ${home.categoryNav}`} aria-label="Marketplace categories"><Link href="/shop" className={home.allCategories}>☰ &nbsp; All Categories</Link>{['Phones & Tablets', 'Electronics', 'Fashion', 'Home & Living', 'Gifts'].map((item) => <Link key={item} href="/shop">{item}</Link>)}</nav>
     </header>
@@ -114,7 +129,7 @@ export function ProductDetailPage({ slug }: { slug: string }) {
 
         <aside className={styles.sidebar}>
           <section className={styles.vendorCard} id="vendor"><div className={styles.vendorTitle}><span>{product.vendor.split(' ').map((word) => word[0]).slice(0, 2).join('')}</span><div><small>VERIFIED VENDOR</small><h2>{product.vendor}</h2></div></div><div className={styles.vendorFacts}><span><b>Identity</b>Checked</span><span><b>Listings</b>Reviewed</span></div><Link href="/shop">Visit storefront</Link></section>
-          <section className={styles.orderCard}><small>PRODUCT PRICE</small><div className={styles.price}><strong>₦{(unitPrice * quantity).toLocaleString()}</strong>{oldUnitPrice !== null && <del>₦{(oldUnitPrice * quantity).toLocaleString()}</del>}</div><p>Delivery and optional packaging are calculated after recipient details are confirmed.</p><button className={styles.secondaryAction} onClick={() => setNotice('Product added to your cart.')}>Add to cart</button><button className={styles.primaryAction} disabled={requesting} onClick={requestOrder}>{requesting ? 'Sending request…' : 'Request to order'}</button><div className={styles.delivery}><h3>FULFILMENT</h3><p><b>Stock:</b> Confirmed by the vendor after request</p><p><b>Delivery:</b> Priced from the recipient’s location</p><p><b>Returns:</b> Reviewed under Fendor’s return policy</p></div></section>
+          <section className={styles.orderCard}><small>PRODUCT PRICE</small><div className={styles.price}><strong>₦{(unitPrice * quantity).toLocaleString()}</strong>{oldUnitPrice !== null && <del>₦{(oldUnitPrice * quantity).toLocaleString()}</del>}</div><p>Delivery and optional packaging are calculated after recipient details are confirmed.</p><button className={styles.secondaryAction} onClick={addProductToCart}>Add to cart</button><button className={styles.primaryAction} disabled={requesting} onClick={requestOrder}>{requesting ? 'Sending request…' : 'Request to order'}</button><div className={styles.delivery}><h3>FULFILMENT</h3><p><b>Stock:</b> Confirmed by the vendor after request</p><p><b>Delivery:</b> Priced from the recipient’s location</p><p><b>Returns:</b> Reviewed under Fendor’s return policy</p></div></section>
         </aside>
       </section>
 
