@@ -24,6 +24,7 @@ The web container serves HTTP only. Put it behind a trusted HTTPS reverse proxy 
 - PostgreSQL 17 with encrypted storage, restricted network access and TLS for hosted connections.
 - A persistent web process and exactly one active operations-worker lease. Multiple worker processes are safe, but only one performs a cycle at a time.
 - `DATABASE_URL`, `APP_ORIGIN`, `OUTBOX_KEY`, `RESERVATION_MINUTES`, `VENDOR_RESPONSE_MINUTES`, `SMTP_URL` and `MAIL_FROM`.
+- `PAYMENT_BANK_NAME`, `PAYMENT_ACCOUNT_NAME` and `PAYMENT_ACCOUNT_NUMBER`. These are shown only to the owning customer after that customer accepts the current quote. Leave any one unset to keep payment instructions closed.
 - A reverse proxy or platform gateway that enforces HTTPS and limits request body size to at most 5 MB.
 
 Run migrations as a one-off release step before starting the new web and worker versions. Do not run unreviewed migrations against production. Take a database snapshot before each migration.
@@ -55,4 +56,4 @@ The verification script creates and destroys only a uniquely named `fendor_resto
 
 ## Production release gate
 
-Before real customer data is accepted: merge the stacked pull requests in order, run CI on updated `main`, provision production secrets, configure real SMTP, replace staging Mailpit, complete a restore drill, connect frontend screens to the documented APIs, test customer/vendor/admin journeys on staging, and obtain business approval for reservation and vendor-response timings.
+Before real customer data is accepted: merge the stacked pull requests in order, run CI on updated `main`, provision production secrets and approved bank details, configure real SMTP, replace staging Mailpit, complete a restore drill, test customer/vendor/admin journeys on staging, approve the final legal copy, and obtain business approval for reservation and vendor-response timings.
