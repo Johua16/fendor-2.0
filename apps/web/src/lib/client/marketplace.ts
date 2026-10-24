@@ -41,6 +41,10 @@ export type CheckoutSummary = {
   refundedKobo: string;
 };
 
+export type DeliveryZone = { id: string; name: string; state: string; city: string; version: number };
+export type DeliveryDetails = { recipientName: string; phone: string; address: string; instructions: string; state: string; city: string; country: 'NG'; deliveryDate: string; proofId: string | null; trackingReference: string | null; attempts: number };
+export type OrderHistoryEvent = { id: string; from_state: string; to_state: string; event_type: string; order_version: number; created_at: string };
+
 type ErrorEnvelope = { error?: { code?: string; message?: string } };
 
 export class MarketplaceApiError extends Error {
@@ -113,4 +117,20 @@ export async function acceptOrderQuote(id: string, version: number, quoteId: str
   return requestJson<{ orderId: string; state: 'awaiting_payment'; version: number }>(`/api/orders/${encodeURIComponent(id)}/accept-quote`, {
     method: 'POST', body: JSON.stringify({ version, quoteId, totalKobo }),
   });
+}
+
+export async function listDeliveryZones(signal?: AbortSignal) {
+  return requestJson<{ zones: DeliveryZone[] }>('/api/delivery-zones', { signal });
+}
+
+export async function getDeliveryDetails(id: string, signal?: AbortSignal) {
+  return requestJson<DeliveryDetails | null>(`/api/orders/${encodeURIComponent(id)}/delivery`, { signal });
+}
+
+export async function saveDeliveryDetails(id: string, input: { version: number; zoneId: string; recipientName: string; phone: string; address: string; instructions: string; deliveryDate: string }) {
+  return requestJson<{ orderId: string; state: string; version: number }>(`/api/orders/${encodeURIComponent(id)}/delivery`, { method: 'POST', body: JSON.stringify(input) });
+}
+
+export async function getOrderHistory(id: string, signal?: AbortSignal) {
+  return requestJson<{ events: OrderHistoryEvent[] }>(`/api/orders/${encodeURIComponent(id)}/history`, { signal });
 }
