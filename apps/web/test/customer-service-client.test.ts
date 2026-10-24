@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { createSupportCase, listNotifications, markNotificationRead, replyToSupportCase } from '../src/lib/client/customer-service.ts';
+import { createSupportCase, getOrderRemedy, listNotifications, markNotificationRead, replyToSupportCase, requestOrderRemedy } from '../src/lib/client/customer-service.ts';
 
 test('notifications use the private session endpoints', async () => {
   const originalFetch = globalThis.fetch;
@@ -22,6 +22,20 @@ test('support creation preserves its idempotency key and replies use the latest 
     assert.deepEqual(bodies, [
       { requestId: 'request-1', subject: 'Help with an order', message: 'Please check this request.', orderId: 'order-1' },
       { version: 3, message: 'Thank you for the update.' },
+    ]);
+  } finally { globalThis.fetch = originalFetch; }
+});
+
+test('paid-order remedy reads status and submits the current order version', async () => {
+  const originalFetch = globalThis.fetch;
+  const calls: Array<{ path: string; method?: string; body?: unknown }> = [];
+  globalThis.fetch = async (input, init) => { calls.push({ path: String(input), method: init?.method, body: init?.body ? JSON.parse(String(init.body)) : undefined }); return Response.json(init?.method ? { orderId: 'order-1', state: 'confirmed', version: 9 } : null); };
+  try {
+    await getOrderRemedy('order-1');
+    await requestOrderRemedy('order-1', 8, 'cancellation', 'The recipient will no longer be available for this delivery.');
+    assert.deepEqual(calls, [
+      { path: '/api/orders/order-1/remedy', method: undefined, body: undefined },
+      { path: '/api/orders/order-1/request-remedy', method: 'POST', body: { version: 8, kind: 'cancellation', note: 'The recipient will no longer be available for this delivery.' } },
     ]);
   } finally { globalThis.fetch = originalFetch; }
 });
