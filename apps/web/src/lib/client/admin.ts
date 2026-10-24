@@ -6,6 +6,9 @@ export type AdminApplication={id:string;business_name:string;business_location:s
 export type SupportCase={id:string;order_id:string|null;status:string;subject:string;version:number;assigned_to:string|null};
 export type PendingUpload={id:string;owner_id:string;purpose:string;status:string;created_at:string};
 export type Operations={orders:{state:string;count:number}[];overdue:{id:string;version:number;availability_deadline:string}[];finance:{id:string;state:string;version:number}[];remedies:{id:string;order_id:string;status:string;kind:string}[];workers:{name:string;last_started:string|null;last_succeeded:string|null;last_failed:string|null;lease_until:string|null}[];mail:{pending:number;failed:number}};
+export type AdminDelivery={recipientName:string;phone:string;address:string;instructions:string;state:string;city:string;country:'NG';deliveryDate:string;proofId:string|null;trackingReference:string|null;attempts:number};
+export type AdminRemedy={id:string;kind:'cancellation'|'return';status:'requested'|'approved'|'rejected'|'closed';reason:string;refund_limit_kobo:string|number;review_note:string|null;restock_quantity:number|null};
+export type MailFailure={id:string;attempts:number;created_at:string;next_attempt_at:string};
 export const listApplications=()=>request<{applications:AdminApplication[]}>('/api/admin/vendor-applications');
 export const reviewApplication=(id:string,decision:'approved'|'rejected'|'changes_requested'|'suspended',note:string)=>request(`/api/admin/vendor-applications/${id}/review`,{decision,note});
 export const listAdminProducts=()=>request<{products:VendorProduct[];nextCursor:string|null}>('/api/admin/products?limit=50');
@@ -19,3 +22,9 @@ export const listPendingUploads=()=>request<{uploads:PendingUpload[]}>('/api/adm
 export const reviewUpload=(id:string,status:'approved'|'rejected',note:string)=>request(`/api/admin/uploads/${id}/review`,{status,note});
 export const getOperations=()=>request<Operations>('/api/admin/operations');
 export const getAudit=()=>request<{events:Record<string,unknown>[]}>('/api/admin/audit');
+export const getAdminDelivery=(id:string)=>request<AdminDelivery|null>(`/api/admin/orders/${id}/delivery`);
+export const getAdminRemedy=(id:string)=>request<AdminRemedy|null>(`/api/admin/orders/${id}/remedy`);
+export const listMailFailures=()=>request<{failures:MailFailure[]}>('/api/admin/mail-failures');
+export const retryMail=(id:string)=>request(`/api/admin/mail-failures/${id}/retry`,{});
+export const saveDeliveryZone=(input:{id?:string;name:string;state:string;city:string;active:boolean;version:number})=>request('/api/admin/delivery-zones',input);
+export async function uploadAdminProof(file:File){const response=await fetch('/api/uploads?purpose=proof',{method:'POST',credentials:'same-origin',headers:{'Content-Type':file.type},body:file});const value=await response.json().catch(()=>({})) as {id?:string;status?:string;error?:{message?:string}};if(!response.ok)throw new AdminApiError(response.status,'UPLOAD_FAILED',value.error?.message??'Fendor could not upload this proof.');return value as {id:string;status:'pending'};}

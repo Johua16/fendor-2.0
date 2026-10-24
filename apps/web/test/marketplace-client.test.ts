@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { acceptOrderQuote, cancelOrderRequest, createOrderRequest, getCheckoutSummary, getDeliveryDetails, getOrderHistory, listDeliveryZones, listOrderRequests, listProducts, MarketplaceApiError, saveDeliveryDetails, saveOrderPersonalisation } from '../src/lib/client/marketplace.ts';
+import { acceptOrderQuote, cancelOrderRequest, createOrderRequest, getCheckoutSummary, getDeliveryDetails, getOrderHistory, getVendorProfile, listDeliveryZones, listOrderRequests, listProducts, MarketplaceApiError, saveDeliveryDetails, saveOrderPersonalisation, saveVendorProfile } from '../src/lib/client/marketplace.ts';
 
 test('catalogue client sends supported public filters', async () => {
   const originalFetch = globalThis.fetch;
@@ -106,5 +106,19 @@ test('delivery client separates public zones from private order details', async 
     await getOrderHistory('order-1');
     await saveDeliveryDetails('order-1', { version: 2, zoneId: 'zone-1', recipientName: 'Ada', phone: '+234 800 000 0000', address: '12 Example Street, Abuja', instructions: '', deliveryDate: '2026-11-02' });
     assert.deepEqual(calls[3], { path: '/api/orders/order-1/delivery', method: 'POST', body: { version: 2, zoneId: 'zone-1', recipientName: 'Ada', phone: '+234 800 000 0000', address: '12 Example Street, Abuja', instructions: '', deliveryDate: '2026-11-02' } });
+  } finally { globalThis.fetch = originalFetch; }
+});
+
+test('vendor readiness uses the protected profile contract and preserves the current version', async () => {
+  const originalFetch = globalThis.fetch;
+  const calls: Array<{ path: string; method?: string; body?: unknown }> = [];
+  globalThis.fetch = async (input, init) => { calls.push({ path: String(input), method: init?.method, body: init?.body ? JSON.parse(String(init.body)) : undefined }); return Response.json(init?.method ? { version: 4, reviewRequired: false } : null); };
+  try {
+    await getVendorProfile();
+    await saveVendorProfile({ version: 3, phone: '+2348000000000', backupPhone: '+2348111111111', pickupAddress: '12 Market Road, Abuja', documentId: 'document-1', windowStart: '2026-11-01T08:00:00.000Z', windowEnd: '2026-11-03T18:00:00.000Z' });
+    assert.deepEqual(calls, [
+      { path: '/api/vendor/profile', method: undefined, body: undefined },
+      { path: '/api/vendor/profile', method: 'POST', body: { version: 3, phone: '+2348000000000', backupPhone: '+2348111111111', pickupAddress: '12 Market Road, Abuja', documentId: 'document-1', windowStart: '2026-11-01T08:00:00.000Z', windowEnd: '2026-11-03T18:00:00.000Z' } },
+    ]);
   } finally { globalThis.fetch = originalFetch; }
 });
