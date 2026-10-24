@@ -39,7 +39,7 @@ const vendors = [
   { initials: 'SD', name: 'Sound District', specialty: 'Audio & accessories', items: ['headphones', 'phone', 'headphones'] },
 ];
 
-function ProductArt({ type, tint }: { type: string; tint: string }) {
+export function ProductArt({ type, tint }: { type: string; tint: string }) {
   return <div className={`${styles.productArt} ${styles[type]}`} style={{ backgroundColor: tint }} aria-hidden="true"><span /></div>;
 }
 
@@ -47,7 +47,7 @@ export function ProductCard({ product, compact = false, onAdd }: { product: type
   return <article className={`${styles.productCard} ${compact ? styles.compactCard : ''}`}>
     <ProductArt type={product.art} tint={product.tint} />
     <div className={styles.vendorLine}><span className={styles.verifiedDot}>✓</span>{product.vendor}</div>
-    <h3>{product.name}</h3>
+    <h3><Link className={styles.productLink} href={`/product/${product.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')}`}>{product.name}</Link></h3>
     <div className={styles.rating}>★ <b>4.8</b> <span>(120+)</span></div>
     <div className={styles.priceRow}><strong>{product.price}</strong><del>{product.old}</del></div>
     {!compact && <><div className={styles.stock}><span style={{ width: '72%' }} /></div><small>Available after vendor confirmation</small></>}
