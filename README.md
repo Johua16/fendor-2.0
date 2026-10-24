@@ -11,8 +11,7 @@ Root HTML/assets and **backend/** are the preserved legacy prototype; do not use
 3. Run `npm run dev --prefix apps/web`.
 4. Open http://localhost:3000.
 
-The home screen is a temporary development placeholder, not the final Figma implementation.
-The placeholder homepage needs no credentials. Backend accounts and catalogue require database configuration; see [setup](docs/identity-setup.md).
+The public homepage and store can be viewed without credentials. Account, catalogue, order, vendor and administrator journeys require database configuration; see [setup](docs/identity-setup.md).
 
 ## Verify
 
@@ -26,15 +25,19 @@ Use npm and the committed **apps/web/package-lock.json** for the new app. Legacy
 
 ## What works today
 
-- `/`: development foundation page.
+- `/` and `/shop`: responsive Fendor homepage and live marketplace catalogue.
+- `/welcome`, `/signup`, `/login`, `/forgot-password`, `/verify-email`: complete customer and vendor account entry.
+- `/orders`, `/cart`, `/saved`, `/notifications`, `/support`, `/account`: integrated customer marketplace journey.
+- `/vendor`: reviewed vendor catalogue, inventory, order, analytics and readiness workspace.
+- `/admin`: protected operations console for moderation, finance, fulfilment, support and monitoring.
 - `GET /api/health`: HTTP 200, process health.
 - `GET /api/ready`: HTTP 200 only after required configuration and database migrations; otherwise HTTP 503.
 - The MVP backend supports accounts, reviewed vendors and products, availability requests, quotes, offline-payment verification, fulfilment, paid-order remedies, support and notifications.
 
-See the [identity endpoints](docs/handoffs/identity-api.md), [catalogue endpoints](docs/handoffs/catalogue-api.md), [order requests](docs/handoffs/orders-api.md), [checkout contract](docs/handoffs/checkout-api.md) and [operations contract](docs/handoffs/operations-api.md). The APIs and customer MVP screens are implemented but not deployed. Use the [portable staging and production handoff](docs/deployment.md) for the next release step.
+See the [identity endpoints](docs/handoffs/identity-api.md), [catalogue endpoints](docs/handoffs/catalogue-api.md), [order requests](docs/handoffs/orders-api.md), [checkout contract](docs/handoffs/checkout-api.md) and [operations contract](docs/handoffs/operations-api.md). The MVP application and APIs are implemented but not deployed. Use the [portable staging and production handoff](docs/deployment.md) for the release step.
 
 ## Collaboration
 
 Read [folder ownership](docs/handoffs/ownership.md), [API policy](docs/handoffs/api-contracts.md), [frontend brief](docs/handoffs/frontend-codex-brief.md) and [business decisions](docs/product-decisions.md).
 
-Frontend development uses the same **apps/web** project and consumes the documented APIs. Merge the stacked backend pull requests in order, then rebase the frontend branch on updated `main`. Do not start a second Next.js scaffold.
+Frontend and backend development use the same **apps/web** project and documented APIs. Start every change from current `main`, use a separate branch, and submit a pull request. Do not start a second Next.js scaffold.
