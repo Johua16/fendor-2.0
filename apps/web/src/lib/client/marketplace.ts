@@ -14,8 +14,17 @@ export type OrderRequest = {
   id: string;
   productVariantId: string;
   quantity: number;
-  state: string;
+  state: 'draft' | 'checking_availability' | 'reserved' | 'awaiting_payment' | 'confirmed' | 'preparing' | 'ready_for_dispatch' | 'out_for_delivery' | 'delivered' | 'unavailable' | 'cancelled' | 'delivery_failed' | 'returned' | 'refunded';
   version: number;
+  product: { title: string; imagePath: string | null; unitPriceKobo: number; currency: 'NGN'; productVersion: number };
+  giftDetails: { recipientName?: string; occasion?: string; relationship?: string; giftMessage?: string; packagingPreference?: string };
+  reservationExpiresAt: string | null;
+  reservationExpired: boolean;
+  financialHold?: boolean;
+  orderConfirmed: boolean;
+  quoteId?: string | null;
+  acceptedQuoteId?: string | null;
+  totalKobo?: number | null;
 };
 
 type ErrorEnvelope = { error?: { code?: string; message?: string } };
@@ -59,5 +68,25 @@ export async function createOrderRequest(productVariantId: string, quantity: num
   return requestJson<{ order: OrderRequest }>('/api/orders', {
     method: 'POST',
     body: JSON.stringify({ clientRequestId, productVariantId, quantity }),
+  });
+}
+
+export async function listOrderRequests(signal?: AbortSignal) {
+  return requestJson<{ orders: OrderRequest[]; nextCursor: string | null }>('/api/orders?limit=50', { signal });
+}
+
+export async function getOrderRequest(id: string, signal?: AbortSignal) {
+  return requestJson<{ order: OrderRequest }>(`/api/orders/${encodeURIComponent(id)}`, { signal });
+}
+
+export async function saveOrderPersonalisation(id: string, version: number, giftDetails: OrderRequest['giftDetails']) {
+  return requestJson<{ order: OrderRequest }>(`/api/orders/${encodeURIComponent(id)}/personalise`, {
+    method: 'POST', body: JSON.stringify({ version, giftDetails }),
+  });
+}
+
+export async function cancelOrderRequest(id: string, version: number) {
+  return requestJson<{ order: OrderRequest }>(`/api/orders/${encodeURIComponent(id)}/cancel`, {
+    method: 'POST', body: JSON.stringify({ version }),
   });
 }
