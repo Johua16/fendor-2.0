@@ -37,10 +37,11 @@ export async function handleIdentity(req: Request, path: string[], dependencies?
     }
     const input = await body(req);
     const fields: Record<string, string[]> = {
-      'auth/signup': ['email', 'password', 'fullName'], 'auth/login': ['email', 'password'], 'auth/logout': [],
+      'auth/signup': ['email', 'password', 'fullName','accountType'], 'auth/login': ['email', 'password'], 'auth/logout': [],
+      'auth/profile': ['dateOfBirth','phone'],
       'auth/resend-verification': ['email'], 'auth/forgot-password': ['email'],
       'auth/verify-email': ['token'], 'auth/reset-password': ['token', 'password'],
-      'vendor/application': ['businessName', 'businessLocation', 'country', 'registrationNumber']
+      'vendor/application': ['businessName', 'businessLocation', 'country', 'registrationNumber','accountType']
     };
     const reviewing = path.length === 4 && path[0] === 'admin' && path[1] === 'vendor-applications' && path[3] === 'review';
     const allowed = reviewing ? ['decision', 'note'] : fields[key];
@@ -55,6 +56,7 @@ export async function handleIdentity(req: Request, path: string[], dependencies?
         headers.set('Set-Cookie', cookie(login.secret, settings.secure)); data = { user: login.user }; break;
       }
       case 'auth/logout': await service.logout(secret); headers.set('Set-Cookie', cookie('', settings.secure, true)); data = { message: 'Signed out.' }; break;
+      case 'auth/profile': data={user:await service.saveProfile(secret,input)}; break;
       case 'auth/resend-verification': data = await service.requestEmail(input, 'verify'); status = 202; break;
       case 'auth/forgot-password': data = await service.requestEmail(input, 'reset'); status = 202; break;
       case 'auth/verify-email': data = await service.consume(input, 'verify'); break;

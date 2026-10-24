@@ -19,7 +19,7 @@ function password(value: unknown) {
   if (typeof value !== 'string' || value.length < 12 || value.length > 128) fail(400, 'INVALID_INPUT', 'Use a password of 12–128 characters.');
   return value;
 }
-export type User = { id: string; email: string; fullName: string; verified: boolean; roles: string[] };
+export type User = { id: string; email: string; fullName: string; verified: boolean; roles: string[]; onboardingIntent: 'customer'|'vendor'; dateOfBirth: string|null; phone: string|null };
 type Config = { origin: string; outboxKey: string; now?: () => number };
 const generic = { message: 'If eligible, an email will be sent with the next step.' };
 export function identity(db: Database, config: Config) {
@@ -43,10 +43,10 @@ export function identity(db: Database, config: Config) {
     await tx.query('INSERT INTO email_outbox(id,payload) VALUES($1,$2)', [randomUUID(), seal({ to: address, purpose, url }, config.outboxKey)]);
   }
   async function userFor(tx: Sql, id: string): Promise<User> {
-    const u = (await tx.query<{ id: string; email: string; full_name: string; email_verified_at: Date | null }>('SELECT id,email,full_name,email_verified_at FROM users WHERE id=$1', [id])).rows[0];
+    const u = (await tx.query<{ id: string; email: string; full_name: string; email_verified_at: Date | null; onboarding_intent:'customer'|'vendor'; date_of_birth:string|null; phone_e164:string|null }>('SELECT id,email,full_name,email_verified_at,onboarding_intent,date_of_birth,phone_e164 FROM users WHERE id=$1', [id])).rows[0];
     if (!u) fail(401, 'UNAUTHENTICATED', 'Sign in to continue.');
     const roles = (await tx.query<{ role: string }>('SELECT role FROM user_roles WHERE user_id=$1 ORDER BY role', [id])).rows.map(r => r.role);
-    return { id: u.id, email: u.email, fullName: u.full_name, verified: !!u.email_verified_at, roles };
+    return { id: u.id, email: u.email, fullName: u.full_name, verified: !!u.email_verified_at, roles, onboardingIntent:u.onboarding_intent, dateOfBirth:u.date_of_birth ? String(u.date_of_birth).slice(0,10) : null, phone:u.phone_e164 };
   }
   async function session(tx: Sql, secret?: string): Promise<User> {
     if (!secret || !/^[A-Za-z0-9_-]{43}$/.test(secret)) fail(401, 'UNAUTHENTICATED', 'Sign in to continue.');
@@ -60,10 +60,11 @@ export function identity(db: Database, config: Config) {
     throttleWrites: () => limit('account-writes-global', 1000),
     async signup(input: Record<string, unknown>) {
       const address = email(input.email), pass = password(input.password), name = text(input.fullName, 'full name', 2, 100);
+      const intent = input.accountType === 'vendor' ? 'vendor' : input.accountType === 'customer' ? 'customer' : fail(400,'INVALID_INPUT','Choose customer or vendor.');
       await limit(`email:${address}`); const encoded = await hashPassword(pass);
       await db.transaction(async tx => {
         const id = randomUUID();
-        const result = await tx.query<{ id: string }>('INSERT INTO users(id,email,password_hash,full_name) VALUES($1,$2,$3,$4) ON CONFLICT(email) DO NOTHING RETURNING id', [id, address, encoded, name]);
+        const result = await tx.query<{ id: string }>('INSERT INTO users(id,email,password_hash,full_name,onboarding_intent) VALUES($1,$2,$3,$4,$5) ON CONFLICT(email) DO NOTHING RETURNING id', [id, address, encoded, name, intent]);
         if (!result.rows.length) return;
         await tx.query("INSERT INTO user_roles(user_id,role) VALUES($1,'customer')", [id]);
         await queue(tx, id, address, 'verify');
@@ -88,6 +89,13 @@ export function identity(db: Database, config: Config) {
       }); return { secret, user };
     },
     me: (secret?: string) => session(db, secret),
+    async saveProfile(secret: string|undefined, input: Record<string,unknown>) {
+      const dob=text(input.dateOfBirth,'date of birth',10,10), phone=text(input.phone,'phone number',11,18).replace(/[\s()-]/g,'');
+      if(!/^\d{4}-\d{2}-\d{2}$/.test(dob)) fail(400,'INVALID_INPUT','Choose a valid date of birth.');
+      const birthday=new Date(`${dob}T00:00:00Z`); if(Number.isNaN(birthday.valueOf()) || birthday > new Date(now()-18*365.2425*86400000)) fail(400,'AGE_REQUIRED','Vendors must be at least 18 years old.');
+      const normalised=phone.startsWith('0')?`+234${phone.slice(1)}`:phone; if(!/^\+234[789]\d{9}$/.test(normalised)) fail(400,'INVALID_INPUT','Enter a valid Nigerian phone number.');
+      return db.transaction(async tx=>{const u=await session(tx,secret);verified(u);await tx.query('UPDATE users SET date_of_birth=$2,phone_e164=$3 WHERE id=$1',[u.id,dob,normalised]);return userFor(tx,u.id);});
+    },
     async logout(secret?: string) { if (secret) await db.query('DELETE FROM sessions WHERE token_hash=$1', [digest(secret)]); },
     async requestEmail(input: Record<string, unknown>, purpose: 'verify' | 'reset') {
       const address = email(input.email); await limit(`email:${address}`);
@@ -112,6 +120,7 @@ export function identity(db: Database, config: Config) {
     },
     async apply(secret: string | undefined, input: Record<string, unknown>) {
       const businessName = text(input.businessName, 'business name', 2, 160), location = text(input.businessLocation, 'business location', 5, 500);
+      const accountType=text(input.accountType,'account type',7,10); if(!['company','individual'].includes(accountType)) fail(400,'INVALID_INPUT','Choose a business type.');
       const country = text(input.country, 'country', 2, 2).toUpperCase();
       if (country !== 'NG') fail(400, 'UNSUPPORTED_COUNTRY', 'Vendor onboarding currently supports Nigeria.');
       const registration = text(input.registrationNumber, 'registration number', 1, 80);
@@ -121,15 +130,16 @@ export function identity(db: Database, config: Config) {
         const old = (await tx.query<{ id: string; status: string }>('SELECT id,status FROM vendor_applications WHERE user_id=$1', [u.id])).rows[0];
         if (old && !['draft', 'changes_requested'].includes(old.status)) fail(409, 'APPLICATION_EXISTS', 'Your existing application cannot be resubmitted in its current state.');
         const id = old?.id ?? randomUUID();
-        const row = (await tx.query(`INSERT INTO vendor_applications(id,user_id,business_name,business_location,country,registration_number,status)
-          VALUES($1,$2,$3,$4,$5,$6,'submitted') ON CONFLICT(user_id) DO UPDATE SET business_name=$3,business_location=$4,country=$5,registration_number=$6,status='submitted',reviewed_by=NULL,reviewed_at=NULL,review_note=NULL RETURNING id,status`, [id, u.id, businessName, location, country, registration])).rows[0];
+        if(!u.dateOfBirth || !u.phone) fail(409,'PROFILE_INCOMPLETE','Complete your personal details first.');
+        const row = (await tx.query(`INSERT INTO vendor_applications(id,user_id,business_name,business_location,country,registration_number,account_type,status)
+          VALUES($1,$2,$3,$4,$5,$6,$7,'submitted') ON CONFLICT(user_id) DO UPDATE SET business_name=$3,business_location=$4,country=$5,registration_number=$6,account_type=$7,status='submitted',reviewed_by=NULL,reviewed_at=NULL,review_note=NULL RETURNING id,status`, [id, u.id, businessName, location, country, registration,accountType])).rows[0];
         await tx.query('INSERT INTO vendor_review_events(id,application_id,actor_id,from_status,to_status,note) VALUES($1,$2,$3,$4,$5,$6)', [randomUUID(), id, u.id, old?.status ?? 'draft', 'submitted', 'Application submitted']);
         return row;
       });
     },
     async application(secret?: string) {
       const u = await session(db, secret);
-      return (await db.query('SELECT id,business_name,business_location,country,registration_number,status,review_note FROM vendor_applications WHERE user_id=$1', [u.id])).rows[0] ?? null;
+      return (await db.query('SELECT id,business_name,business_location,country,registration_number,account_type,status,review_note FROM vendor_applications WHERE user_id=$1', [u.id])).rows[0] ?? null;
     },
     async vendorAccess(secret?: string) {
       const u = await session(db, secret); verified(u);
@@ -139,7 +149,7 @@ export function identity(db: Database, config: Config) {
     },
     async applications(secret?: string) {
       admin(await session(db, secret));
-      return (await db.query('SELECT id,business_name,business_location,country,registration_number,review_note,status,created_at FROM vendor_applications ORDER BY created_at DESC LIMIT 100')).rows;
+      return (await db.query('SELECT id,business_name,business_location,country,registration_number,account_type,review_note,status,created_at FROM vendor_applications ORDER BY created_at DESC LIMIT 100')).rows;
     },
     async review(secret: string | undefined, id: string, input: Record<string, unknown>) {
       if (!/^[0-9a-f-]{36}$/i.test(id)) fail(400, 'INVALID_INPUT', 'Invalid application ID.');
