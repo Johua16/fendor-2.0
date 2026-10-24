@@ -1,6 +1,6 @@
 # MVP backend delivery status
 
-The six completion areas are implemented on the backend-completion branch and covered by integrated PostgreSQL tests. They remain unmerged and undeployed. Shared frontend integration, production accounts and design approval are separate release work.
+The six completion areas are merged into `main`, connected to the customer, vendor and administrator interfaces, and covered by integrated PostgreSQL tests. Production accounts and infrastructure remain release work.
 
 1. **Financial exceptions and paid-order remedies — implemented.** Paid cancellation/return review, refund controls, immutable receipt corrections, reconciliation holds and explicit restocking.
 2. **Delivery and fulfilment — implemented.** Encrypted recipient details, service zones, preparation, dispatch, failed attempts, proof-gated delivery and returns.
@@ -9,4 +9,4 @@ The six completion areas are implemented on the backend-completion branch and co
 5. **Support and admin operations — implemented.** Isolated customer cases, private internal notes, operational queues and append-only audit records.
 6. **Production readiness — portable baseline implemented.** Containerised staging, readiness checks, backup/restore scripts, monitoring contract and full backend integration tests. A real deployment still requires hosting, SMTP, managed database, secrets, alerts and a successful production-like restore drill.
 
-Current merge sequence: #1 foundation (merged), #2 identity, #3 catalogue, #4 order requests/reservations, #5 quotes/payment verification, #6 payment exceptions, then backend completion. These APIs do not mean the screens are integrated or the app is deployed. Review and merge each dependency before retargeting the next stacked PR to `main`.
+All backend dependencies and their corresponding MVP screens have been merged. The remaining release gate is a production-like staging run using real infrastructure, followed by the deployment checks in `docs/deployment.md`.
