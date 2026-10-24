@@ -79,7 +79,7 @@ export function catalogue(db:Database) {
       if(old.version!==version) fail(409,'STALE_VERSION','Product changed. Reload before saving.');
       let status=old.status, note='';
       if(edited) {
-        if(edited.imagePath?.startsWith('/api/media/') && !(await tx.query("SELECT id FROM uploads WHERE id=$1 AND owner_id=$2 AND purpose='product' AND status='approved'",[edited.imagePath.split('/').pop(),by])).rows.length) fail(400,'IMAGE_REQUIRED','Approved owned product image required.');
+        if(edited.imagePath?.startsWith('/api/media/') && !(await tx.query("SELECT id FROM uploads WHERE id=$1 AND owner_id=$2 AND purpose='product'",[edited.imagePath.split('/').pop(),by])).rows.length) fail(400,'IMAGE_REQUIRED','Owned product image required.');
         if(old.reserved_quantity>0) fail(409,'ACTIVE_RESERVATIONS','Product has active reservations. Contact Fendor before editing.');
         status='draft'; note='Product edited; fresh review required';
         await tx.query('UPDATE products SET title=$2,description=$3,category=$4,image_path=$5 WHERE id=$1',[id,edited.title,edited.description,edited.category,edited.imagePath]);
@@ -89,6 +89,7 @@ export function catalogue(db:Database) {
       } else if(action==='submit') {
         if(!['draft','rejected','paused'].includes(old.status)) fail(409,'INVALID_STATE','Product cannot be submitted in its current state.');
         if(!old.image_path) fail(400,'IMAGE_REQUIRED','Add an approved product image before submitting.');
+        if(old.image_path.startsWith('/api/media/') && !(await tx.query("SELECT id FROM uploads WHERE id=$1 AND owner_id=$2 AND purpose='product' AND status='approved'",[old.image_path.split('/').pop(),by])).rows.length) fail(409,'IMAGE_REVIEW_PENDING','Fendor must approve the product image before you submit this listing.');
         status='under_review'; note='Submitted for Fendor review';
       } else if(action==='pause') {
         if(!['approved','under_review'].includes(old.status)) fail(409,'INVALID_STATE','Only live or pending products can be paused.');
@@ -109,7 +110,7 @@ export function catalogue(db:Database) {
       const data=content(input);
       return db.transaction(async tx=>{
         const by=await actor(tx,secret,'vendor');
-        if(data.imagePath?.startsWith('/api/media/') && !(await tx.query("SELECT id FROM uploads WHERE id=$1 AND owner_id=$2 AND purpose='product' AND status='approved'",[data.imagePath.split('/').pop(),by])).rows.length) fail(400,'IMAGE_REQUIRED','Approved owned product image required.');
+        if(data.imagePath?.startsWith('/api/media/') && !(await tx.query("SELECT id FROM uploads WHERE id=$1 AND owner_id=$2 AND purpose='product'",[data.imagePath.split('/').pop(),by])).rows.length) fail(400,'IMAGE_REQUIRED','Owned product image required.');
         // Serialize creates/edits for a vendor's SKU uniqueness and predictable conflicts.
         await tx.query('SELECT id FROM users WHERE id=$1 FOR UPDATE',[by]);
         if((await tx.query('SELECT id FROM product_variants WHERE vendor_user_id=$1 AND sku=$2',[by,data.sku])).rows.length) fail(409,'SKU_EXISTS','SKU already exists.');

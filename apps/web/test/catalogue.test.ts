@@ -59,6 +59,12 @@ test('catalogue conflicts, invalid data, rollback, reservations and concurrent u
     await assert.rejects(api.create(vendor.secret,input),{code:'SKU_EXISTS'});
     const other=await api.create(vendor.secret,{...input,sku:'HAMPER-2',imagePath:null});
     await assert.rejects(api.mutate(vendor.secret,other.id,{version:0},'submit'),{code:'IMAGE_REQUIRED'});
+    const upload=randomUUID();
+    await db.query("INSERT INTO uploads(id,owner_id,purpose,payload,bytes) VALUES($1,$2,'product','fixture',1)",[upload,vendor.id]);
+    const pending=await api.create(vendor.secret,{...input,sku:'HAMPER-UPLOAD',imagePath:`/api/media/${upload}`});
+    await assert.rejects(api.mutate(vendor.secret,pending.id,{version:0},'submit'),{code:'IMAGE_REVIEW_PENDING'});
+    await db.query("UPDATE uploads SET status='approved' WHERE id=$1",[upload]);
+    assert.equal((await api.mutate(vendor.secret,pending.id,{version:0},'submit')).status,'under_review');
     await assert.rejects(api.mutate(vendor.secret,other.id,{...input,title:'Must roll back',version:0},'edit'),{code:'SKU_EXISTS'});
     assert.equal((await api.detail(other.id,vendor.secret,'vendor')).title,input.title);
     const results=await Promise.allSettled([

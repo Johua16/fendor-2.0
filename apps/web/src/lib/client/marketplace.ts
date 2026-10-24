@@ -9,6 +9,7 @@ export type CatalogueProduct = {
   currency: 'NGN';
   availability: 'confirmation_required';
 };
+export type VendorProduct=CatalogueProduct&{status:'draft'|'under_review'|'approved'|'paused'|'rejected';version:number;reviewNote:string|null;sku:string;stockQuantity:number;reservedQuantity:number};
 
 export type OrderRequest = {
   id: string;
@@ -82,6 +83,13 @@ export async function listProducts(filters: { q?: string; category?: string; lim
 export async function getProduct(id: string, signal?: AbortSignal) {
   return requestJson<{ product: CatalogueProduct }>(`/api/products/${encodeURIComponent(id)}`, { signal });
 }
+export async function listVendorProducts(signal?:AbortSignal){return requestJson<{products:VendorProduct[];nextCursor:string|null}>('/api/vendor/products?limit=50',{signal});}
+export async function createVendorProduct(input:{title:string;description:string;category:string;imagePath:string|null;sku:string;priceKobo:number;stockQuantity:number}){return requestJson<{product:VendorProduct}>('/api/vendor/products',{method:'POST',body:JSON.stringify(input)});}
+export async function submitVendorProduct(id:string,version:number){return requestJson<{product:VendorProduct}>(`/api/vendor/products/${encodeURIComponent(id)}/submit`,{method:'POST',body:JSON.stringify({version})});}
+export async function pauseVendorProduct(id:string,version:number){return requestJson<{product:VendorProduct}>(`/api/vendor/products/${encodeURIComponent(id)}/pause`,{method:'POST',body:JSON.stringify({version})});}
+export async function listVendorOrders(signal?:AbortSignal){return requestJson<{orders:OrderRequest[];nextCursor:string|null}>('/api/vendor/orders?limit=50',{signal});}
+export async function vendorOrderAction(id:string,version:number,action:'reserve'|'decline'|'prepare'|'ready'){return requestJson<{order?:OrderRequest;orderId?:string;state:string;version:number}>(`/api/vendor/orders/${encodeURIComponent(id)}/${action}`,{method:'POST',body:JSON.stringify(action==='prepare'||action==='ready'?{version,note:action==='prepare'?'Vendor started preparing the verified order.':'Vendor confirmed the order is ready for Fendor dispatch.'}:{version})});}
+export async function uploadProductImage(file:File){const response=await fetch('/api/uploads?purpose=product',{method:'POST',credentials:'same-origin',headers:{'Content-Type':file.type},body:file});const value=await response.json().catch(()=>({})) as {id?:string;imagePath?:string;status?:string;error?:{message?:string}};if(!response.ok)throw new MarketplaceApiError(response.status,'UPLOAD_FAILED',value.error?.message??'Fendor could not upload this image.');return value as {id:string;imagePath:string;status:'pending'};}
 
 export async function createOrderRequest(productVariantId: string, quantity: number, clientRequestId: string) {
   return requestJson<{ order: OrderRequest }>('/api/orders', {
