@@ -2,6 +2,7 @@ export type CustomerNotification = { id: string; title: string; message: string;
 export type SupportCaseSummary = { id: string; order_id: string | null; status: 'open' | 'waiting_customer' | 'resolved'; subject: string; version: number; assigned_to: string | null };
 export type SupportMessage = { id: string; body: string; internal: false; created_at: string; author: 'you' | 'Fendor' };
 export type SupportCase = SupportCaseSummary & { messages: SupportMessage[]; nextCursor: string | null };
+export type OrderRemedy = { id: string; kind: 'cancellation' | 'return'; status: 'requested' | 'approved' | 'rejected' | 'closed'; reason: string; refund_limit_kobo: string | number; review_note: string | null; restock_quantity: number | null };
 type ErrorEnvelope = { error?: { code?: string; message?: string } };
 
 export class CustomerServiceError extends Error {
@@ -34,4 +35,10 @@ export function createSupportCase(input: { requestId: string; subject: string; m
 }
 export function replyToSupportCase(id: string, version: number, message: string) {
   return requestJson<{ id: string; status: 'open'; version: number }>(`/api/support/${encodeURIComponent(id)}`, { method: 'POST', body: JSON.stringify({ version, message }) });
+}
+export function getOrderRemedy(id: string, signal?: AbortSignal) {
+  return requestJson<OrderRemedy | null>(`/api/orders/${encodeURIComponent(id)}/remedy`, { signal });
+}
+export function requestOrderRemedy(id: string, version: number, kind: 'cancellation' | 'return', note: string) {
+  return requestJson<{ orderId: string; state: string; version: number }>(`/api/orders/${encodeURIComponent(id)}/request-remedy`, { method: 'POST', body: JSON.stringify({ version, kind, note }) });
 }
