@@ -39,6 +39,7 @@ export type CheckoutSummary = {
   fundsRecorded: boolean;
   netReceivedKobo: string;
   refundedKobo: string;
+  paymentInstructions?: null | { bankName: string; accountName: string; accountNumber: string };
 };
 
 export type DeliveryZone = { id: string; name: string; state: string; city: string; version: number };

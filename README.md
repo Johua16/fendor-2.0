@@ -31,7 +31,7 @@ Use npm and the committed **apps/web/package-lock.json** for the new app. Legacy
 - `GET /api/ready`: HTTP 200 only after required configuration and database migrations; otherwise HTTP 503.
 - The MVP backend supports accounts, reviewed vendors and products, availability requests, quotes, offline-payment verification, fulfilment, paid-order remedies, support and notifications.
 
-See the [identity endpoints](docs/handoffs/identity-api.md), [catalogue endpoints](docs/handoffs/catalogue-api.md), [order requests](docs/handoffs/orders-api.md), [checkout contract](docs/handoffs/checkout-api.md) and [operations contract](docs/handoffs/operations-api.md). The APIs are implemented but not deployed, and the final frontend screens are not yet integrated. Use the [portable staging and production handoff](docs/deployment.md) for the next release step.
+See the [identity endpoints](docs/handoffs/identity-api.md), [catalogue endpoints](docs/handoffs/catalogue-api.md), [order requests](docs/handoffs/orders-api.md), [checkout contract](docs/handoffs/checkout-api.md) and [operations contract](docs/handoffs/operations-api.md). The APIs and customer MVP screens are implemented but not deployed. Use the [portable staging and production handoff](docs/deployment.md) for the next release step.
 
 ## Collaboration
 

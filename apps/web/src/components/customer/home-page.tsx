@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { FormEvent, useEffect, useState } from 'react';
 import { addCartItem, cartItemCount } from '../../lib/client/cart';
 import { useCart } from '../../lib/client/use-cart';
+import { CatalogueProduct, listProducts, MarketplaceApiError } from '../../lib/client/marketplace';
 import styles from './home-page.module.css';
 
 const categories = [
@@ -35,6 +36,15 @@ export const products: DisplayProduct[] = [
   { name: 'Men’s Slim-Fit Chinos', vendor: 'Defacto Abuja', price: '₦29,900', old: '₦34,000', tint: '#d8ded8', art: 'fashion' },
   { name: 'Precision Espresso Tamper', vendor: 'Brew Culture', price: '₦18,500', old: '₦22,000', tint: '#ddd1c4', art: 'tamper' },
 ];
+
+const categoryArt: Record<string, Pick<DisplayProduct, 'art' | 'tint'>> = {
+  flowers: { art: 'tea', tint: '#ead9cc' }, cakes: { art: 'tea', tint: '#f1dfd8' }, hampers: { art: 'bag', tint: '#ead8c6' },
+  'personalised-gifts': { art: 'tamper', tint: '#ddd1c4' }, fashion: { art: 'fashion', tint: '#d8ded8' }, home: { art: 'tea', tint: '#ead9cc' }, other: { art: 'bag', tint: '#dedfe4' },
+};
+
+function catalogueProduct(product: CatalogueProduct): DisplayProduct {
+  return { id: product.id, variantId: product.variantId, name: product.title, vendor: 'Verified Fendor vendor', price: `₦${Math.round(product.priceKobo / 100).toLocaleString('en-NG')}`, imagePath: product.imagePath, description: product.description, category: product.category, ...(categoryArt[product.category] ?? categoryArt.other) };
+}
 
 const heroSlides = [
   { eyebrow: 'Curated for meaningful moments', title: 'Find Your Next Favourite Thing', copy: 'Discover thoughtful products from verified Nigerian vendors, brought together in one dependable marketplace.', position: '50% 48%' },
@@ -97,17 +107,33 @@ export function HomePage() {
   const cartCount = cartItemCount(cartItems);
   const [search, setSearch] = useState('');
   const [notice, setNotice] = useState('');
+  const [catalogue, setCatalogue] = useState<DisplayProduct[]>([]);
+  const [catalogueState, setCatalogueState] = useState<'loading' | 'ready' | 'error'>('loading');
 
   useEffect(() => {
     const timer = window.setInterval(() => setSlide((current) => (current + 1) % heroSlides.length), 6500);
     return () => window.clearInterval(timer);
   }, []);
 
+  useEffect(() => {
+    const controller = new AbortController();
+    listProducts({ limit: 12 }, controller.signal).then(({ products: result }) => {
+      setCatalogue(result.map(catalogueProduct));
+      setCatalogueState('ready');
+    }).catch((error: unknown) => {
+      if (controller.signal.aborted) return;
+      setCatalogue([]);
+      setCatalogueState('error');
+      setNotice(error instanceof MarketplaceApiError && error.status === 503 ? 'The live marketplace is temporarily unavailable.' : 'Fendor could not load the live catalogue.');
+    });
+    return () => controller.abort();
+  }, []);
+
   function handleSearch(event: FormEvent) {
     event.preventDefault();
     const query = search.trim();
-    setNotice(query ? `Showing ideas for “${query}”` : 'Type what you are looking for first.');
-    document.getElementById('popular')?.scrollIntoView({ behavior: 'smooth' });
+    if (query) window.location.href = `/shop?q=${encodeURIComponent(query)}`;
+    else setNotice('Type what you are looking for first.');
   }
 
   function addToCart(product: DisplayProduct) {
@@ -125,8 +151,8 @@ export function HomePage() {
           <button aria-label="Submit search"><Image src="/icons/home/search.svg" width={19} height={19} alt="" /></button>
         </form>
         <nav className={styles.actions} aria-label="Account actions">
-          <Link href="/login"><Image src="/icons/home/account.svg" width={21} height={21} alt="" /><span>Account</span></Link>
-          <Link href="#support"><Image src="/icons/home/help.svg" width={21} height={21} alt="" /><span>Help</span></Link>
+          <Link href="/account"><Image src="/icons/home/account.svg" width={21} height={21} alt="" /><span>Account</span></Link>
+          <Link href="/help"><Image src="/icons/home/help.svg" width={21} height={21} alt="" /><span>Help</span></Link>
           <Link href="/cart" className={styles.cart}><Image src="/icons/home/cart.svg" width={23} height={23} alt="" /><span>Cart</span>{cartCount > 0 && <b>{cartCount}</b>}</Link>
         </nav>
       </div>
@@ -162,12 +188,12 @@ export function HomePage() {
 
       <section className={`${styles.shell} ${styles.section} ${styles.panel}`}>
         <div className={styles.sectionHead}><div className={styles.titleWithBadge}><span className={styles.pill}>FLASH WINDOW</span><div><h2>Deals worth discovering</h2><p>Limited offers from verified vendors. Stock is confirmed before payment.</p></div></div><Link href="/shop">View all deals <span>→</span></Link></div>
-        <div className={styles.productScroller}>{products.map((product) => <ProductCard key={product.name} product={product} onAdd={() => addToCart(product)} />)}</div>
+        {catalogueState === 'loading' ? <div className={styles.catalogueState}>Loading approved products…</div> : catalogueState === 'error' ? <div className={styles.catalogueState}>Live products are unavailable right now. <Link href="/shop">Try the marketplace again</Link>.</div> : catalogue.length ? <div className={styles.productScroller}>{catalogue.slice(0, 6).map((product) => <ProductCard key={product.id} product={product} onAdd={() => addToCart(product)} />)}</div> : <div className={styles.catalogueState}>Approved products will appear here as soon as vendors publish them.</div>}
       </section>
 
       <section className={`${styles.shell} ${styles.section}`} id="popular">
         <div className={styles.sectionHead}><div><p className={styles.kicker}>CUSTOMER FAVOURITES</p><h2>Popular right now</h2></div><Link href="/shop">Shop all products <span>→</span></Link></div>
-        <div className={styles.popularGrid}>{products.slice(0, 5).map((product) => <ProductCard key={product.name} product={product} compact onAdd={() => addToCart(product)} />)}</div>
+        {catalogueState === 'ready' && catalogue.length > 0 && <div className={styles.popularGrid}>{catalogue.slice(0, 5).map((product) => <ProductCard key={product.id} product={product} compact onAdd={() => addToCart(product)} />)}</div>}
       </section>
 
       <section className={`${styles.shell} ${styles.section}`} id="collections">
@@ -181,8 +207,8 @@ export function HomePage() {
       </section>
 
       <section className={`${styles.shell} ${styles.section} ${styles.discovery}`}>
-        <div><p className={styles.kicker}>PICK UP WHERE YOU LEFT OFF</p><h2>Recently viewed</h2><div className={styles.recentList}>{products.slice(0, 3).map((p) => <ProductCard key={p.name} product={p} compact />)}</div></div>
-        <div><p className={styles.kicker}>MORE TO EXPLORE</p><h2>Made for thoughtful gifting</h2><div className={styles.recentList}>{products.slice(3, 6).map((p) => <ProductCard key={p.name} product={p} compact />)}</div></div>
+        <div><p className={styles.kicker}>NEW TO THE MARKETPLACE</p><h2>Fresh approved products</h2><div className={styles.recentList}>{catalogue.slice(0, 3).map((p) => <ProductCard key={p.id} product={p} compact />)}</div></div>
+        <div><p className={styles.kicker}>MORE TO EXPLORE</p><h2>Made for thoughtful gifting</h2><div className={styles.recentList}>{catalogue.slice(3, 6).map((p) => <ProductCard key={p.id} product={p} compact />)}</div></div>
       </section>
 
       <section className={`${styles.shell} ${styles.section} ${styles.trust}`}>
@@ -203,8 +229,6 @@ export function HomePage() {
       <section className={`${styles.shell} ${styles.newsletter}`}><div><span className={styles.pill}>CURATED UPDATES</span><h2>Stay in the loop</h2><p>Receive new collections, vendor stories, and thoughtful gift ideas.</p></div><form onSubmit={(e) => { e.preventDefault(); setNotice('You’re on the Fendor updates list.'); }}><div><input required type="email" placeholder="Enter your email address" aria-label="Email address" /><button>Subscribe</button></div><small>No spam. Unsubscribe at any time.</small></form></section>
     </main>
 
-    <footer className={styles.footer} id="support"><div className={`${styles.shell} ${styles.footerGrid}`}><div><Link href="/" className={styles.logo}><Image src="/icons/home/logo.svg" width={40} height={40} alt="" /><span><b>Fendor</b><small>MARKETPLACE</small></span></Link><p>Thoughtful products from verified vendors, coordinated through one dependable marketplace.</p><span className={styles.footerBadge}>✓ Verified marketplace</span></div>{[
-      ['Shopping', 'Browse products', 'Categories', 'Featured vendors', 'Saved items'], ['Selling', 'Sell on Fendor', 'Vendor hub', 'Vendor standards'], ['Customer care', 'Help centre', 'Order tracking', 'Contact Fendor'], ['Trust & policies', 'Vendor verification', 'Returns', 'Privacy policy', 'Terms'],
-    ].map(([title, ...links]) => <div key={title}><h3>{title}</h3>{links.map((link) => <a href="#" key={link}>{link}</a>)}</div>)}</div><div className={`${styles.shell} ${styles.copyright}`}>© 2026 Fendor Marketplace. Built for meaningful commerce.</div></footer>
+    <footer className={styles.footer} id="support"><div className={`${styles.shell} ${styles.footerGrid}`}><div><Link href="/" className={styles.logo}><Image src="/icons/home/logo.svg" width={40} height={40} alt="" /><span><b>Fendor</b><small>MARKETPLACE</small></span></Link><p>Thoughtful products from verified vendors, coordinated through one dependable marketplace.</p><span className={styles.footerBadge}>✓ Verified marketplace</span></div><div><h3>Shopping</h3><Link href="/shop">Browse products</Link><Link href="/saved">Saved products</Link><Link href="/cart">Cart</Link></div><div><h3>Customer care</h3><Link href="/help">Help centre</Link><Link href="/orders">Order tracking</Link><Link href="/support">Contact Fendor</Link></div><div><h3>Trust & policies</h3><Link href="/policies/returns">Returns</Link><Link href="/policies/privacy">Privacy</Link><Link href="/policies/terms">Terms</Link></div></div><div className={`${styles.shell} ${styles.copyright}`}>© 2026 Fendor Marketplace. Built for meaningful commerce.</div></footer>
   </div>;
 }
