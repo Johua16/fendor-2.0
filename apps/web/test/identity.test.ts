@@ -25,18 +25,21 @@ test('database-backed identity and vendor lifecycle', async () => {
   try {
     await migrate(db,resolve('../../server/db'));
     await migrate(db,resolve('../../server/db'));
-    await api.signup({email:'vendor@example.com',password:pass,fullName:'Vendor Test'});
+    await api.signup({email:'vendor@example.com',password:pass,fullName:'Vendor Test',accountType:'vendor'});
     const vendor=await api.login({email:'vendor@example.com',password:pass});
     assert.deepEqual(vendor.user.roles,['customer']);
-    const application={businessName:'Test Gifts',businessLocation:'Abuja, Nigeria',country:'NG',registrationNumber:'TEST-123'};
+    const application={businessName:'Test Gifts',businessLocation:'Abuja, FCT, Nigeria',country:'NG',registrationNumber:'TEST-123',accountType:'company'};
     await assert.rejects(api.apply(vendor.secret,application),{code:'EMAIL_UNVERIFIED'});
     const verify=await link('vendor@example.com','verify');
     await api.consume({token:verify},'verify');
     await assert.rejects(api.consume({token:verify},'verify'),{code:'INVALID_TOKEN'});
+    const profile=await api.saveProfile(vendor.secret,{dateOfBirth:'1995-06-15',phone:'08012345678'});
+    assert.equal(profile.onboardingIntent,'vendor');
+    assert.equal(profile.phone,'+2348012345678');
     const submitted=await api.apply(vendor.secret,application);
     await assert.rejects(api.vendorAccess(vendor.secret),{code:'VENDOR_NOT_APPROVED'});
     await assert.rejects(api.review(vendor.secret,String(submitted.id),{decision:'approved',note:'Checked'}),{code:'FORBIDDEN'});
-    await api.signup({email:'admin@example.com',password:pass,fullName:'Admin Test'});
+    await api.signup({email:'admin@example.com',password:pass,fullName:'Admin Test',accountType:'customer'});
     await api.consume({token:await link('admin@example.com','verify')},'verify');
     const admin=await api.login({email:'admin@example.com',password:pass});
     await db.query("INSERT INTO user_roles(user_id,role) VALUES($1,'admin')",[admin.user.id]);
