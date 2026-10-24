@@ -27,6 +27,20 @@ export type OrderRequest = {
   totalKobo?: number | null;
 };
 
+export type CheckoutSummary = {
+  orderId: string;
+  version: number;
+  state: OrderRequest['state'];
+  quote: null | { id: string; details: { productSubtotalKobo: number; packagingKobo: number; deliveryKobo: number; totalKobo: number; currency: 'NGN'; fulfilmentPlan: string; fulfilmentChecked: true } };
+  acceptedQuoteId: string | null;
+  orderConfirmed: boolean;
+  reservationExpiresAt: string | null;
+  reservationActive: boolean;
+  fundsRecorded: boolean;
+  netReceivedKobo: string;
+  refundedKobo: string;
+};
+
 type ErrorEnvelope = { error?: { code?: string; message?: string } };
 
 export class MarketplaceApiError extends Error {
@@ -88,5 +102,15 @@ export async function saveOrderPersonalisation(id: string, version: number, gift
 export async function cancelOrderRequest(id: string, version: number) {
   return requestJson<{ order: OrderRequest }>(`/api/orders/${encodeURIComponent(id)}/cancel`, {
     method: 'POST', body: JSON.stringify({ version }),
+  });
+}
+
+export async function getCheckoutSummary(id: string, signal?: AbortSignal) {
+  return requestJson<CheckoutSummary>(`/api/orders/${encodeURIComponent(id)}/checkout`, { signal });
+}
+
+export async function acceptOrderQuote(id: string, version: number, quoteId: string, totalKobo: number) {
+  return requestJson<{ orderId: string; state: 'awaiting_payment'; version: number }>(`/api/orders/${encodeURIComponent(id)}/accept-quote`, {
+    method: 'POST', body: JSON.stringify({ version, quoteId, totalKobo }),
   });
 }
