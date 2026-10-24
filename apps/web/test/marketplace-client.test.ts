@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { cancelOrderRequest, createOrderRequest, listOrderRequests, listProducts, MarketplaceApiError, saveOrderPersonalisation } from '../src/lib/client/marketplace.ts';
+import { acceptOrderQuote, cancelOrderRequest, createOrderRequest, getCheckoutSummary, listOrderRequests, listProducts, MarketplaceApiError, saveOrderPersonalisation } from '../src/lib/client/marketplace.ts';
 
 test('catalogue client sends supported public filters', async () => {
   const originalFetch = globalThis.fetch;
@@ -70,6 +70,23 @@ test('personalisation and cancellation include the latest order version', async 
     assert.deepEqual(calls, [
       { path: '/api/orders/order-1/personalise', body: { version: 4, giftDetails: { recipientName: 'Ada', giftMessage: 'Happy birthday' } } },
       { path: '/api/orders/order-1/cancel', body: { version: 5 } },
+    ]);
+  } finally { globalThis.fetch = originalFetch; }
+});
+
+test('checkout reads the private summary and accepts the exact quoted total', async () => {
+  const originalFetch = globalThis.fetch;
+  const calls: Array<{ path: string; method?: string; body?: unknown }> = [];
+  globalThis.fetch = async (input, init) => {
+    calls.push({ path: String(input), method: init?.method, body: init?.body ? JSON.parse(String(init.body)) : undefined });
+    return Response.json(init?.method ? { orderId: 'order-1', state: 'awaiting_payment', version: 7 } : { orderId: 'order-1', version: 6, quote: null });
+  };
+  try {
+    await getCheckoutSummary('order-1');
+    await acceptOrderQuote('order-1', 6, 'quote-1', 18_500_00);
+    assert.deepEqual(calls, [
+      { path: '/api/orders/order-1/checkout', method: undefined, body: undefined },
+      { path: '/api/orders/order-1/accept-quote', method: 'POST', body: { version: 6, quoteId: 'quote-1', totalKobo: 18_500_00 } },
     ]);
   } finally { globalThis.fetch = originalFetch; }
 });
