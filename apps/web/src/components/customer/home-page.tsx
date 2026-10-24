@@ -11,7 +11,21 @@ const categories = [
   ['Computing', '⌘'], ['Kitchenware', '◫'],
 ];
 
-export const products = [
+export type DisplayProduct = {
+  id?: string;
+  variantId?: string;
+  name: string;
+  vendor: string;
+  price: string;
+  old?: string;
+  tint: string;
+  art: string;
+  imagePath?: string | null;
+  description?: string;
+  category?: string;
+};
+
+export const products: DisplayProduct[] = [
   { name: 'Samsung Galaxy A55 5G', vendor: 'AfriTech Direct', price: '₦385,000', old: '₦440,000', tint: '#dce3df', art: 'phone' },
   { name: 'Vegetable-Tanned Field Satchel', vendor: 'Maro Leather Works', price: '₦48,500', old: '₦55,000', tint: '#ead8c6', art: 'bag' },
   { name: 'Soundcore Space One ANC', vendor: 'Sound District', price: '₦124,900', old: '₦139,000', tint: '#dddde5', art: 'headphones' },
@@ -43,13 +57,17 @@ export function ProductArt({ type, tint }: { type: string; tint: string }) {
   return <div className={`${styles.productArt} ${styles[type]}`} style={{ backgroundColor: tint }} aria-hidden="true"><span /></div>;
 }
 
-export function ProductCard({ product, compact = false, onAdd }: { product: typeof products[number]; compact?: boolean; onAdd?: () => void }) {
+export function productHref(product: DisplayProduct) {
+  return `/product/${product.id ?? product.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')}`;
+}
+
+export function ProductCard({ product, compact = false, onAdd }: { product: DisplayProduct; compact?: boolean; onAdd?: () => void }) {
   return <article className={`${styles.productCard} ${compact ? styles.compactCard : ''}`}>
-    <ProductArt type={product.art} tint={product.tint} />
+    {product.imagePath ? <div className={styles.productImage}><Image src={product.imagePath} fill sizes="(max-width: 720px) 55vw, 25vw" alt={product.name} /></div> : <ProductArt type={product.art} tint={product.tint} />}
     <div className={styles.vendorLine}><span className={styles.verifiedDot}>✓</span>{product.vendor}</div>
-    <h3><Link className={styles.productLink} href={`/product/${product.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')}`}>{product.name}</Link></h3>
+    <h3><Link className={styles.productLink} href={productHref(product)}>{product.name}</Link></h3>
     <div className={styles.rating}>★ <b>4.8</b> <span>(120+)</span></div>
-    <div className={styles.priceRow}><strong>{product.price}</strong><del>{product.old}</del></div>
+    <div className={styles.priceRow}><strong>{product.price}</strong>{product.old && <del>{product.old}</del>}</div>
     {!compact && <><div className={styles.stock}><span style={{ width: '72%' }} /></div><small>Available after vendor confirmation</small></>}
     {onAdd && <button className={styles.addButton} onClick={onAdd}>Add to cart</button>}
   </article>;

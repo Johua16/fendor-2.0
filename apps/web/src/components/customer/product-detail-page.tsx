@@ -2,8 +2,9 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { FormEvent, useMemo, useState } from 'react';
-import { ProductArt, ProductCard, products } from './home-page';
+import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { createOrderRequest, getProduct, MarketplaceApiError } from '../../lib/client/marketplace';
+import { DisplayProduct, ProductArt, ProductCard, products } from './home-page';
 import home from './home-page.module.css';
 import styles from './product-detail-page.module.css';
 
@@ -12,24 +13,63 @@ function slugify(value: string) {
 }
 
 export function ProductDetailPage({ slug }: { slug: string }) {
-  const product = useMemo(() => products.find((item) => slugify(item.name) === slug) ?? products[0], [slug]);
+  const previewProduct = useMemo(() => products.find((item) => slugify(item.name) === slug), [slug]);
+  const [product, setProduct] = useState<DisplayProduct | null>(previewProduct ?? null);
+  const [productError, setProductError] = useState('');
   const [quantity, setQuantity] = useState(1);
   const [gallery, setGallery] = useState(0);
   const [saved, setSaved] = useState(false);
   const [gift, setGift] = useState('standard');
   const [message, setMessage] = useState('');
   const [notice, setNotice] = useState('');
-  const unitPrice = Number(product.price.replace(/\D/g, ''));
-  const oldUnitPrice = Number(product.old.replace(/\D/g, ''));
+  const [requesting, setRequesting] = useState(false);
+  const unitPrice = product ? Number(product.price.replace(/\D/g, '')) : 0;
+  const oldUnitPrice = product?.old ? Number(product.old.replace(/\D/g, '')) : null;
+
+  useEffect(() => {
+    if (previewProduct) {
+      setProduct(previewProduct);
+      setProductError('');
+      return;
+    }
+    const controller = new AbortController();
+    setProduct(null);
+    setProductError('');
+    getProduct(slug, controller.signal).then(({ product: result }) => {
+      const visual = result.category === 'fashion' ? { art: 'fashion', tint: '#d8ded8' } : result.category === 'home' ? { art: 'tea', tint: '#ead9cc' } : { art: 'bag', tint: '#ead8c6' };
+      setProduct({ id: result.id, variantId: result.variantId, name: result.title, description: result.description, category: result.category, vendor: 'Verified Fendor vendor', price: `₦${Math.round(result.priceKobo / 100).toLocaleString('en-NG')}`, imagePath: result.imagePath, ...visual });
+    }).catch((error: unknown) => {
+      if (!controller.signal.aborted) setProductError(error instanceof Error ? error.message : 'Fendor could not load this product.');
+    });
+    return () => controller.abort();
+  }, [previewProduct, slug]);
 
   function runSearch(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     window.location.href = '/shop';
   }
 
-  function requestOrder() {
-    setNotice('Order request prepared. Fendor will confirm stock before payment.');
+  async function requestOrder() {
+    if (!product?.variantId) {
+      setNotice('This preview product is not connected to a live catalogue listing yet.');
+      return;
+    }
+    setRequesting(true);
+    const storageKey = `fendor-order-request:${product.variantId}`;
+    const clientRequestId = window.sessionStorage.getItem(storageKey) ?? window.crypto.randomUUID();
+    window.sessionStorage.setItem(storageKey, clientRequestId);
+    try {
+      await createOrderRequest(product.variantId, quantity, clientRequestId);
+      window.sessionStorage.removeItem(storageKey);
+      setNotice('Availability request sent. The vendor will confirm the exact item and quantity.');
+    } catch (error) {
+      setNotice(error instanceof MarketplaceApiError && error.status === 401 ? 'Please sign in before sending this availability request.' : error instanceof Error ? error.message : 'Fendor could not send this request.');
+    } finally {
+      setRequesting(false);
+    }
   }
+
+  if (!product) return <div className={home.page}><main className={`${home.shell} ${styles.remoteState}`} aria-live="polite"><span>{productError ? '!' : ''}</span><h1>{productError ? 'Product unavailable' : 'Loading product details'}</h1>{productError && <><p>{productError}</p><Link href="/shop">Return to the marketplace</Link></>}</main></div>;
 
   return <div className={home.page}>
     <header className={home.header}>
@@ -50,11 +90,11 @@ export function ProductDetailPage({ slug }: { slug: string }) {
       <section className={styles.showcase}>
         <div className={styles.gallery}>
           <div className={styles.mainVisual}>
-            <ProductArt type={product.art} tint={[product.tint, '#f2dfd6', '#dedfe4'][gallery]} />
+            {product.imagePath ? <Image className={styles.liveProductImage} src={product.imagePath} fill sizes="(max-width: 720px) 100vw, 40vw" alt={product.name} /> : <ProductArt type={product.art} tint={[product.tint, '#f2dfd6', '#dedfe4'][gallery]} />}
             <div className={styles.badges}><span>VERIFIED PRODUCT</span><small>Confirmation required</small></div>
             <button className={`${styles.save} ${saved ? styles.saved : ''}`} onClick={() => setSaved(!saved)} aria-label={saved ? 'Remove from saved items' : 'Save product'}>{saved ? '♥' : '♡'}</button>
           </div>
-          <div className={styles.thumbnails}>{[product.tint, '#f2dfd6', '#dedfe4'].map((tint, index) => <button key={tint} className={gallery === index ? styles.activeThumb : ''} onClick={() => setGallery(index)} aria-label={`View product image ${index + 1}`}><ProductArt type={product.art} tint={tint} /></button>)}</div>
+          {!product.imagePath && <div className={styles.thumbnails}>{[product.tint, '#f2dfd6', '#dedfe4'].map((tint, index) => <button key={tint} className={gallery === index ? styles.activeThumb : ''} onClick={() => setGallery(index)} aria-label={`View product image ${index + 1}`}><ProductArt type={product.art} tint={tint} /></button>)}</div>}
           <div className={styles.microProof}><span>✓ Product reviewed by Fendor</span><span>Communication stays on Fendor</span></div>
         </div>
 
@@ -74,11 +114,11 @@ export function ProductDetailPage({ slug }: { slug: string }) {
 
         <aside className={styles.sidebar}>
           <section className={styles.vendorCard} id="vendor"><div className={styles.vendorTitle}><span>{product.vendor.split(' ').map((word) => word[0]).slice(0, 2).join('')}</span><div><small>VERIFIED VENDOR</small><h2>{product.vendor}</h2></div></div><div className={styles.vendorFacts}><span><b>Identity</b>Checked</span><span><b>Listings</b>Reviewed</span></div><Link href="/shop">Visit storefront</Link></section>
-          <section className={styles.orderCard}><small>PRODUCT PRICE</small><div className={styles.price}><strong>₦{(unitPrice * quantity).toLocaleString()}</strong><del>₦{(oldUnitPrice * quantity).toLocaleString()}</del></div><p>Delivery and optional packaging are calculated after recipient details are confirmed.</p><button className={styles.secondaryAction} onClick={() => setNotice('Product added to your cart.')}>Add to cart</button><button className={styles.primaryAction} onClick={requestOrder}>Request to order</button><div className={styles.delivery}><h3>FULFILMENT</h3><p><b>Stock:</b> Confirmed by the vendor after request</p><p><b>Delivery:</b> Priced from the recipient’s location</p><p><b>Returns:</b> Reviewed under Fendor’s return policy</p></div></section>
+          <section className={styles.orderCard}><small>PRODUCT PRICE</small><div className={styles.price}><strong>₦{(unitPrice * quantity).toLocaleString()}</strong>{oldUnitPrice !== null && <del>₦{(oldUnitPrice * quantity).toLocaleString()}</del>}</div><p>Delivery and optional packaging are calculated after recipient details are confirmed.</p><button className={styles.secondaryAction} onClick={() => setNotice('Product added to your cart.')}>Add to cart</button><button className={styles.primaryAction} disabled={requesting} onClick={requestOrder}>{requesting ? 'Sending request…' : 'Request to order'}</button><div className={styles.delivery}><h3>FULFILMENT</h3><p><b>Stock:</b> Confirmed by the vendor after request</p><p><b>Delivery:</b> Priced from the recipient’s location</p><p><b>Returns:</b> Reviewed under Fendor’s return policy</p></div></section>
         </aside>
       </section>
 
-      <section className={styles.information}><article><h2>Product details</h2><p>This verified listing includes the product and quantity selected above. Final availability, packaging options, delivery fee, and delivery timeline are confirmed before payment.</p><dl><div><dt>Vendor</dt><dd>{product.vendor}</dd></div><div><dt>Category</dt><dd>Curated marketplace product</dd></div><div><dt>Order type</dt><dd>{gift === 'gift' ? 'Gift preparation requested' : 'Standard product order'}</dd></div></dl></article><article id="reviews"><h2>How reviews work</h2><p>Reviews are connected to completed Fendor orders. This helps customers understand the product and the vendor’s fulfilment quality.</p><div className={styles.reviewScore}><strong>4.8</strong><span>★★★★★<small>Customer rating</small></span></div></article></section>
+      <section className={styles.information}><article><h2>Product details</h2><p>{product.description ?? 'This verified listing includes the product and quantity selected above. Final availability, packaging options, delivery fee, and delivery timeline are confirmed before payment.'}</p><dl><div><dt>Vendor</dt><dd>{product.vendor}</dd></div><div><dt>Category</dt><dd>{product.category ?? 'Curated marketplace product'}</dd></div><div><dt>Order type</dt><dd>{gift === 'gift' ? 'Gift preparation requested' : 'Standard product order'}</dd></div></dl></article><article id="reviews"><h2>How reviews work</h2><p>Reviews are connected to completed Fendor orders. This helps customers understand the product and the vendor’s fulfilment quality.</p><div className={styles.reviewScore}><strong>4.8</strong><span>★★★★★<small>Customer rating</small></span></div></article></section>
 
       <section className={styles.related}><div><p className={home.kicker}>YOU MAY ALSO LIKE</p><h2>More from verified vendors</h2></div><div className={styles.relatedGrid}>{products.filter((item) => item.name !== product.name).slice(0, 4).map((item) => <ProductCard key={item.name} product={item} compact />)}</div></section>
     </main>
