@@ -4,7 +4,9 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { CatalogueProduct, listProducts, MarketplaceApiError } from '../../lib/client/marketplace';
-import { DisplayProduct, ProductCard, products } from './home-page';
+import { addCartItem, cartItemCount } from '../../lib/client/cart';
+import { useCart } from '../../lib/client/use-cart';
+import { DisplayProduct, displayProductToCartItem, ProductCard, products } from './home-page';
 import home from './home-page.module.css';
 import styles from './storefront-page.module.css';
 
@@ -28,7 +30,8 @@ export function StorefrontPage() {
   const [submittedQuery, setSubmittedQuery] = useState('');
   const [category, setCategory] = useState('');
   const [sort, setSort] = useState('popular');
-  const [cartCount, setCartCount] = useState(0);
+  const { items: cartItems } = useCart();
+  const cartCount = cartItemCount(cartItems);
   const [notice, setNotice] = useState('');
   const [catalogue, setCatalogue] = useState<DisplayProduct[]>([]);
   const [loading, setLoading] = useState(true);
@@ -64,9 +67,9 @@ export function StorefrontPage() {
     setNotice(query.trim() ? `Results for “${query.trim()}”` : 'Showing all products');
   }
 
-  function addToCart(name: string) {
-    setCartCount((current) => current + 1);
-    setNotice(`${name} added to cart`);
+  function addToCart(product: DisplayProduct) {
+    addCartItem(displayProductToCartItem(product));
+    setNotice(`${product.name} added to cart`);
   }
 
   return <div className={home.page}>
@@ -100,13 +103,13 @@ export function StorefrontPage() {
 
       <section className={`${home.shell} ${home.section} ${home.panel}`}>
         <div className={home.sectionHead}><div className={home.titleWithBadge}><span className={home.pill}>FLASH WINDOW</span><div><h2>Deals worth discovering</h2><p>Selected offers from verified vendors, subject to stock confirmation.</p></div></div></div>
-        <div className={home.productScroller}>{products.map((product) => <ProductCard key={product.name} product={product} onAdd={() => addToCart(product.name)} />)}</div>
+        <div className={home.productScroller}>{products.map((product) => <ProductCard key={product.name} product={product} onAdd={() => addToCart(product)} />)}</div>
       </section>
 
       <section className={`${home.shell} ${styles.catalogue}`}>
         <div className={styles.catalogueHead}><div><p className={home.kicker}>BROWSE THE MARKETPLACE</p><h2>Popular on Fendor</h2><p>{`${visibleProducts.length} product${visibleProducts.length === 1 ? '' : 's'} available to request`}</p></div><label>Sort by<select value={sort} onChange={(event) => setSort(event.target.value)}><option value="popular">Popular</option><option value="price-low">Price: low to high</option><option value="price-high">Price: high to low</option></select></label></div>
         <div className={styles.filters} aria-label="Filter by category">{categoryOptions.map(([label, value]) => <button key={value || 'all'} className={category === value ? styles.activeFilter : ''} onClick={() => setCategory(value)}>{label}</button>)}</div>
-        {loading ? <div className={styles.statePanel} aria-live="polite"><span className={styles.loader} /><h3>Loading verified products</h3><p>Fendor is checking the current public catalogue.</p></div> : loadError ? <div className={styles.statePanel} role="alert"><span>!</span><h3>We couldn’t load the marketplace</h3><p>{loadError}</p><button onClick={() => setReloadKey((key) => key + 1)}>Try again</button></div> : visibleProducts.length ? <div className={styles.grid}>{visibleProducts.map((product) => <ProductCard key={product.id ?? product.name} product={product} onAdd={() => addToCart(product.name)} />)}</div> : <div className={styles.empty}><span>⌕</span><h3>No products match this search</h3><p>Try another keyword or clear the current category.</p><button onClick={() => { setCategory(''); setQuery(''); setSubmittedQuery(''); }}>Clear filters</button></div>}
+        {loading ? <div className={styles.statePanel} aria-live="polite"><span className={styles.loader} /><h3>Loading verified products</h3><p>Fendor is checking the current public catalogue.</p></div> : loadError ? <div className={styles.statePanel} role="alert"><span>!</span><h3>We couldn’t load the marketplace</h3><p>{loadError}</p><button onClick={() => setReloadKey((key) => key + 1)}>Try again</button></div> : visibleProducts.length ? <div className={styles.grid}>{visibleProducts.map((product) => <ProductCard key={product.id ?? product.name} product={product} onAdd={() => addToCart(product)} />)}</div> : <div className={styles.empty}><span>⌕</span><h3>No products match this search</h3><p>Try another keyword or clear the current category.</p><button onClick={() => { setCategory(''); setQuery(''); setSubmittedQuery(''); }}>Clear filters</button></div>}
       </section>
 
       <section className={`${home.shell} ${home.newsletter}`}><div><span className={home.pill}>CURATED UPDATES</span><h2>Stay in the loop</h2><p>Receive new collections, vendor stories, and thoughtful gift ideas.</p></div><form onSubmit={(event) => { event.preventDefault(); setNotice('You’re on the Fendor updates list.'); }}><div><input required type="email" placeholder="Enter your email address" aria-label="Email address" /><button>Subscribe</button></div><small>No spam. Unsubscribe at any time.</small></form></section>
