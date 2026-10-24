@@ -36,7 +36,7 @@ export function CustomerHeader() {
     <div className={`${home.shell} ${home.mainHeader}`}>
       <Link href="/" className={home.logo} aria-label="Fendor home"><Image src="/icons/home/logo.svg" width={40} height={40} alt="" priority /><span><b>Fendor</b><small>MARKETPLACE</small></span></Link>
       <form className={home.search} action="/shop"><input name="q" placeholder="Search products, brands or vendors" aria-label="Search products" /><button aria-label="Submit search"><Image src="/icons/home/search.svg" width={19} height={19} alt="" /></button></form>
-      <nav className={home.actions} aria-label="Account actions"><Link href="/orders"><Image src="/icons/home/account.svg" width={21} height={21} alt="" /><span>Orders</span></Link><Link href="/support"><Image src="/icons/home/help.svg" width={21} height={21} alt="" /><span>Help</span></Link><Link href="/cart" className={home.cart}><Image src="/icons/home/cart.svg" width={23} height={23} alt="" /><span>Cart</span>{count > 0 && <b>{count}</b>}</Link></nav>
+      <nav className={home.actions} aria-label="Account actions"><Link href="/account"><Image src="/icons/home/account.svg" width={21} height={21} alt="" /><span>Account</span></Link><Link href="/support"><Image src="/icons/home/help.svg" width={21} height={21} alt="" /><span>Help</span></Link><Link href="/cart" className={home.cart}><Image src="/icons/home/cart.svg" width={23} height={23} alt="" /><span>Cart</span>{count > 0 && <b>{count}</b>}</Link></nav>
     </div>
   </header>;
 }

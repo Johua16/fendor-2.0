@@ -9,6 +9,10 @@ function amount(value:unknown,min=0):number {
  if(typeof value!=='number'||!Number.isSafeInteger(value)||value<min) fail(400,'INVALID_AMOUNT','Use a valid integer amount in kobo.');return value;
 }
 export function checkout(db:Database,now:()=>number=Date.now) {
+ function paymentInstructions() {
+  const bankName=process.env.PAYMENT_BANK_NAME?.trim(),accountName=process.env.PAYMENT_ACCOUNT_NAME?.trim(),accountNumber=process.env.PAYMENT_ACCOUNT_NUMBER?.trim();
+  return bankName&&accountName&&accountNumber?{bankName,accountName,accountNumber}:null;
+ }
  async function load(tx:Sql,id:string):Promise<Row> {
   const row=(await tx.query<Row>('SELECT * FROM order_requests WHERE id=$1',[id])).rows[0];
   if(!row) fail(404,'NOT_FOUND','Order not found.');return row;
@@ -37,7 +41,7 @@ export function checkout(db:Database,now:()=>number=Date.now) {
     const ledger=await balances(tx,id);
     const refundRows=admin?(await tx.query('SELECT r.id,r.payment_id,r.bank_reference,r.amount_kobo,r.note,r.created_at FROM payment_refunds r JOIN payment_records p ON p.id=r.payment_id WHERE p.order_id=$1 ORDER BY r.created_at,r.id',[id])).rows:undefined;
     const recorded=(await tx.query('SELECT id FROM payment_records WHERE order_id=$1 LIMIT 1',[id])).rows.length>0;
-    return {orderId:id,version:row.version,state:row.state,quote,acceptedQuoteId:row.accepted_quote_id,orderConfirmed:row.payment_verified,reservationExpiresAt:row.reservation_expires_at,reservationActive:row.stock_held && !!row.reservation_expires_at && new Date(row.reservation_expires_at).getTime()>now(),fundsRecorded:recorded,netReceivedKobo:ledger.net.toString(),refundedKobo:ledger.rows.reduce((sum,p)=>sum+BigInt(p.refunded_kobo),0n).toString(),...(admin?{payments,refunds:refundRows}:{})};
+    return {orderId:id,version:row.version,state:row.state,quote,acceptedQuoteId:row.accepted_quote_id,orderConfirmed:row.payment_verified,reservationExpiresAt:row.reservation_expires_at,reservationActive:row.stock_held && !!row.reservation_expires_at && new Date(row.reservation_expires_at).getTime()>now(),fundsRecorded:recorded,netReceivedKobo:ledger.net.toString(),refundedKobo:ledger.rows.reduce((sum,p)=>sum+BigInt(p.refunded_kobo),0n).toString(),...(!admin&&row.accepted_quote_id?{paymentInstructions:paymentInstructions()}:{}),...(admin?{payments,refunds:refundRows}:{})};
    });
   },
   async change(secret:string|undefined,id:string,input:Record<string,unknown>,action:'quote'|'accept-quote'|'record-payment'|'verify-payment') {

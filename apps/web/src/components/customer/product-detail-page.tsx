@@ -3,9 +3,10 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { FormEvent, useEffect, useMemo, useState } from 'react';
-import { createOrderRequest, getProduct, MarketplaceApiError } from '../../lib/client/marketplace';
+import { createOrderRequest, getProduct, MarketplaceApiError, saveOrderPersonalisation } from '../../lib/client/marketplace';
 import { addCartItem, cartItemCount } from '../../lib/client/cart';
 import { useCart } from '../../lib/client/use-cart';
+import { isSaved, toggleSavedItem } from '../../lib/client/saved';
 import { DisplayProduct, displayProductToCartItem, ProductArt, ProductCard, products } from './home-page';
 import home from './home-page.module.css';
 import styles from './product-detail-page.module.css';
@@ -48,6 +49,10 @@ export function ProductDetailPage({ slug }: { slug: string }) {
     return () => controller.abort();
   }, [previewProduct, slug]);
 
+  useEffect(() => {
+    if (product) setSaved(isSaved(displayProductToCartItem(product).id));
+  }, [product]);
+
   function runSearch(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     window.location.href = '/shop';
@@ -63,9 +68,10 @@ export function ProductDetailPage({ slug }: { slug: string }) {
     const clientRequestId = window.sessionStorage.getItem(storageKey) ?? window.crypto.randomUUID();
     window.sessionStorage.setItem(storageKey, clientRequestId);
     try {
-      await createOrderRequest(product.variantId, quantity, clientRequestId);
+      const { order } = await createOrderRequest(product.variantId, quantity, clientRequestId);
+      if (gift === 'gift') await saveOrderPersonalisation(order.id, order.version, { giftMessage: message.trim(), packagingPreference: 'Gift preparation requested' });
       window.sessionStorage.removeItem(storageKey);
-      setNotice('Availability request sent. The vendor will confirm the exact item and quantity.');
+      window.location.href = `/orders/${order.id}`;
     } catch (error) {
       if (error instanceof MarketplaceApiError && error.status === 401) {
         window.sessionStorage.setItem('fendor-intended-order', JSON.stringify({ productId: product.id, variantId: product.variantId, quantity, gift, message }));
@@ -84,6 +90,14 @@ export function ProductDetailPage({ slug }: { slug: string }) {
     setNotice(`${product.name} added to your cart.`);
   }
 
+  function saveProduct() {
+    if (!product) return;
+    const item = displayProductToCartItem(product);
+    const result = toggleSavedItem(item);
+    setSaved(result.saved);
+    setNotice(result.saved ? `${product.name} saved.` : `${product.name} removed from saved products.`);
+  }
+
   if (!product) return <div className={home.page}><main className={`${home.shell} ${styles.remoteState}`} aria-live="polite"><span>{productError ? '!' : ''}</span><h1>{productError ? 'Product unavailable' : 'Loading product details'}</h1>{productError && <><p>{productError}</p><Link href="/shop">Return to the marketplace</Link></>}</main></div>;
 
   return <div className={home.page}>
@@ -92,7 +106,7 @@ export function ProductDetailPage({ slug }: { slug: string }) {
       <div className={`${home.shell} ${home.mainHeader}`}>
         <Link href="/" className={home.logo} aria-label="Fendor home"><Image src="/icons/home/logo.svg" width={40} height={40} alt="" priority /><span><b>Fendor</b><small>MARKETPLACE</small></span></Link>
         <form className={home.search} onSubmit={runSearch} role="search"><input placeholder="Search products, brands or vendors" aria-label="Search products" /><button aria-label="Submit search"><Image src="/icons/home/search.svg" width={19} height={19} alt="" /></button></form>
-        <nav className={home.actions} aria-label="Account actions"><Link href="/login"><Image src="/icons/home/account.svg" width={21} height={21} alt="" /><span>Account</span></Link><Link href="#support"><Image src="/icons/home/help.svg" width={21} height={21} alt="" /><span>Help</span></Link><Link href="/cart" className={home.cart}><Image src="/icons/home/cart.svg" width={23} height={23} alt="" /><span>Cart</span>{cartCount > 0 && <b>{cartCount}</b>}</Link></nav>
+        <nav className={home.actions} aria-label="Account actions"><Link href="/account"><Image src="/icons/home/account.svg" width={21} height={21} alt="" /><span>Account</span></Link><Link href="/help"><Image src="/icons/home/help.svg" width={21} height={21} alt="" /><span>Help</span></Link><Link href="/cart" className={home.cart}><Image src="/icons/home/cart.svg" width={23} height={23} alt="" /><span>Cart</span>{cartCount > 0 && <b>{cartCount}</b>}</Link></nav>
       </div>
       <nav className={`${home.shell} ${home.categoryNav}`} aria-label="Marketplace categories"><Link href="/shop" className={home.allCategories}>☰ &nbsp; All Categories</Link>{['Phones & Tablets', 'Electronics', 'Fashion', 'Home & Living', 'Gifts'].map((item) => <Link key={item} href="/shop">{item}</Link>)}</nav>
     </header>
@@ -107,7 +121,7 @@ export function ProductDetailPage({ slug }: { slug: string }) {
           <div className={styles.mainVisual}>
             {product.imagePath ? <Image className={styles.liveProductImage} src={product.imagePath} fill sizes="(max-width: 720px) 100vw, 40vw" alt={product.name} /> : <ProductArt type={product.art} tint={[product.tint, '#f2dfd6', '#dedfe4'][gallery]} />}
             <div className={styles.badges}><span>VERIFIED PRODUCT</span><small>Confirmation required</small></div>
-            <button className={`${styles.save} ${saved ? styles.saved : ''}`} onClick={() => setSaved(!saved)} aria-label={saved ? 'Remove from saved items' : 'Save product'}>{saved ? '♥' : '♡'}</button>
+            <button className={`${styles.save} ${saved ? styles.saved : ''}`} onClick={saveProduct} aria-label={saved ? 'Remove from saved items' : 'Save product'}>{saved ? '♥' : '♡'}</button>
           </div>
           {!product.imagePath && <div className={styles.thumbnails}>{[product.tint, '#f2dfd6', '#dedfe4'].map((tint, index) => <button key={tint} className={gallery === index ? styles.activeThumb : ''} onClick={() => setGallery(index)} aria-label={`View product image ${index + 1}`}><ProductArt type={product.art} tint={tint} /></button>)}</div>}
           <div className={styles.microProof}><span>✓ Product reviewed by Fendor</span><span>Communication stays on Fendor</span></div>

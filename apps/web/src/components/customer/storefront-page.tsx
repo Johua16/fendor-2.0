@@ -39,6 +39,11 @@ export function StorefrontPage() {
   const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
+    const requested = new URLSearchParams(window.location.search).get('q')?.trim() ?? '';
+    if (requested) { setQuery(requested); setSubmittedQuery(requested); }
+  }, []);
+
+  useEffect(() => {
     const controller = new AbortController();
     setLoading(true);
     setLoadError('');
@@ -82,8 +87,8 @@ export function StorefrontPage() {
           <button aria-label="Submit search"><Image src="/icons/home/search.svg" width={19} height={19} alt="" /></button>
         </form>
         <nav className={home.actions} aria-label="Account actions">
-          <Link href="/login"><Image src="/icons/home/account.svg" width={21} height={21} alt="" /><span>Account</span></Link>
-          <Link href="#support"><Image src="/icons/home/help.svg" width={21} height={21} alt="" /><span>Help</span></Link>
+          <Link href="/account"><Image src="/icons/home/account.svg" width={21} height={21} alt="" /><span>Account</span></Link>
+          <Link href="/help"><Image src="/icons/home/help.svg" width={21} height={21} alt="" /><span>Help</span></Link>
           <Link href="/cart" className={home.cart}><Image src="/icons/home/cart.svg" width={23} height={23} alt="" /><span>Cart</span>{cartCount > 0 && <b>{cartCount}</b>}</Link>
         </nav>
       </div>
