@@ -14,3 +14,7 @@ export function safeReviewDestination(value: string | null | undefined) {
   if (!value?.startsWith('/') || value.startsWith('//')) return '/';
   return value;
 }
+
+export function reviewEntryDestination(reviewMode: boolean, requested: string | null | undefined) {
+  return reviewMode ? '/welcome' : safeReviewDestination(requested);
+}

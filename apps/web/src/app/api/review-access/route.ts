@@ -1,16 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { REVIEW_ACCESS_COOKIE, reviewAccessEnabled, reviewAccessToken, safeReviewDestination } from '@/lib/review-access';
+import { REVIEW_ACCESS_COOKIE, reviewAccessEnabled, reviewAccessToken, reviewEntryDestination, safeReviewDestination } from '@/lib/review-access';
 
 export async function POST(request: NextRequest) {
   const form = await request.formData();
   const submittedCode = String(form.get('code') ?? '').trim();
-  const destination = safeReviewDestination(String(form.get('next') ?? '/'));
+  const requestedDestination = safeReviewDestination(String(form.get('next') ?? '/'));
+  const destination = reviewEntryDestination(process.env.BETA_REVIEW_MODE === 'true', requestedDestination);
   const configuredCode = process.env.REVIEW_ACCESS_CODE?.trim() ?? '';
 
   if (!reviewAccessEnabled() || !submittedCode || submittedCode !== configuredCode) {
     const retry = new URL('/review-access', request.url);
     retry.searchParams.set('error', 'invalid');
-    retry.searchParams.set('next', destination);
+    retry.searchParams.set('next', requestedDestination);
     return NextResponse.redirect(retry, 303);
   }
 
