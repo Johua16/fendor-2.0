@@ -29,8 +29,8 @@ Add the following only after Fendor's bank details have been approved. Leaving t
 
 ```text
 PAYMENT_BANK_NAME=
-PAYMENT_BANK_ACCOUNT_NAME=
-PAYMENT_BANK_ACCOUNT_NUMBER=
+PAYMENT_ACCOUNT_NAME=
+PAYMENT_ACCOUNT_NUMBER=
 ```
 
 Do not commit real credentials or bank details to Git.
