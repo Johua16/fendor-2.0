@@ -41,6 +41,7 @@
     "../../server/test/**/*.ts",
     ".next/dev/types/**/*.ts",
     "scripts/**/*.ts",
+    "netlify/**/*.mts",
     "test/**/*.ts"
   ],
   "exclude": [
