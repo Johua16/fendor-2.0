@@ -1,12 +1,17 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { AuthApiError, safeNext, signIn } from '../src/lib/client/auth.ts';
+import { AuthApiError, reviewSignupDestination, safeNext, signIn } from '../src/lib/client/auth.ts';
 
 test('safeNext accepts only local application paths', () => {
   assert.equal(safeNext('/orders/123'), '/orders/123');
   assert.equal(safeNext('https://example.com'), '/account');
   assert.equal(safeNext('//example.com'), '/account');
   assert.equal(safeNext('/\\example.com'), '/account');
+});
+
+test('review signups continue into the correct onboarding journey', () => {
+  assert.equal(reviewSignupDestination('customer'), '/');
+  assert.equal(reviewSignupDestination('vendor'), '/vendor/onboarding');
 });
 
 test('sign in uses the protected session endpoint and preserves API errors', async () => {

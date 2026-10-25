@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { FormEvent, useEffect, useState } from 'react';
 import {
   AccountType, AuthApiError, forgotPassword, resendVerification, resetPassword,
-  safeNext, signIn, signUp, verifyEmail,
+  reviewSignupDestination, safeNext, signIn, signUp, verifyEmail,
 } from '../../lib/client/auth';
 import styles from './auth-page.module.css';
 
@@ -89,8 +89,20 @@ export function AuthPage({ mode }: { mode: Mode }) {
       if (mode === 'signup') {
         if (password !== confirm) throw Error('Passwords do not match.');
         const result = await signUp(fullName, email, password, accountType);
+        if (result.reviewMode === true) {
+          setMessage('Your review account is ready. Signing you in…');
+          try {
+            await signIn(email, password);
+            window.location.replace(reviewSignupDestination(accountType));
+          } catch {
+            setMessage('Your review account is ready, but automatic sign-in did not complete. Continue to sign in.');
+            setReviewSignup(true);
+            setSuccess(true);
+          }
+          return;
+        }
         setMessage(result.message);
-        setReviewSignup(result.reviewMode === true);
+        setReviewSignup(false);
         setSuccess(true);
       }
       if (mode === 'forgot') {
