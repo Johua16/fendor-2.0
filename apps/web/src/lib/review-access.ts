@@ -18,3 +18,13 @@ export function safeReviewDestination(value: string | null | undefined) {
 export function reviewEntryDestination(reviewMode: boolean, requested: string | null | undefined) {
   return reviewMode ? '/welcome' : safeReviewDestination(requested);
 }
+
+export function canonicalReviewOrigin(configuredOrigin: string | null | undefined, fallbackUrl: string) {
+  try {
+    const configured = new URL(configuredOrigin?.trim() || fallbackUrl);
+    if (!['http:', 'https:'].includes(configured.protocol)) throw new Error('Unsupported origin protocol.');
+    return configured.origin;
+  } catch {
+    return new URL(fallbackUrl).origin;
+  }
+}
