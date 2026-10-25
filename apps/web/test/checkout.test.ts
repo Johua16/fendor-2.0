@@ -68,3 +68,27 @@ test('checkout HTTP permissions, field validation and receipt reference conflict
   assert.equal((await db.query('SELECT * FROM payment_records')).rows.length,1);
  }finally {await db.close();}
 });
+
+test('private review mode simulates payment without bank instructions or real receipt input',async()=>{
+ const f=await fixture(),pay=checkout(f.db,Date.now,{reviewMode:true});
+ const order=await f.api.create(f.customer.secret,f.input());
+ await f.api.change(f.vendor.secret,order.id,{version:0},'reserve');
+ await f.seedDelivery(order.id);
+ try {
+  const q=await pay.change(f.admin.secret,order.id,{...quote,version:1},'quote');
+  await pay.change(f.customer.secret,order.id,{version:2,quoteId:q.quoteId,totalKobo:13000},'accept-quote');
+  const customerSummary=await pay.summary(f.customer.secret,order.id);
+  assert.equal(customerSummary.reviewMode,true);
+  assert.equal('paymentInstructions' in customerSummary,false);
+  await assert.rejects(checkout(f.db).change(f.admin.secret,order.id,{version:3,reviewModeAcknowledged:true},'simulate-payment'),{code:'REVIEW_MODE_REQUIRED'});
+  const confirmed=await pay.change(f.admin.secret,order.id,{version:3,reviewModeAcknowledged:true},'simulate-payment');
+  assert.equal(confirmed.orderConfirmed,true);
+  const replay=await pay.change(f.admin.secret,order.id,{version:4,reviewModeAcknowledged:true},'simulate-payment');
+  assert.equal(replay.orderConfirmed,true);
+  const payment=(await f.db.query<{bank_reference:string;receipt_note:string;status:string}>('SELECT bank_reference,receipt_note,status FROM payment_records WHERE order_id=$1',[order.id])).rows[0];
+  assert.match(payment.bank_reference,/^TEST-/);
+  assert.equal(payment.status,'verified');
+  assert.match(payment.receipt_note,/no funds moved/i);
+  assert.equal((await f.db.query("SELECT * FROM order_events WHERE event_type='test_payment_simulated'")).rows.length,1);
+ } finally {await f.db.close();}
+});

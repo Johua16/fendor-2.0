@@ -20,7 +20,7 @@ function password(value: unknown) {
   return value;
 }
 export type User = { id: string; email: string; fullName: string; verified: boolean; roles: string[]; onboardingIntent: 'customer'|'vendor'; dateOfBirth: string|null; phone: string|null };
-type Config = { origin: string; outboxKey: string; now?: () => number };
+type Config = { origin: string; outboxKey: string; reviewMode?: boolean; now?: () => number };
 const generic = { message: 'If eligible, an email will be sent with the next step.' };
 export function identity(db: Database, config: Config) {
   const now = config.now ?? Date.now;
@@ -64,11 +64,14 @@ export function identity(db: Database, config: Config) {
       await limit(`email:${address}`); const encoded = await hashPassword(pass);
       await db.transaction(async tx => {
         const id = randomUUID();
-        const result = await tx.query<{ id: string }>('INSERT INTO users(id,email,password_hash,full_name,onboarding_intent) VALUES($1,$2,$3,$4,$5) ON CONFLICT(email) DO NOTHING RETURNING id', [id, address, encoded, name, intent]);
+        const result = await tx.query<{ id: string }>('INSERT INTO users(id,email,password_hash,full_name,onboarding_intent,email_verified_at) VALUES($1,$2,$3,$4,$5,$6) ON CONFLICT(email) DO NOTHING RETURNING id', [id, address, encoded, name, intent, config.reviewMode ? instant() : null]);
         if (!result.rows.length) return;
         await tx.query("INSERT INTO user_roles(user_id,role) VALUES($1,'customer')", [id]);
-        await queue(tx, id, address, 'verify');
-      }); return generic;
+        if (!config.reviewMode) await queue(tx, id, address, 'verify');
+      });
+      return config.reviewMode
+        ? { message: 'Your private-review account is ready. Sign in to continue.', reviewMode: true }
+        : generic;
     },
     async login(input: Record<string, unknown>) {
       const address = email(input.email);

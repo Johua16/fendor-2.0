@@ -43,6 +43,7 @@ export function AuthPage({ mode }: { mode: Mode }) {
   const [resendBusy, setResendBusy] = useState(false);
   const [resendMessage, setResendMessage] = useState('');
   const [loginReason, setLoginReason] = useState('');
+  const [reviewSignup, setReviewSignup] = useState(false);
 
   useEffect(() => {
     const query = new URLSearchParams(window.location.search);
@@ -89,6 +90,7 @@ export function AuthPage({ mode }: { mode: Mode }) {
         if (password !== confirm) throw Error('Passwords do not match.');
         const result = await signUp(fullName, email, password, accountType);
         setMessage(result.message);
+        setReviewSignup(result.reviewMode === true);
         setSuccess(true);
       }
       if (mode === 'forgot') {
@@ -145,10 +147,10 @@ export function AuthPage({ mode }: { mode: Mode }) {
         <b>✓ Your new password is ready</b><p>Use it to sign in to your Fendor account.</p>
         <Link href="/login">Continue to sign in</Link>
       </div> : success && mode === 'signup' ? <div className={styles.verify}>
-        <span className={styles.mail}>✉</span><b>Check your inbox</b>
-        <p>If the address is eligible, Fendor will send a verification link to {email}.</p>
+        <span className={styles.mail}>{reviewSignup ? '✓' : '✉'}</span><b>{reviewSignup ? 'Private-review account ready' : 'Check your inbox'}</b>
+        <p>{reviewSignup ? 'Email verification is temporarily bypassed for this private product review. No payment will be collected.' : `If the address is eligible, Fendor will send a verification link to ${email}.`}</p>
         <Link href="/login">Go to sign in</Link>
-        <Link className={styles.secondaryLink} href="/verify-email">Need another verification link?</Link>
+        {!reviewSignup && <Link className={styles.secondaryLink} href="/verify-email">Need another verification link?</Link>}
       </div> : <form onSubmit={submit}>
         {mode === 'signup' && <>
           <div className={styles.roleTabs} role="group" aria-label="Account type">

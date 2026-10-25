@@ -8,7 +8,7 @@ export async function orderResponse(req:Request,path:string[],db:Database,secret
   const scope=path[0]==='orders'?'customer':path[1]==='orders' && ['vendor','admin'].includes(path[0])?path[0] as 'vendor'|'admin':null;
   if(!scope) return null;
   const rest=path.slice(scope==='customer'?1:2),service=orders(db,{reservationMinutes:Number(process.env.RESERVATION_MINUTES),responseMinutes:Number(process.env.VENDOR_RESPONSE_MINUTES)});
-  const payments=checkout(db);
+  const payments=checkout(db,Date.now,{reviewMode:process.env.BETA_REVIEW_MODE==='true'});
   if(req.method==='GET') {
     if(rest.length===2 && rest[1]==='checkout' && scope!=='vendor') return Response.json(await payments.summary(secret,rest[0],scope==='admin'),{headers});
     if(rest.length===0) return Response.json(await service.list(secret,scope,new URL(req.url).searchParams),{headers});
@@ -21,11 +21,11 @@ export async function orderResponse(req:Request,path:string[],db:Database,secret
       return Response.json(await refunds(db).change(secret,rest[0],input,rest[1] as 'record-refund'|'close-refunded'),{headers});
     }
     const paymentAction=rest[1];
-    if(rest.length===2 && (scope==='admin'?['quote','record-payment','verify-payment'].includes(paymentAction):scope==='customer'&&paymentAction==='accept-quote')) {
+    if(rest.length===2 && (scope==='admin'?['quote','record-payment','verify-payment','simulate-payment'].includes(paymentAction):scope==='customer'&&paymentAction==='accept-quote')) {
       const input=await body(req);
-      const allowed:Record<string,string[]>={quote:['version','packagingKobo','deliveryKobo','fulfilmentChecked','fulfilmentPlan'],'record-payment':['version','bankReference','receivedKobo','receiptNote'],'verify-payment':['version','paymentId','bankReceiptChecked'],'accept-quote':['version','quoteId','totalKobo']};
+      const allowed:Record<string,string[]>={quote:['version','packagingKobo','deliveryKobo','fulfilmentChecked','fulfilmentPlan'],'record-payment':['version','bankReference','receivedKobo','receiptNote'],'verify-payment':['version','paymentId','bankReceiptChecked'],'simulate-payment':['version','reviewModeAcknowledged'],'accept-quote':['version','quoteId','totalKobo']};
       if(Object.keys(input).some(k=>!allowed[paymentAction].includes(k))) fail(400,'UNKNOWN_FIELD','Unexpected request fields.');
-      return Response.json(await payments.change(secret,rest[0],input,paymentAction as 'quote'|'record-payment'|'verify-payment'|'accept-quote'),{headers});
+      return Response.json(await payments.change(secret,rest[0],input,paymentAction as 'quote'|'record-payment'|'verify-payment'|'simulate-payment'|'accept-quote'),{headers});
     }
     const create=scope==='customer' && rest.length===0;
     const action=rest[1];

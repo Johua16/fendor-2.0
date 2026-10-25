@@ -8,7 +8,8 @@ type Row=Record<string,unknown>&{id:string;customer_id:string;vendor_id:string;p
 function amount(value:unknown,min=0):number {
  if(typeof value!=='number'||!Number.isSafeInteger(value)||value<min) fail(400,'INVALID_AMOUNT','Use a valid integer amount in kobo.');return value;
 }
-export function checkout(db:Database,now:()=>number=Date.now) {
+export function checkout(db:Database,now:()=>number=Date.now,options:{reviewMode?:boolean}={}) {
+ const reviewMode=options.reviewMode===true;
  function paymentInstructions() {
   const bankName=process.env.PAYMENT_BANK_NAME?.trim(),accountName=process.env.PAYMENT_ACCOUNT_NAME?.trim(),accountNumber=process.env.PAYMENT_ACCOUNT_NUMBER?.trim();
   return bankName&&accountName&&accountNumber?{bankName,accountName,accountNumber}:null;
@@ -41,13 +42,14 @@ export function checkout(db:Database,now:()=>number=Date.now) {
     const ledger=await balances(tx,id);
     const refundRows=admin?(await tx.query('SELECT r.id,r.payment_id,r.bank_reference,r.amount_kobo,r.note,r.created_at FROM payment_refunds r JOIN payment_records p ON p.id=r.payment_id WHERE p.order_id=$1 ORDER BY r.created_at,r.id',[id])).rows:undefined;
     const recorded=(await tx.query('SELECT id FROM payment_records WHERE order_id=$1 LIMIT 1',[id])).rows.length>0;
-    return {orderId:id,version:row.version,state:row.state,quote,acceptedQuoteId:row.accepted_quote_id,orderConfirmed:row.payment_verified,reservationExpiresAt:row.reservation_expires_at,reservationActive:row.stock_held && !!row.reservation_expires_at && new Date(row.reservation_expires_at).getTime()>now(),fundsRecorded:recorded,netReceivedKobo:ledger.net.toString(),refundedKobo:ledger.rows.reduce((sum,p)=>sum+BigInt(p.refunded_kobo),0n).toString(),...(!admin&&row.accepted_quote_id?{paymentInstructions:paymentInstructions()}:{}),...(admin?{payments,refunds:refundRows}:{})};
+    return {orderId:id,version:row.version,state:row.state,quote,acceptedQuoteId:row.accepted_quote_id,orderConfirmed:row.payment_verified,reservationExpiresAt:row.reservation_expires_at,reservationActive:row.stock_held && !!row.reservation_expires_at && new Date(row.reservation_expires_at).getTime()>now(),fundsRecorded:recorded,netReceivedKobo:ledger.net.toString(),refundedKobo:ledger.rows.reduce((sum,p)=>sum+BigInt(p.refunded_kobo),0n).toString(),reviewMode,...(!admin&&row.accepted_quote_id&&!reviewMode?{paymentInstructions:paymentInstructions()}:{}),...(admin?{payments,refunds:refundRows}:{})};
    });
   },
-  async change(secret:string|undefined,id:string,input:Record<string,unknown>,action:'quote'|'accept-quote'|'record-payment'|'verify-payment') {
+  async change(secret:string|undefined,id:string,input:Record<string,unknown>,action:'quote'|'accept-quote'|'record-payment'|'verify-payment'|'simulate-payment') {
    uuid(id);const version=amount(input.version),customer=action==='accept-quote';
    return db.transaction(async tx=>{
     const by=await actor(tx,secret,customer?'customer':'admin'),initial=await load(tx,id);authorise(initial,by,customer);
+    if(action==='simulate-payment' && (!reviewMode || input.reviewModeAcknowledged!==true)) fail(403,'REVIEW_MODE_REQUIRED','Test payment simulation is disabled.');
     // Match catalogue/reservation lock order: vendor approval, product, stock, order.
     if(action!=='record-payment') {
      const vendor=(await tx.query<{status:string}>('SELECT status FROM vendor_applications WHERE user_id=$1 FOR SHARE',[initial.vendor_id])).rows[0];
@@ -58,6 +60,20 @@ export function checkout(db:Database,now:()=>number=Date.now) {
     await tx.query('SELECT id FROM product_variants WHERE id=$1 FOR UPDATE',[initial.product_variant_id]);
     await tx.query('SELECT id FROM order_requests WHERE id=$1 FOR UPDATE',[id]);
     const row=await load(tx,id);
+    if(action==='simulate-payment') {
+     if(row.version!==version) fail(409,'STALE_VERSION','Reload the current order.');
+     if(row.payment_verified) return {orderId:id,state:row.state,version:row.version,orderConfirmed:true,reviewMode:true};
+     active(row);
+     if(!row.quote_id||row.quote_id!==row.accepted_quote_id||row.state!=='awaiting_payment'||!row.accepted_total_kobo) fail(409,'QUOTE_CHANGED','Customer must accept the current quote.');
+     if((await tx.query('SELECT id FROM payment_records WHERE order_id=$1',[id])).rows.length) fail(409,'PAYMENT_REVIEW_REQUIRED','Resolve recorded funds before simulating payment.');
+     const allocated=(await tx.query('UPDATE product_variants SET stock_quantity=stock_quantity-$2,reserved_quantity=reserved_quantity-$2 WHERE id=$1 AND reserved_quantity>=$2 AND stock_quantity>=$2 RETURNING id',[row.product_variant_id,row.quantity])).rows;
+     if(!allocated.length) fail(409,'STOCK_REVIEW_REQUIRED','Resolve the stock discrepancy before confirming.');
+     const paymentId=randomUUID(),reference=`TEST-${id.slice(0,8).toUpperCase()}-${version}`;
+     await tx.query("INSERT INTO payment_records(id,order_id,bank_reference,received_kobo,status,received_by,receipt_note,verified_by,verified_at) VALUES($1,$2,$3,$4,'verified',$5,$6,$5,$7)",[paymentId,id,reference,Number(row.accepted_total_kobo),by,'Private beta simulated payment; no funds moved.',new Date(now())]);
+     await tx.query("UPDATE order_requests SET payment_verified=true,state='confirmed',stock_held=false,reservation_expires_at=NULL,version=version+1 WHERE id=$1",[id]);
+     await audit(tx,row,by,'confirmed','test_payment_simulated');
+     return {orderId:id,state:'confirmed',version:row.version+1,orderConfirmed:true,reviewMode:true};
+    }
     if(action==='record-payment') {
      const reference=text(input.bankReference,'bank reference',3,160).toUpperCase(),received=amount(input.receivedKobo,1),note=text(input.receiptNote,'receipt note',5,1000);
      const existing=(await tx.query<{id:string;order_id:string;received_kobo:string}>('SELECT id,order_id,received_kobo FROM payment_records WHERE bank_reference=$1',[reference])).rows[0];

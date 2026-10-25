@@ -12,7 +12,8 @@ function sessionCookie(req: Request) {
 function cookie(value: string, secure: boolean, clear = false) {
   return `${COOKIE}=${value}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${clear ? 0 : 604800}${secure ? '; Secure' : ''}`;
 }
-export async function handleIdentity(req: Request, path: string[], dependencies?: {db: Database; settings: ReturnType<typeof config>}) {
+type IdentitySettings = Omit<ReturnType<typeof config>, 'reviewMode'> & { reviewMode?: boolean };
+export async function handleIdentity(req: Request, path: string[], dependencies?: {db: Database; settings: IdentitySettings}) {
   const headers = new Headers({ 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' });
   try {
     const settings = dependencies?.settings ?? config();

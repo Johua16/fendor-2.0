@@ -75,3 +75,17 @@ test('database-backed identity and vendor lifecycle', async () => {
     await assert.rejects(api.me(fresh.secret),{code:'UNAUTHENTICATED'});
   } finally {await db.close();}
 });
+
+test('private review signups are verified without queuing external email', async () => {
+  const db = await testDatabase();
+  const key = 'cd'.repeat(32);
+  const api = identity(db, { origin: 'http://localhost:3000', outboxKey: key, reviewMode: true });
+  try {
+    await migrate(db, resolve('../../server/db'));
+    const result = await api.signup({ email: 'reviewer@example.com', password: 'A long secure passphrase!', fullName: 'Review Tester', accountType: 'customer' });
+    assert.equal('reviewMode' in result && result.reviewMode, true);
+    const login = await api.login({ email: 'reviewer@example.com', password: 'A long secure passphrase!' });
+    assert.equal(login.user.verified, true);
+    assert.equal((await db.query('SELECT * FROM email_outbox')).rows.length, 0);
+  } finally { await db.close(); }
+});
