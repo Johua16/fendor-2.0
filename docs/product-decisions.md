@@ -31,3 +31,9 @@ Updated: 11 October 2026
 - During the pilot, a human vendor check-in activates a selling window; phone notifications alone are not evidence of reliable stock or readiness.
 - Pilot in one limited service area before expansion. Quantities, acknowledgement times, sales windows and delivery targets are not yet agreed.
 - Offline payment verification remains a separate speed bottleneck and must not be presented as automatic confirmation.
+
+## Temporary private-review decision — 25 October 2026
+
+- The pre-November team review uses an explicit environment-gated test mode. It may auto-verify new reviewer accounts because the Resend sandbox cannot deliver verification mail to the full team without a verified Fendor domain.
+- Test checkout never shows bank details or asks for a transfer. After quote acceptance, a Fendor administrator may create an auditable simulated payment so fulfilment screens can be reviewed end to end.
+- Before the November beta, disable test mode, verify a Fendor email domain, approve the legal business bank account or payment provider, and rerun customer, vendor, admin, refund and payment checks using the real release configuration.

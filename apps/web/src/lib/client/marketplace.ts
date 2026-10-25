@@ -41,6 +41,7 @@ export type CheckoutSummary = {
   netReceivedKobo: string;
   refundedKobo: string;
   paymentInstructions?: null | { bankName: string; accountName: string; accountNumber: string };
+  reviewMode?: boolean;
 };
 
 export type DeliveryZone = { id: string; name: string; state: string; city: string; version: number };

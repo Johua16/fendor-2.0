@@ -5,5 +5,10 @@ export function config() {
   const url = new URL(rawOrigin);
   if (url.origin !== rawOrigin || !['http:', 'https:'].includes(url.protocol)) throw Error('APP_ORIGIN must be an origin without a path.');
   if (process.env.NODE_ENV === 'production' && url.protocol !== 'https:') throw Error('Production APP_ORIGIN must use HTTPS.');
-  return { origin: url.origin, outboxKey, secure: url.protocol === 'https:' };
+  return {
+    origin: url.origin,
+    outboxKey,
+    secure: url.protocol === 'https:',
+    reviewMode: process.env.BETA_REVIEW_MODE === 'true',
+  };
 }

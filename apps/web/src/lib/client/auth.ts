@@ -8,7 +8,7 @@ async function request<T>(path: string, body?: Record<string, unknown>): Promise
   if (!response.ok) throw new AuthApiError(response.status, value.error?.code ?? 'REQUEST_FAILED', value.error?.message ?? 'Fendor could not complete this request.');
   return value;
 }
-export const signUp = (fullName: string, email: string, password: string, accountType:AccountType) => request<{ message: string }>('/api/auth/signup', { fullName, email, password, accountType });
+export const signUp = (fullName: string, email: string, password: string, accountType:AccountType) => request<{ message: string; reviewMode?: boolean }>('/api/auth/signup', { fullName, email, password, accountType });
 export const saveOnboardingProfile=(dateOfBirth:string,phone:string)=>request<{user:CurrentUser}>('/api/auth/profile',{dateOfBirth,phone});
 export type VendorApplication={id:string;business_name:string;business_location:string;country:string;registration_number:string;account_type:'individual'|'company';status:string;review_note:string|null};
 export const vendorApplication=()=>request<{application:VendorApplication|null}>('/api/vendor/application');
