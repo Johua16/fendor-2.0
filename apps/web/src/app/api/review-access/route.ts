@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { REVIEW_ACCESS_COOKIE, reviewAccessEnabled, reviewAccessToken, reviewEntryDestination, safeReviewDestination } from '@/lib/review-access';
+import { canonicalReviewOrigin, REVIEW_ACCESS_COOKIE, reviewAccessEnabled, reviewAccessToken, reviewEntryDestination, safeReviewDestination } from '@/lib/review-access';
 
 export async function POST(request: NextRequest) {
   const form = await request.formData();
@@ -7,15 +7,16 @@ export async function POST(request: NextRequest) {
   const requestedDestination = safeReviewDestination(String(form.get('next') ?? '/'));
   const destination = reviewEntryDestination(process.env.BETA_REVIEW_MODE === 'true', requestedDestination);
   const configuredCode = process.env.REVIEW_ACCESS_CODE?.trim() ?? '';
+  const canonicalOrigin = canonicalReviewOrigin(process.env.APP_ORIGIN, request.url);
 
   if (!reviewAccessEnabled() || !submittedCode || submittedCode !== configuredCode) {
-    const retry = new URL('/review-access', request.url);
+    const retry = new URL('/review-access', canonicalOrigin);
     retry.searchParams.set('error', 'invalid');
     retry.searchParams.set('next', requestedDestination);
     return NextResponse.redirect(retry, 303);
   }
 
-  const response = NextResponse.redirect(new URL(destination, request.url), 303);
+  const response = NextResponse.redirect(new URL(destination, canonicalOrigin), 303);
   response.cookies.set(REVIEW_ACCESS_COOKIE, await reviewAccessToken(configuredCode), {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
