@@ -35,6 +35,7 @@ VENDOR_RESPONSE_MINUTES=30
 SMTP_URL=smtps://resend:<resend-api-key>@smtp.resend.com:465
 MAIL_FROM=Fendor <notifications@<verified-domain>>
 BETA_REVIEW_MODE=false
+REVIEW_ACCESS_CODE=<long-random-team-review-code>
 ```
 
 Add the approved bank details only when payment testing begins. Leaving any value unset keeps payment instructions closed.
@@ -45,7 +46,7 @@ PAYMENT_ACCOUNT_NAME=
 PAYMENT_ACCOUNT_NUMBER=
 ```
 
-For a private product review before Fendor has approved bank details or a verified sending domain, set `BETA_REVIEW_MODE=true`. New review accounts are verified immediately and administrators receive a **Simulate test payment** action after a customer accepts a quote. No transfer is requested or recorded as real money. Remove the variable or set it to `false` before the public beta, configure branded email and approved payment details, then repeat the payment and identity release checks.
+For a private product review before Fendor has approved bank details or a verified sending domain, set `BETA_REVIEW_MODE=true` and configure a long, unique `REVIEW_ACCESS_CODE`. The review code protects every product page and API except health/readiness checks with an HTTP-only seven-day access cookie, allowing Netlify's site visibility to remain public without exposing the beta to casual visitors. New review accounts are verified immediately and administrators receive a **Simulate test payment** action after a customer accepts a quote. No transfer is requested or recorded as real money. Rotate the review code if it is shared outside the approved team. Remove `REVIEW_ACCESS_CODE` and set `BETA_REVIEW_MODE=false` before the public beta, configure branded email and approved payment details, then repeat the payment and identity release checks.
 
 ## Database and account setup
 

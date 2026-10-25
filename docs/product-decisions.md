@@ -37,3 +37,4 @@ Updated: 11 October 2026
 - The pre-November team review uses an explicit environment-gated test mode. It may auto-verify new reviewer accounts because the Resend sandbox cannot deliver verification mail to the full team without a verified Fendor domain.
 - Test checkout never shows bank details or asks for a transfer. After quote acceptance, a Fendor administrator may create an auditable simulated payment so fulfilment screens can be reviewed end to end.
 - Before the November beta, disable test mode, verify a Fendor email domain, approve the legal business bank account or payment provider, and rerun customer, vendor, admin, refund and payment checks using the real release configuration.
+- The five-person team review may use a shared access-code gate in front of the otherwise public Netlify URL. The code is stored only in hosting configuration, grants a seven-day HTTP-only browser session and must be removed or rotated before wider access.
