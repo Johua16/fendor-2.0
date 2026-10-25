@@ -6,6 +6,7 @@ import { FormEvent, useEffect, useState } from 'react';
 import { cancelOrderRequest, getOrderRequest, listOrderRequests, MarketplaceApiError, OrderRequest, saveOrderPersonalisation } from '../../lib/client/marketplace';
 import { cartItemCount } from '../../lib/client/cart';
 import { useCart } from '../../lib/client/use-cart';
+import { Icon } from '../ui/icon';
 import home from './home-page.module.css';
 import styles from './customer-orders.module.css';
 
@@ -35,15 +36,15 @@ export function CustomerHeader() {
     <div className={home.utility}><div className={home.shell}><span>Help & Support</span><span>Sell on Fendor</span></div></div>
     <div className={`${home.shell} ${home.mainHeader}`}>
       <Link href="/" className={home.logo} aria-label="Fendor home"><Image src="/icons/home/logo.svg" width={40} height={40} alt="" priority /><span><b>Fendor</b><small>MARKETPLACE</small></span></Link>
-      <form className={home.search} action="/shop"><input name="q" placeholder="Search products, brands or vendors" aria-label="Search products" /><button aria-label="Submit search"><Image src="/icons/home/search.svg" width={19} height={19} alt="" /></button></form>
-      <nav className={home.actions} aria-label="Account actions"><Link href="/account"><Image src="/icons/home/account.svg" width={21} height={21} alt="" /><span>Account</span></Link><Link href="/support"><Image src="/icons/home/help.svg" width={21} height={21} alt="" /><span>Help</span></Link><Link href="/cart" className={home.cart}><Image src="/icons/home/cart.svg" width={23} height={23} alt="" /><span>Cart</span>{count > 0 && <b>{count}</b>}</Link></nav>
+      <form className={home.search} action="/shop"><input name="q" placeholder="Search products, brands or vendors" aria-label="Search products" /><button aria-label="Submit search"><Icon name="search" size={19}/></button></form>
+      <nav className={home.actions} aria-label="Account actions"><Link href="/account"><Icon name="user" size={21}/><span>Account</span></Link><Link href="/support"><Icon name="circle-help" size={21}/><span>Help</span></Link><Link href="/cart" className={home.cart}><Icon name="shopping-cart" size={23}/><span>Cart</span>{count > 0 && <b>{count}</b>}</Link></nav>
     </div>
   </header>;
 }
 
 function AccessState({ error, retry }: { error: MarketplaceApiError | Error; retry: () => void }) {
   const signedOut = error instanceof MarketplaceApiError && error.status === 401;
-  return <section className={styles.state} role="alert"><span>{signedOut ? '○' : '!'}</span><h1>{signedOut ? 'Sign in to view your requests' : 'We couldn’t load your requests'}</h1><p>{signedOut ? 'Your order requests and gift details are private to your Fendor account.' : error.message}</p>{signedOut ? <Link href="/login?next=/orders">Sign in</Link> : <button onClick={retry}>Try again</button>}</section>;
+  return <section className={styles.state} role="alert"><span><Icon name={signedOut?'user':'alert-triangle'} size={30}/></span><h1>{signedOut ? 'Sign in to view your requests' : 'We couldn’t load your requests'}</h1><p>{signedOut ? 'Your order requests and gift details are private to your Fendor account.' : error.message}</p>{signedOut ? <Link href="/login?next=/orders">Sign in</Link> : <button onClick={retry}>Try again</button>}</section>;
 }
 
 export function CustomerOrdersPage() {
@@ -63,7 +64,7 @@ export function CustomerOrdersPage() {
 
   return <div className={home.page}><CustomerHeader /><main className={`${home.shell} ${styles.main}`}>
     <div className={styles.heading}><div><p className={home.kicker}>YOUR FENDOR ACTIVITY</p><h1>Order requests</h1><p>Follow availability, quotes, preparation and delivery without contacting vendors directly.</p></div><Link href="/shop">Browse marketplace</Link></div>
-    {loading ? <section className={styles.state} aria-live="polite"><i /><h1>Loading your requests</h1></section> : error ? <AccessState error={error} retry={() => setReload((value) => value + 1)} /> : orders.length === 0 ? <section className={styles.state}><span>⌑</span><h1>No order requests yet</h1><p>When you request an item, its availability and fulfilment progress will appear here.</p><Link href="/shop">Find a product</Link></section> : <div className={styles.orderList}>{orders.map((order) => {
+    {loading ? <section className={styles.state} aria-live="polite"><i /><h1>Loading your requests</h1></section> : error ? <AccessState error={error} retry={() => setReload((value) => value + 1)} /> : orders.length === 0 ? <section className={styles.state}><span><Icon name="receipt" size={32}/></span><h1>No order requests yet</h1><p>When you request an item, its availability and fulfilment progress will appear here.</p><Link href="/shop">Find a product</Link></section> : <div className={styles.orderList}>{orders.map((order) => {
       const status = order.reservationExpired ? { label: 'Availability needs reconfirmation', detail: 'The previous stock hold expired. Fendor has asked the vendor to check again.' } : statusCopy[order.state];
       return <article className={styles.order} key={order.id}>
         <div className={styles.productVisual}>{order.product.imagePath ? <Image src={order.product.imagePath} fill sizes="120px" alt={order.product.title} /> : <span>F</span>}</div>

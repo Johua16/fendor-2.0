@@ -7,6 +7,7 @@ import { cartItemCount } from '../../lib/client/cart';
 import { useCart } from '../../lib/client/use-cart';
 import { isSaved, toggleSavedItem } from '../../lib/client/saved';
 import { ProductArt, ProductCard, products } from './home-page';
+import { Icon } from '../ui/icon';
 import home from './home-page.module.css';
 import styles from './cart-page.module.css';
 
@@ -50,17 +51,17 @@ export function CartPage() {
       <div className={home.utility}><div className={home.shell}><span>Help & Support</span><span>Sell on Fendor</span></div></div>
       <div className={`${home.shell} ${home.mainHeader}`}>
         <Link href="/" className={home.logo} aria-label="Fendor home"><Image src="/icons/home/logo.svg" width={40} height={40} alt="" priority /><span><b>Fendor</b><small>MARKETPLACE</small></span></Link>
-        <form className={home.search} onSubmit={handleSearch} role="search"><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search products, brands or vendors" aria-label="Search products" /><button aria-label="Submit search"><Image src="/icons/home/search.svg" width={19} height={19} alt="" /></button></form>
-        <nav className={home.actions} aria-label="Account actions"><Link href="/account"><Image src="/icons/home/account.svg" width={21} height={21} alt="" /><span>Account</span></Link><Link href="/help"><Image src="/icons/home/help.svg" width={21} height={21} alt="" /><span>Help</span></Link><Link href="/cart" className={home.cart}><Image src="/icons/home/cart.svg" width={23} height={23} alt="" /><span>Cart</span>{itemCount > 0 && <b>{itemCount}</b>}</Link></nav>
+        <form className={home.search} onSubmit={handleSearch} role="search"><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search products, brands or vendors" aria-label="Search products" /><button aria-label="Submit search"><Icon name="search" size={19}/></button></form>
+        <nav className={home.actions} aria-label="Account actions"><Link href="/account"><Icon name="user" size={21}/><span>Account</span></Link><Link href="/help"><Icon name="circle-help" size={21}/><span>Help</span></Link><Link href="/cart" className={home.cart}><Icon name="shopping-cart" size={23}/><span>Cart</span>{itemCount > 0 && <b>{itemCount}</b>}</Link></nav>
       </div>
-      <nav className={`${home.shell} ${home.categoryNav}`} aria-label="Marketplace categories"><Link href="/shop" className={home.allCategories}>☰ &nbsp; All Categories</Link>{['Phones & Tablets', 'Electronics', 'Fashion', 'Home & Living', 'Gifts'].map((item) => <Link key={item} href="/shop">{item}</Link>)}</nav>
+      <nav className={`${home.shell} ${home.categoryNav}`} aria-label="Marketplace categories"><Link href="/shop" className={home.allCategories}><Icon name="menu" size={18}/> All Categories</Link>{['Phones & Tablets', 'Electronics', 'Fashion', 'Home & Living', 'Gifts'].map((item) => <Link key={item} href="/shop">{item}</Link>)}</nav>
     </header>
 
     {notice && <button className={home.toast} onClick={() => setNotice('')} aria-live="polite">{notice}<span>×</span></button>}
 
     <main className={`${home.shell} ${styles.main}`}>
       {!ready ? <section className={styles.empty} aria-live="polite"><h1>Loading your cart…</h1></section> : items.length === 0 ? <section className={styles.empty}>
-        <span aria-hidden="true">⌑</span>
+        <span aria-hidden="true"><Icon name="shopping-cart" size={32}/></span>
         <p className={home.kicker}>YOUR CART IS READY FOR A FRESH START</p>
         <h1>Your cart is empty</h1>
         <p>Explore products from verified vendors and save the ones you would like Fendor to confirm.</p>
@@ -84,7 +85,7 @@ export function CartPage() {
               </div>
             </article>)}
 
-            <section className={styles.location}><span aria-hidden="true">⌖</span><div><small>DELIVERY DETAILS COME NEXT</small><h2>Where should Fendor deliver?</h2><p>The recipient’s location, preferred date, packaging and delivery instructions are collected after availability requests are created. Delivery fees are quoted before payment.</p></div><Link href="/orders/new">Add after request</Link></section>
+            <section className={styles.location}><span aria-hidden="true"><Icon name="map-pin" size={28}/></span><div><small>DELIVERY DETAILS COME NEXT</small><h2>Where should Fendor deliver?</h2><p>The recipient’s location, preferred date, packaging and delivery instructions are collected after availability requests are created. Delivery fees are quoted before payment.</p></div><Link href="/orders/new">Add after request</Link></section>
           </div>
 
           <aside className={styles.summary}>
