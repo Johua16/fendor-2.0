@@ -8,6 +8,7 @@ import {
   submitVendorApplication, vendorApplication, VendorApplication,
 } from '../../lib/client/auth';
 import { DocumentUpload, uploadBusinessDocument } from '../../lib/client/onboarding';
+import { Icon } from '../ui/icon';
 import styles from './vendor-onboarding.module.css';
 
 const places: Record<string, string[]> = {
@@ -185,7 +186,7 @@ const statusContent: Record<string, { title: string; detail: string; action: str
 function Status({ application }: { application: VendorApplication }) {
   const content = statusContent[application.status] ?? statusContent.submitted;
   return <main className={styles.page}><header><Link href="/"><Image src="/icons/home/logo.svg" width={39} height={39} alt="" /><b>Fendor</b></Link></header>
-    <section className={`${styles.card} ${styles.status}`}><span aria-hidden="true">{application.status === 'approved' ? '✓' : application.status === 'rejected' || application.status === 'suspended' ? '!' : '⌛'}</span>
+    <section className={`${styles.card} ${styles.status}`}><span aria-hidden="true"><Icon name={application.status === 'approved' ? 'check-circle' : application.status === 'rejected' || application.status === 'suspended' ? 'alert-triangle' : 'clock'} size={34}/></span>
       <p className={styles.kicker}>APPLICATION {application.status.replaceAll('_', ' ').toUpperCase()}</p><h1>{content.title}</h1><p>{content.detail}</p>
       {application.review_note && <div className={styles.note}><b>Fendor review note</b><span>{application.review_note}</span></div>}
       <Link href={content.href}>{content.action}</Link>

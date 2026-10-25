@@ -8,6 +8,7 @@ import { addCartItem, cartItemCount } from '../../lib/client/cart';
 import { useCart } from '../../lib/client/use-cart';
 import { isSaved, toggleSavedItem } from '../../lib/client/saved';
 import { DisplayProduct, displayProductToCartItem, ProductArt, ProductCard, products } from './home-page';
+import { Icon } from '../ui/icon';
 import home from './home-page.module.css';
 import styles from './product-detail-page.module.css';
 
@@ -98,17 +99,17 @@ export function ProductDetailPage({ slug }: { slug: string }) {
     setNotice(result.saved ? `${product.name} saved.` : `${product.name} removed from saved products.`);
   }
 
-  if (!product) return <div className={home.page}><main className={`${home.shell} ${styles.remoteState}`} aria-live="polite"><span>{productError ? '!' : ''}</span><h1>{productError ? 'Product unavailable' : 'Loading product details'}</h1>{productError && <><p>{productError}</p><Link href="/shop">Return to the marketplace</Link></>}</main></div>;
+  if (!product) return <div className={home.page}><main className={`${home.shell} ${styles.remoteState}`} aria-live="polite"><span>{productError ? <Icon name="alert-triangle" size={30}/> : null}</span><h1>{productError ? 'Product unavailable' : 'Loading product details'}</h1>{productError && <><p>{productError}</p><Link href="/shop">Return to the marketplace</Link></>}</main></div>;
 
   return <div className={home.page}>
     <header className={home.header}>
       <div className={home.utility}><div className={home.shell}><span>Help & Support</span><span>Sell on Fendor</span></div></div>
       <div className={`${home.shell} ${home.mainHeader}`}>
         <Link href="/" className={home.logo} aria-label="Fendor home"><Image src="/icons/home/logo.svg" width={40} height={40} alt="" priority /><span><b>Fendor</b><small>MARKETPLACE</small></span></Link>
-        <form className={home.search} onSubmit={runSearch} role="search"><input placeholder="Search products, brands or vendors" aria-label="Search products" /><button aria-label="Submit search"><Image src="/icons/home/search.svg" width={19} height={19} alt="" /></button></form>
-        <nav className={home.actions} aria-label="Account actions"><Link href="/account"><Image src="/icons/home/account.svg" width={21} height={21} alt="" /><span>Account</span></Link><Link href="/help"><Image src="/icons/home/help.svg" width={21} height={21} alt="" /><span>Help</span></Link><Link href="/cart" className={home.cart}><Image src="/icons/home/cart.svg" width={23} height={23} alt="" /><span>Cart</span>{cartCount > 0 && <b>{cartCount}</b>}</Link></nav>
+        <form className={home.search} onSubmit={runSearch} role="search"><input placeholder="Search products, brands or vendors" aria-label="Search products" /><button aria-label="Submit search"><Icon name="search" size={19}/></button></form>
+        <nav className={home.actions} aria-label="Account actions"><Link href="/account"><Icon name="user" size={21}/><span>Account</span></Link><Link href="/help"><Icon name="circle-help" size={21}/><span>Help</span></Link><Link href="/cart" className={home.cart}><Icon name="shopping-cart" size={23}/><span>Cart</span>{cartCount > 0 && <b>{cartCount}</b>}</Link></nav>
       </div>
-      <nav className={`${home.shell} ${home.categoryNav}`} aria-label="Marketplace categories"><Link href="/shop" className={home.allCategories}>☰ &nbsp; All Categories</Link>{['Phones & Tablets', 'Electronics', 'Fashion', 'Home & Living', 'Gifts'].map((item) => <Link key={item} href="/shop">{item}</Link>)}</nav>
+      <nav className={`${home.shell} ${home.categoryNav}`} aria-label="Marketplace categories"><Link href="/shop" className={home.allCategories}><Icon name="menu" size={18}/> All Categories</Link>{['Phones & Tablets', 'Electronics', 'Fashion', 'Home & Living', 'Gifts'].map((item) => <Link key={item} href="/shop">{item}</Link>)}</nav>
     </header>
 
     {notice && <button className={home.toast} onClick={() => setNotice('')} aria-live="polite">{notice}<span>×</span></button>}
@@ -121,7 +122,7 @@ export function ProductDetailPage({ slug }: { slug: string }) {
           <div className={styles.mainVisual}>
             {product.imagePath ? <Image className={styles.liveProductImage} src={product.imagePath} fill sizes="(max-width: 720px) 100vw, 40vw" alt={product.name} /> : <ProductArt type={product.art} tint={[product.tint, '#f2dfd6', '#dedfe4'][gallery]} />}
             <div className={styles.badges}><span>VERIFIED PRODUCT</span><small>Confirmation required</small></div>
-            <button className={`${styles.save} ${saved ? styles.saved : ''}`} onClick={saveProduct} aria-label={saved ? 'Remove from saved items' : 'Save product'}>{saved ? '♥' : '♡'}</button>
+            <button className={`${styles.save} ${saved ? styles.saved : ''}`} onClick={saveProduct} aria-label={saved ? 'Remove from saved items' : 'Save product'}><Icon name="heart" size={20} fill={saved?'currentColor':'none'}/></button>
           </div>
           {!product.imagePath && <div className={styles.thumbnails}>{[product.tint, '#f2dfd6', '#dedfe4'].map((tint, index) => <button key={tint} className={gallery === index ? styles.activeThumb : ''} onClick={() => setGallery(index)} aria-label={`View product image ${index + 1}`}><ProductArt type={product.art} tint={tint} /></button>)}</div>}
           <div className={styles.microProof}><span>✓ Product reviewed by Fendor</span><span>Communication stays on Fendor</span></div>

@@ -7,6 +7,7 @@ import { CatalogueProduct, listProducts, MarketplaceApiError } from '../../lib/c
 import { addCartItem, cartItemCount } from '../../lib/client/cart';
 import { useCart } from '../../lib/client/use-cart';
 import { DisplayProduct, displayProductToCartItem, ProductCard, products } from './home-page';
+import { Icon } from '../ui/icon';
 import home from './home-page.module.css';
 import styles from './storefront-page.module.css';
 
@@ -84,16 +85,16 @@ export function StorefrontPage() {
         <Link href="/" className={home.logo} aria-label="Fendor home"><Image src="/icons/home/logo.svg" width={40} height={40} alt="" priority /><span><b>Fendor</b><small>MARKETPLACE</small></span></Link>
         <form className={home.search} onSubmit={runSearch} role="search">
           <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search products, brands or vendors" aria-label="Search products" />
-          <button aria-label="Submit search"><Image src="/icons/home/search.svg" width={19} height={19} alt="" /></button>
+          <button aria-label="Submit search"><Icon name="search" size={19}/></button>
         </form>
         <nav className={home.actions} aria-label="Account actions">
-          <Link href="/account"><Image src="/icons/home/account.svg" width={21} height={21} alt="" /><span>Account</span></Link>
-          <Link href="/help"><Image src="/icons/home/help.svg" width={21} height={21} alt="" /><span>Help</span></Link>
-          <Link href="/cart" className={home.cart}><Image src="/icons/home/cart.svg" width={23} height={23} alt="" /><span>Cart</span>{cartCount > 0 && <b>{cartCount}</b>}</Link>
+          <Link href="/account"><Icon name="user" size={21}/><span>Account</span></Link>
+          <Link href="/help"><Icon name="circle-help" size={21}/><span>Help</span></Link>
+          <Link href="/cart" className={home.cart}><Icon name="shopping-cart" size={23}/><span>Cart</span>{cartCount > 0 && <b>{cartCount}</b>}</Link>
         </nav>
       </div>
       <nav className={`${home.shell} ${home.categoryNav}`} aria-label="Marketplace categories">
-        <Link href="/shop" className={home.allCategories}>☰ &nbsp; All Categories</Link>
+        <Link href="/shop" className={home.allCategories}><Icon name="menu" size={18}/> All Categories</Link>
         {categoryOptions.slice(1, 6).map(([label, value]) => <button className={styles.categoryButton} key={value} onClick={() => setCategory(value)}>{label}</button>)}
       </nav>
     </header>
@@ -114,7 +115,7 @@ export function StorefrontPage() {
       <section className={`${home.shell} ${styles.catalogue}`}>
         <div className={styles.catalogueHead}><div><p className={home.kicker}>BROWSE THE MARKETPLACE</p><h2>Popular on Fendor</h2><p>{`${visibleProducts.length} product${visibleProducts.length === 1 ? '' : 's'} available to request`}</p></div><label>Sort by<select value={sort} onChange={(event) => setSort(event.target.value)}><option value="popular">Popular</option><option value="price-low">Price: low to high</option><option value="price-high">Price: high to low</option></select></label></div>
         <div className={styles.filters} aria-label="Filter by category">{categoryOptions.map(([label, value]) => <button key={value || 'all'} className={category === value ? styles.activeFilter : ''} onClick={() => setCategory(value)}>{label}</button>)}</div>
-        {loading ? <div className={styles.statePanel} aria-live="polite"><span className={styles.loader} /><h3>Loading verified products</h3><p>Fendor is checking the current public catalogue.</p></div> : loadError ? <div className={styles.statePanel} role="alert"><span>!</span><h3>We couldn’t load the marketplace</h3><p>{loadError}</p><button onClick={() => setReloadKey((key) => key + 1)}>Try again</button></div> : visibleProducts.length ? <div className={styles.grid}>{visibleProducts.map((product) => <ProductCard key={product.id ?? product.name} product={product} onAdd={() => addToCart(product)} />)}</div> : <div className={styles.empty}><span>⌕</span><h3>No products match this search</h3><p>Try another keyword or clear the current category.</p><button onClick={() => { setCategory(''); setQuery(''); setSubmittedQuery(''); }}>Clear filters</button></div>}
+        {loading ? <div className={styles.statePanel} aria-live="polite"><span className={styles.loader} /><h3>Loading verified products</h3><p>Fendor is checking the current public catalogue.</p></div> : loadError ? <div className={styles.statePanel} role="alert"><span><Icon name="alert-triangle" size={28}/></span><h3>We couldn’t load the marketplace</h3><p>{loadError}</p><button onClick={() => setReloadKey((key) => key + 1)}>Try again</button></div> : visibleProducts.length ? <div className={styles.grid}>{visibleProducts.map((product) => <ProductCard key={product.id ?? product.name} product={product} onAdd={() => addToCart(product)} />)}</div> : <div className={styles.empty}><span><Icon name="search" size={28}/></span><h3>No products match this search</h3><p>Try another keyword or clear the current category.</p><button onClick={() => { setCategory(''); setQuery(''); setSubmittedQuery(''); }}>Clear filters</button></div>}
       </section>
 
       <section className={`${home.shell} ${home.newsletter}`}><div><span className={home.pill}>CURATED UPDATES</span><h2>Stay in the loop</h2><p>Receive new collections, vendor stories, and thoughtful gift ideas.</p></div><form onSubmit={(event) => { event.preventDefault(); setNotice('You’re on the Fendor updates list.'); }}><div><input required type="email" placeholder="Enter your email address" aria-label="Email address" /><button>Subscribe</button></div><small>No spam. Unsubscribe at any time.</small></form></section>

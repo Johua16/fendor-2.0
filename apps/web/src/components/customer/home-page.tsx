@@ -6,12 +6,13 @@ import { FormEvent, useEffect, useState } from 'react';
 import { addCartItem, cartItemCount } from '../../lib/client/cart';
 import { useCart } from '../../lib/client/use-cart';
 import { CatalogueProduct, listProducts, MarketplaceApiError } from '../../lib/client/marketplace';
+import { Icon, type IconName } from '../ui/icon';
 import styles from './home-page.module.css';
 
-const categories = [
-  ['Phones & Tablets', '▣'], ['Electronics', '⌁'], ['Fashion', '◇'], ['Home Living', '⌂'],
-  ['Health & Beauty', '✦'], ['Groceries', '◉'], ['Footwear', '◒'], ['Accessories', '◈'],
-  ['Computing', '⌘'], ['Kitchenware', '◫'],
+const categories: [string, IconName][] = [
+  ['Phones & Tablets', 'smartphone'], ['Electronics', 'headphones'], ['Fashion', 'shirt'], ['Home Living', 'home'],
+  ['Health & Beauty', 'sparkles'], ['Groceries', 'shopping-basket'], ['Footwear', 'shoe'], ['Accessories', 'watch'],
+  ['Computing', 'laptop'], ['Kitchenware', 'cooking-pot'],
 ];
 
 export type DisplayProduct = {
@@ -92,7 +93,7 @@ export function displayProductToCartItem(product: DisplayProduct) {
 export function ProductCard({ product, compact = false, onAdd }: { product: DisplayProduct; compact?: boolean; onAdd?: () => void }) {
   return <article className={`${styles.productCard} ${compact ? styles.compactCard : ''}`}>
     {product.imagePath ? <div className={styles.productImage}><Image src={product.imagePath} fill sizes="(max-width: 720px) 55vw, 25vw" alt={product.name} /></div> : <ProductArt type={product.art} tint={product.tint} />}
-    <div className={styles.vendorLine}><span className={styles.verifiedDot}>✓</span>{product.vendor}</div>
+    <div className={styles.vendorLine}><span className={styles.verifiedDot}><Icon name="check" size={12} /></span>{product.vendor}</div>
     <h3><Link className={styles.productLink} href={productHref(product)}>{product.name}</Link></h3>
     <div className={styles.rating}>★ <b>4.8</b> <span>(120+)</span></div>
     <div className={styles.priceRow}><strong>{product.price}</strong>{product.old && <del>{product.old}</del>}</div>
@@ -148,16 +149,16 @@ export function HomePage() {
         <Link href="/" className={styles.logo} aria-label="Fendor home"><Image src="/icons/home/logo.svg" width={40} height={40} alt="" priority /><span><b>Fendor</b><small>MARKETPLACE</small></span></Link>
         <form className={styles.search} onSubmit={handleSearch} role="search">
           <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search products, brands and categories" aria-label="Search Fendor" />
-          <button aria-label="Submit search"><Image src="/icons/home/search.svg" width={19} height={19} alt="" /></button>
+          <button aria-label="Submit search"><Icon name="search" size={19} /></button>
         </form>
         <nav className={styles.actions} aria-label="Account actions">
-          <Link href="/account"><Image src="/icons/home/account.svg" width={21} height={21} alt="" /><span>Account</span></Link>
-          <Link href="/help"><Image src="/icons/home/help.svg" width={21} height={21} alt="" /><span>Help</span></Link>
-          <Link href="/cart" className={styles.cart}><Image src="/icons/home/cart.svg" width={23} height={23} alt="" /><span>Cart</span>{cartCount > 0 && <b>{cartCount}</b>}</Link>
+          <Link href="/account"><Icon name="user" size={21} /><span>Account</span></Link>
+          <Link href="/help"><Icon name="circle-help" size={21} /><span>Help</span></Link>
+          <Link href="/cart" className={styles.cart}><Icon name="shopping-cart" size={23} /><span>Cart</span>{cartCount > 0 && <b>{cartCount}</b>}</Link>
         </nav>
       </div>
       <nav className={`${styles.shell} ${styles.categoryNav}`} aria-label="Main categories">
-        <a href="#categories" className={styles.allCategories}>☰ &nbsp; All Categories</a>
+        <a href="#categories" className={styles.allCategories}><Icon name="menu" size={18} /> All Categories</a>
         {['New Arrivals', 'Phones & Tablets', 'Fashion', 'Home & Living', 'Gifts', 'Deals'].map((item) => <Link key={item} href="/shop">{item}</Link>)}
       </nav>
     </header>
@@ -170,20 +171,20 @@ export function HomePage() {
           <p className={styles.eyebrow}>{heroSlides[slide].eyebrow}</p>
           <h1>{heroSlides[slide].title}</h1>
           <p>{heroSlides[slide].copy}</p>
-          <div className={styles.heroButtons}><Link href="/shop" className={styles.primaryButton}>Start shopping</Link><a href="#vendors" className={styles.textButton}>Explore vendors <span>→</span></a></div>
+          <div className={styles.heroButtons}><Link href="/shop" className={styles.primaryButton}>Start shopping</Link><a href="#vendors" className={styles.textButton}>Explore vendors <Icon name="arrow-right" size={16}/></a></div>
         </div>
         <div className={styles.heroImage}>
           <Image src="/images/home/hero-pottery.png" fill sizes="(max-width: 720px) 100vw, 50vw" alt="A curated handmade pottery collection" priority style={{ objectPosition: heroSlides[slide].position }} />
           <div className={styles.heroBadge}><small>THIS WEEK’S EDIT</small><strong>{slide === 0 ? 'Made with care' : slide === 1 ? 'Gift beautifully' : 'Shop local'}</strong></div>
-          <button className={`${styles.arrow} ${styles.previous}`} aria-label="Previous slide" onClick={() => setSlide((slide + 2) % 3)}>‹</button>
-          <button className={`${styles.arrow} ${styles.next}`} aria-label="Next slide" onClick={() => setSlide((slide + 1) % 3)}>›</button>
+          <button className={`${styles.arrow} ${styles.previous}`} aria-label="Previous slide" onClick={() => setSlide((slide + 2) % 3)}><Icon name="chevron-left" size={24}/></button>
+          <button className={`${styles.arrow} ${styles.next}`} aria-label="Next slide" onClick={() => setSlide((slide + 1) % 3)}><Icon name="chevron-right" size={24}/></button>
         </div>
         <div className={styles.dots}>{heroSlides.map((_, index) => <button key={index} className={index === slide ? styles.activeDot : ''} aria-label={`Go to slide ${index + 1}`} onClick={() => setSlide(index)} />)}</div>
       </section>
 
       <section className={`${styles.shell} ${styles.section}`} id="categories">
         <div className={styles.sectionHead}><div><p className={styles.kicker}>SHOP YOUR WAY</p><h2>Browse popular categories</h2></div><a href="#collections">View all <span>→</span></a></div>
-        <div className={styles.categoryGrid}>{categories.map(([name, icon]) => <a href="#collections" className={styles.category} key={name}><span>{icon}</span><b>{name}</b></a>)}</div>
+        <div className={styles.categoryGrid}>{categories.map(([name, icon]) => <a href="#collections" className={styles.category} key={name}><span><Icon name={icon} size={25}/></span><b>{name}</b></a>)}</div>
       </section>
 
       <section className={`${styles.shell} ${styles.section} ${styles.panel}`}>
@@ -214,11 +215,11 @@ export function HomePage() {
       <section className={`${styles.shell} ${styles.section} ${styles.trust}`}>
         <div className={styles.centeredHead}><h2>Why shop on Fendor</h2><p>Built to make discovery, confirmation, and fulfilment feel clear from the start.</p></div>
         <div className={styles.trustGrid}>{[
-          ['✓', 'Verified vendors', 'Vendors submit identity and business information before their products can be approved.'],
-          ['▣', 'Stock confirmation', 'The vendor confirms availability before Fendor asks you to complete an offline payment.'],
-          ['→', 'Clear order updates', 'Follow each order through confirmation, payment review, preparation, and fulfilment.'],
-          ['?', 'Fendor support', 'Questions and order issues stay inside Fendor so every request has a visible record.'],
-        ].map(([icon, title, copy]) => <article key={title}><span aria-hidden="true">{icon}</span><h3>{title}</h3><p>{copy}</p></article>)}</div>
+          ['shield-check', 'Verified vendors', 'Vendors submit identity and business information before their products can be approved.'],
+          ['package', 'Stock confirmation', 'The vendor confirms availability before Fendor asks you to complete an offline payment.'],
+          ['truck', 'Clear order updates', 'Follow each order through confirmation, payment review, preparation, and fulfilment.'],
+          ['message-circle', 'Fendor support', 'Questions and order issues stay inside Fendor so every request has a visible record.'],
+        ].map(([icon, title, copy]) => <article key={title}><span aria-hidden="true"><Icon name={icon as IconName} size={26}/></span><h3>{title}</h3><p>{copy}</p></article>)}</div>
       </section>
 
       <section className={`${styles.shell} ${styles.vendorCta}`}>
@@ -229,6 +230,6 @@ export function HomePage() {
       <section className={`${styles.shell} ${styles.newsletter}`}><div><span className={styles.pill}>CURATED UPDATES</span><h2>Stay in the loop</h2><p>Receive new collections, vendor stories, and thoughtful gift ideas.</p></div><form onSubmit={(e) => { e.preventDefault(); setNotice('You’re on the Fendor updates list.'); }}><div><input required type="email" placeholder="Enter your email address" aria-label="Email address" /><button>Subscribe</button></div><small>No spam. Unsubscribe at any time.</small></form></section>
     </main>
 
-    <footer className={styles.footer} id="support"><div className={`${styles.shell} ${styles.footerGrid}`}><div><Link href="/" className={styles.logo}><Image src="/icons/home/logo.svg" width={40} height={40} alt="" /><span><b>Fendor</b><small>MARKETPLACE</small></span></Link><p>Thoughtful products from verified vendors, coordinated through one dependable marketplace.</p><span className={styles.footerBadge}>✓ Verified marketplace</span></div><div><h3>Shopping</h3><Link href="/shop">Browse products</Link><Link href="/saved">Saved products</Link><Link href="/cart">Cart</Link></div><div><h3>Customer care</h3><Link href="/help">Help centre</Link><Link href="/orders">Order tracking</Link><Link href="/support">Contact Fendor</Link></div><div><h3>Trust & policies</h3><Link href="/policies/returns">Returns</Link><Link href="/policies/privacy">Privacy</Link><Link href="/policies/terms">Terms</Link></div></div><div className={`${styles.shell} ${styles.copyright}`}>© 2026 Fendor Marketplace. Built for meaningful commerce.</div></footer>
+    <footer className={styles.footer} id="support"><div className={`${styles.shell} ${styles.footerGrid}`}><div><Link href="/" className={styles.logo}><Image src="/icons/home/logo.svg" width={40} height={40} alt="" /><span><b>Fendor</b><small>MARKETPLACE</small></span></Link><p>Thoughtful products from verified vendors, coordinated through one dependable marketplace.</p><span className={styles.footerBadge}><Icon name="check-circle" size={15}/> Verified marketplace</span></div><div><h3>Shopping</h3><Link href="/shop">Browse products</Link><Link href="/saved">Saved products</Link><Link href="/cart">Cart</Link></div><div><h3>Customer care</h3><Link href="/help">Help centre</Link><Link href="/orders">Order tracking</Link><Link href="/support">Contact Fendor</Link></div><div><h3>Trust & policies</h3><Link href="/policies/returns">Returns</Link><Link href="/policies/privacy">Privacy</Link><Link href="/policies/terms">Terms</Link></div></div><div className={`${styles.shell} ${styles.copyright}`}>© 2026 Fendor Marketplace. Built for meaningful commerce.</div></footer>
   </div>;
 }
