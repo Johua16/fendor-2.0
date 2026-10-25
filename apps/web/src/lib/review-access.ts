@@ -1,0 +1,16 @@
+export const REVIEW_ACCESS_COOKIE = 'fendor_review_access';
+
+export function reviewAccessEnabled() {
+  return process.env.BETA_REVIEW_MODE === 'true' && Boolean(process.env.REVIEW_ACCESS_CODE?.trim());
+}
+
+export async function reviewAccessToken(code: string) {
+  const bytes = new TextEncoder().encode(`fendor-private-review:${code}`);
+  const digest = await crypto.subtle.digest('SHA-256', bytes);
+  return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('');
+}
+
+export function safeReviewDestination(value: string | null | undefined) {
+  if (!value?.startsWith('/') || value.startsWith('//')) return '/';
+  return value;
+}
