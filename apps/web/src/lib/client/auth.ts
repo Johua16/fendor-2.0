@@ -21,4 +21,23 @@ export const forgotPassword = (email: string) => request<{ message: string }>('/
 export const verifyEmail = (token: string) => request<{ message: string }>('/api/auth/verify-email', { token });
 export const resetPassword = (token: string, password: string) => request<{ message: string }>('/api/auth/reset-password', { token, password });
 export function safeNext(value: string | null, fallback = '/account') { return value?.startsWith('/') && !value.startsWith('//') && !value.includes('\\') ? value : fallback; }
-export function reviewSignupDestination(accountType: AccountType) { return accountType === 'vendor' ? '/vendor/onboarding' : '/'; }
+export function reviewSignupDestination(accountType: AccountType, user?: Pick<CurrentUser, 'roles' | 'onboardingIntent'>) {
+  if (user) {
+    const destination = accountDestination(user);
+    if (destination !== '/account') return destination;
+  }
+  // Choosing to apply is a navigation hint, never approval to sell.
+  return accountType === 'vendor' ? '/vendor/onboarding' : '/';
+}
+
+// Navigation hints use server-returned identity; API permissions remain server-enforced.
+export function accountDestination(user: Pick<CurrentUser, 'roles' | 'onboardingIntent'>) {
+  if (user.roles.includes('admin')) return '/admin';
+  if (user.roles.includes('vendor')) return '/vendor';
+  return user.onboardingIntent === 'vendor' ? '/vendor/onboarding' : '/account';
+}
+export function signInDestination(user: Pick<CurrentUser, 'roles' | 'onboardingIntent'>, next: string | null) {
+  const destination = accountDestination(user);
+  const requested = safeNext(next, destination);
+  return requested === '/account' ? destination : requested;
+}

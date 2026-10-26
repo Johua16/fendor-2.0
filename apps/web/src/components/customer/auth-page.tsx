@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { FormEvent, useEffect, useState } from 'react';
 import {
   AccountType, AuthApiError, forgotPassword, resendVerification, resetPassword,
-  reviewSignupDestination, safeNext, signIn, signUp, verifyEmail,
+  reviewSignupDestination, signInDestination, signIn, signUp, verifyEmail,
 } from '../../lib/client/auth';
 import styles from './auth-page.module.css';
 
@@ -59,7 +59,7 @@ export function AuthPage({ mode }: { mode: Mode }) {
     window.history.replaceState(null, '', window.location.pathname + window.location.search);
     if (mode === 'verify') {
       if (!secret) {
-        setMessage('This verification link is incomplete. Request a new one below.');
+        setMessage('Open the verification link sent to your email, or request a new one below.');
         setBusy(false);
         return;
       }
@@ -79,11 +79,7 @@ export function AuthPage({ mode }: { mode: Mode }) {
       if (mode === 'login') {
         const result = await signIn(email, password);
         const next = new URLSearchParams(window.location.search).get('next');
-        window.location.href = safeNext(
-          next,
-          result.user.onboardingIntent === 'vendor' && !result.user.roles.includes('vendor')
-            ? '/vendor/onboarding' : '/account',
-        );
+        window.location.href = signInDestination(result.user, next);
         return;
       }
       if (mode === 'signup') {
@@ -92,8 +88,8 @@ export function AuthPage({ mode }: { mode: Mode }) {
         if (result.reviewMode === true) {
           setMessage('Your review account is ready. Signing you in…');
           try {
-            await signIn(email, password);
-            window.location.replace(reviewSignupDestination(accountType));
+            const login = await signIn(email, password);
+            window.location.replace(reviewSignupDestination(accountType, login.user));
           } catch {
             setMessage('Your review account is ready, but automatic sign-in did not complete. Continue to sign in.');
             setReviewSignup(true);
@@ -150,11 +146,11 @@ export function AuthPage({ mode }: { mode: Mode }) {
       <p className={styles.eyebrow}>{mode === 'signup' ? accountType.toUpperCase() : 'FENDOR ACCOUNT'}</p>
       <h1>{copy[mode][0]}</h1><p className={styles.intro}>{copy[mode][1]}</p>
       {loginReason && <div className={styles.notice} role="status">{loginReason}</div>}
-      {message && <div className={success ? styles.success : styles.error} role={success ? 'status' : 'alert'}>{message}</div>}
+      {message && <div className={success ? styles.success : mode === 'verify' && !token ? styles.notice : styles.error} role={success || (mode === 'verify' && !token) ? 'status' : 'alert'}>{message}</div>}
       {mode === 'verify' ? <div className={styles.verify}>
         {busy ? <><i /><p>Checking your verification link…</p></> : success
           ? <><b>✓ Email verified</b><Link href="/login">Continue to sign in</Link></>
-          : <><b>Verification could not be completed</b><p>The link may have expired or already been used.</p></>}
+          : !token ? <><b>Check your inbox</b><p>Follow the email link to verify your account. You can request another link below.</p></> : <><b>Verification could not be completed</b><p>The link may have expired or already been used.</p></>}
       </div> : mode === 'password-created' ? <div className={styles.verify}>
         <b>✓ Your new password is ready</b><p>Use it to sign in to your Fendor account.</p>
         <Link href="/login">Continue to sign in</Link>
@@ -187,7 +183,7 @@ export function AuthPage({ mode }: { mode: Mode }) {
         {resendMessage && <div className={styles.notice} role="status">{resendMessage}</div>}
       </form>}
       <div className={styles.switch}>{mode === 'login' ? <>New to Fendor? <Link href="/welcome">Create account</Link></>
-        : mode === 'signup' ? <>Already have an account? <Link href="/login">Sign in</Link></>
+        : mode === 'signup' ? <>Already have an account? <Link href={accountType === 'vendor' ? '/login?next=/vendor' : '/login'}>Sign in</Link></>
           : mode === 'forgot' || mode === 'reset' ? <Link href="/login">Back to sign in</Link> : null}</div>
     </div></section>
   </main>;

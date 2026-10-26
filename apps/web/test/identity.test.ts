@@ -89,3 +89,41 @@ test('private review signups are verified without queuing external email', async
     assert.equal((await db.query('SELECT * FROM email_outbox')).rows.length, 0);
   } finally { await db.close(); }
 });
+
+test('customer becoming a vendor retains application identity across sessions and approval changes', async () => {
+  const db = await testDatabase();
+  const api = identity(db, { origin: 'http://localhost:3000', outboxKey: 'ef'.repeat(32), reviewMode: true });
+  const password = 'A long secure passphrase!';
+  try {
+    await migrate(db, resolve('../../server/db'));
+    await api.signup({ email: 'transition@example.com', password, fullName: 'Transition Tester', accountType: 'customer' });
+    const applicant = await api.login({ email: 'transition@example.com', password });
+    assert.equal(applicant.user.onboardingIntent, 'customer');
+    await api.saveProfile(applicant.secret, { dateOfBirth: '1995-06-15', phone: '08012345678' });
+    assert.equal((await api.me(applicant.secret)).onboardingIntent, 'vendor');
+    assert.deepEqual((await api.me(applicant.secret)).roles, ['customer']);
+    const application = await api.apply(applicant.secret, { businessName: 'Transition Gifts', businessLocation: 'Abuja, FCT, Nigeria', country: 'NG', registrationNumber: 'TEST-TRANSITION', accountType: 'company' });
+    // Existing accounts created before this fix can have customer intent and a vendor application.
+    await db.query("UPDATE users SET onboarding_intent='customer' WHERE id=$1", [applicant.user.id]);
+    assert.equal((await api.login({ email: 'transition@example.com', password })).user.onboardingIntent, 'vendor');
+    assert.equal((await api.application(applicant.secret))?.status, 'submitted');
+    await assert.rejects(api.vendorAccess(applicant.secret), { code: 'VENDOR_NOT_APPROVED' });
+    await api.signup({ email: 'transition-admin@example.com', password, fullName: 'Transition Admin', accountType: 'customer' });
+    const admin = await api.login({ email: 'transition-admin@example.com', password });
+    await db.query("INSERT INTO user_roles(user_id,role) VALUES($1,'admin')", [admin.user.id]);
+    await api.review(admin.secret, String(application.id), { decision: 'approved', note: 'Checked for lifecycle test' });
+    assert.equal((await api.me(applicant.secret)).roles.includes('vendor'), true);
+    assert.equal((await api.vendorAccess(applicant.secret)).allowed, true);
+    const updates = (await db.query<{ title: string; message: string }>('SELECT title,message FROM notifications WHERE user_id=$1', [applicant.user.id])).rows;
+    assert.equal(updates.length, 1);
+    assert.match(updates[0].message, /approved/);
+    await api.review(admin.secret, String(application.id), { decision: 'suspended', note: 'Suspended for lifecycle test' });
+    assert.equal((await api.me(applicant.secret)).onboardingIntent, 'vendor');
+    assert.equal((await api.me(applicant.secret)).roles.includes('vendor'), false);
+    await assert.rejects(api.vendorAccess(applicant.secret), { code: 'VENDOR_NOT_APPROVED' });
+    assert.equal((await db.query('SELECT id FROM notifications WHERE user_id=$1', [applicant.user.id])).rows.length, 2);
+    const mail = (await db.query<{payload:string}>('SELECT payload FROM email_outbox')).rows.map(row => unseal(row.payload, 'ef'.repeat(32)) as {text:string});
+    assert.equal(mail.length, 2);
+    assert.ok(mail.every(item => item.text.includes('/notifications') && !item.text.includes('/account/notifications')));
+  } finally { await db.close(); }
+});

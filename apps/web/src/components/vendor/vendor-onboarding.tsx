@@ -125,22 +125,22 @@ export function VendorOnboarding() {
   }
 
   if (loading) return <main className={styles.page}><div className={styles.loading} role="status"><i /><p>Preparing your Fendor application…</p></div></main>;
-  if (application && !['draft', 'changes_requested'].includes(application.status)) return <Status application={application} />;
+  if (application && !['draft', 'changes_requested'].includes(application.status)) return <Status application={application} refresh={setApplication} />;
   const [title, intro] = headings[step - 1];
   return <main className={styles.page}>
     <Image className={styles.ribbonTop} src="/images/onboarding/74583795-5c3f-4f99-bd29-e22e03973ebe" width={720} height={965} alt="" />
     <Image className={styles.ribbonBottom} src="/images/onboarding/f1af9ffc-3a90-4e5b-8855-a2ee994d3a59" width={320} height={320} alt="" />
-    <header><Link href="/"><Image src="/icons/home/logo.svg" width={39} height={39} alt="" /><b>Fendor</b></Link><Link href="/account">Save & exit</Link></header>
+    <header><Link href="/"><Image src="/icons/home/logo.svg" width={39} height={39} alt="" /><b>Fendor</b></Link><Link href="/account">Exit setup</Link></header>
     <section className={styles.card}>
       <div className={styles.progress} aria-label={`Step ${step} of 5`}>{[1, 2, 3, 4, 5].map((number) => <span key={number} className={number <= step ? styles.done : ''} />)}</div>
       <p className={styles.kicker}>VENDOR APPLICATION · STEP {step} OF 5</p>
-      <h1>{title}</h1><p className={styles.intro}>{intro}</p>
+      <h1>{title}</h1><p className={styles.intro}>{intro}</p><p className={styles.privacy}>Personal details are saved after step 2. Business details are saved when you submit for review; keep this page open until then.</p>
       {application?.status === 'changes_requested' && <div className={styles.note} role="status"><b>Changes requested</b><span>{application.review_note || 'Please update and resubmit your business details.'}</span></div>}
       {error && <div className={styles.error} role="alert">{error}</div>}
       {step === 1 && <form onSubmit={next}><label>Country<select value={country} onChange={(event) => setCountry(event.target.value)}><option value="NG">Nigeria</option></select><small>Fendor’s first vendor network currently operates in Nigeria.</small></label><button>Next</button></form>}
       {step === 2 && <form onSubmit={saveContact}>
         <label>Date of birth<input required type="date" value={dob} onChange={(event) => setDob(event.target.value)} /><small>You must be at least 18 to operate a vendor account.</small></label>
-        <label>Email address<input readOnly value={user?.email ?? ''} /><small className={styles.verified}>{user?.verified ? '✓ Verified through your secure email link' : 'Verify your email before uploading documents.'}</small></label>
+        <label>Email address<input readOnly value={user?.email ?? ''} /><small className={styles.verified}>{user?.verified ? '✓ Email verified' : 'Verify your email before uploading documents.'}</small></label>
         <label>Phone number<input required inputMode="tel" autoComplete="tel" placeholder="0801 234 5678" value={phone} onChange={(event) => setPhone(event.target.value)} /><small>Used by Fendor operations. It is never shown to customers.</small></label>
         <Nav back={() => setStep(1)} busy={busy} />
       </form>}
@@ -177,18 +177,37 @@ function Nav({ back, busy = false, final = false }: { back: () => void; busy?: b
 }
 
 const statusContent: Record<string, { title: string; detail: string; action: string; href: string }> = {
-  submitted: { title: 'Application submitted', detail: 'Fendor has received your application. Our team will review your business details and notify you of a decision.', action: 'Return to account', href: '/account' },
-  under_review: { title: 'Application under review', detail: 'Our team is reviewing your business details. You do not need to submit again.', action: 'Return to account', href: '/account' },
+  submitted: { title: 'Application submitted', detail: 'Fendor has received your application. Our team will review your business details and notify you of a decision.', action: 'Browse marketplace while we review', href: '/shop' },
+  under_review: { title: 'Application under review', detail: 'Our team is reviewing your business details. You do not need to submit again.', action: 'Browse marketplace while we review', href: '/shop' },
   approved: { title: 'Your application is approved', detail: 'Your vendor access is active. You can open your workspace and prepare your business profile.', action: 'Open vendor workspace', href: '/vendor' },
   rejected: { title: 'Application rejected', detail: 'This application cannot be resubmitted through the current service. Review the reason below and contact Fendor support if you need help.', action: 'Contact Fendor support', href: '/support' },
   suspended: { title: 'Vendor access suspended', detail: 'Your vendor workspace is unavailable while this suspension is active. Review the reason below and contact Fendor support.', action: 'Contact Fendor support', href: '/support' },
 };
-function Status({ application }: { application: VendorApplication }) {
+function Status({ application, refresh }: { application: VendorApplication; refresh: (application: VendorApplication) => void }) {
+  const [checking, setChecking] = useState(false);
+  const [error, setError] = useState('');
+  async function checkStatus() {
+    setChecking(true); setError('');
+    try {
+      const result = await vendorApplication();
+      if (result.application) refresh(result.application);
+      else setError('No application was returned. Contact Fendor support.');
+    } catch (caught) { setError(caught instanceof Error ? caught.message : 'Could not refresh your application.'); }
+    finally { setChecking(false); }
+  }
+  useEffect(() => {
+    if (!['submitted', 'under_review'].includes(application.status)) return;
+    const timer = window.setInterval(() => { if (document.visibilityState === 'visible') void checkStatus(); }, 30000);
+    return () => window.clearInterval(timer);
+  }, [application.status]);
   const content = statusContent[application.status] ?? statusContent.submitted;
   return <main className={styles.page}><header><Link href="/"><Image src="/icons/home/logo.svg" width={39} height={39} alt="" /><b>Fendor</b></Link></header>
     <section className={`${styles.card} ${styles.status}`}><span aria-hidden="true"><Icon name={application.status === 'approved' ? 'check-circle' : application.status === 'rejected' || application.status === 'suspended' ? 'alert-triangle' : 'clock'} size={34}/></span>
       <p className={styles.kicker}>APPLICATION {application.status.replaceAll('_', ' ').toUpperCase()}</p><h1>{content.title}</h1><p>{content.detail}</p>
       {application.review_note && <div className={styles.note}><b>Fendor review note</b><span>{application.review_note}</span></div>}
+      {application.status !== 'approved' && <p>Your account is a vendor application. Selling access begins after Fendor approves your business.</p>}
+      {error && <div className={styles.error} role="alert">{error}</div>}
+      <button type="button" disabled={checking} onClick={checkStatus}>{checking ? 'Checking…' : 'Check application status'}</button>
       <Link href={content.href}>{content.action}</Link>
     </section>
   </main>;

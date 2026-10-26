@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import type { Database, Sql } from './database.ts';
 import { token, digest, hashPassword, checkPassword, seal } from './security.ts';
+import { notify } from './notifications.ts';
 export class ApiError extends Error {
   status: number; code: string;
   constructor(status: number, code: string, message: string) { super(message); this.status = status; this.code = code; }
@@ -43,7 +44,7 @@ export function identity(db: Database, config: Config) {
     await tx.query('INSERT INTO email_outbox(id,payload) VALUES($1,$2)', [randomUUID(), seal({ to: address, purpose, url }, config.outboxKey)]);
   }
   async function userFor(tx: Sql, id: string): Promise<User> {
-    const u = (await tx.query<{ id: string; email: string; full_name: string; email_verified_at: Date | null; onboarding_intent:'customer'|'vendor'; date_of_birth:string|null; phone_e164:string|null }>('SELECT id,email,full_name,email_verified_at,onboarding_intent,date_of_birth,phone_e164 FROM users WHERE id=$1', [id])).rows[0];
+    const u = (await tx.query<{ id: string; email: string; full_name: string; email_verified_at: Date | null; onboarding_intent:'customer'|'vendor'; date_of_birth:string|null; phone_e164:string|null }>(`SELECT id,email,full_name,email_verified_at,CASE WHEN EXISTS (SELECT 1 FROM vendor_applications WHERE user_id=users.id) THEN 'vendor' ELSE onboarding_intent END AS onboarding_intent,date_of_birth,phone_e164 FROM users WHERE id=$1`, [id])).rows[0];
     if (!u) fail(401, 'UNAUTHENTICATED', 'Sign in to continue.');
     const roles = (await tx.query<{ role: string }>('SELECT role FROM user_roles WHERE user_id=$1 ORDER BY role', [id])).rows.map(r => r.role);
     return { id: u.id, email: u.email, fullName: u.full_name, verified: !!u.email_verified_at, roles, onboardingIntent:u.onboarding_intent, dateOfBirth:u.date_of_birth ? String(u.date_of_birth).slice(0,10) : null, phone:u.phone_e164 };
@@ -97,7 +98,7 @@ export function identity(db: Database, config: Config) {
       if(!/^\d{4}-\d{2}-\d{2}$/.test(dob)) fail(400,'INVALID_INPUT','Choose a valid date of birth.');
       const birthday=new Date(`${dob}T00:00:00Z`); if(Number.isNaN(birthday.valueOf()) || birthday > new Date(now()-18*365.2425*86400000)) fail(400,'AGE_REQUIRED','Vendors must be at least 18 years old.');
       const normalised=phone.startsWith('0')?`+234${phone.slice(1)}`:phone; if(!/^\+234[789]\d{9}$/.test(normalised)) fail(400,'INVALID_INPUT','Enter a valid Nigerian phone number.');
-      return db.transaction(async tx=>{const u=await session(tx,secret);verified(u);await tx.query('UPDATE users SET date_of_birth=$2,phone_e164=$3 WHERE id=$1',[u.id,dob,normalised]);return userFor(tx,u.id);});
+      return db.transaction(async tx=>{const u=await session(tx,secret);verified(u);await tx.query("UPDATE users SET date_of_birth=$2,phone_e164=$3,onboarding_intent='vendor' WHERE id=$1",[u.id,dob,normalised]);return userFor(tx,u.id);});
     },
     async logout(secret?: string) { if (secret) await db.query('DELETE FROM sessions WHERE token_hash=$1', [digest(secret)]); },
     async requestEmail(input: Record<string, unknown>, purpose: 'verify' | 'reset') {
@@ -136,6 +137,7 @@ export function identity(db: Database, config: Config) {
         if(!u.dateOfBirth || !u.phone) fail(409,'PROFILE_INCOMPLETE','Complete your personal details first.');
         const row = (await tx.query(`INSERT INTO vendor_applications(id,user_id,business_name,business_location,country,registration_number,account_type,status)
           VALUES($1,$2,$3,$4,$5,$6,$7,'submitted') ON CONFLICT(user_id) DO UPDATE SET business_name=$3,business_location=$4,country=$5,registration_number=$6,account_type=$7,status='submitted',reviewed_by=NULL,reviewed_at=NULL,review_note=NULL RETURNING id,status`, [id, u.id, businessName, location, country, registration,accountType])).rows[0];
+        await tx.query("UPDATE users SET onboarding_intent='vendor' WHERE id=$1", [u.id]);
         await tx.query('INSERT INTO vendor_review_events(id,application_id,actor_id,from_status,to_status,note) VALUES($1,$2,$3,$4,$5,$6)', [randomUUID(), id, u.id, old?.status ?? 'draft', 'submitted', 'Application submitted']);
         return row;
       });
@@ -168,7 +170,9 @@ export function identity(db: Database, config: Config) {
         await tx.query('UPDATE vendor_applications SET status=$2,reviewed_by=$3,reviewed_at=$4,review_note=$5 WHERE id=$1', [id, decision, u.id, instant(), note]);
         if (decision === 'approved') await tx.query("INSERT INTO user_roles(user_id,role) VALUES($1,'vendor') ON CONFLICT DO NOTHING", [old.user_id]);
         else await tx.query("DELETE FROM user_roles WHERE user_id=$1 AND role='vendor'", [old.user_id]);
-        await tx.query('INSERT INTO vendor_review_events(id,application_id,actor_id,from_status,to_status,note) VALUES($1,$2,$3,$4,$5,$6)', [randomUUID(), id, u.id, old.status, decision, note]);
+        const eventId = randomUUID();
+        await tx.query('INSERT INTO vendor_review_events(id,application_id,actor_id,from_status,to_status,note) VALUES($1,$2,$3,$4,$5,$6)', [eventId, id, u.id, old.status, decision, note]);
+        await notify(tx, old.user_id, `vendor-review:${eventId}`, 'Fendor vendor application update', `Your vendor application is ${decision.replaceAll('_', ' ')}. Open Vendor onboarding in Fendor for the decision and next steps.`, config.outboxKey, config.origin);
         return { id, status: decision };
       });
     }
