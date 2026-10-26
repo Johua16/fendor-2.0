@@ -9,7 +9,18 @@ const href=(view:VendorView)=>view==='overview'?'/vendor':view==='new-product'?'
 const money=(kobo:number)=>new Intl.NumberFormat('en-NG',{style:'currency',currency:'NGN',maximumFractionDigits:0}).format(kobo/100);
 export function VendorWorkspace({view}:{view:VendorView}){
  const [user,setUser]=useState<CurrentUser|null>(null),[app,setApp]=useState<VendorApplication|null>(null),[products,setProducts]=useState<VendorProduct[]>([]),[orders,setOrders]=useState<OrderRequest[]>([]),[loading,setLoading]=useState(true),[error,setError]=useState('');
- const load=()=>Promise.all([currentUser(),vendorApplication(),listVendorProducts(),listVendorOrders()]).then(([u,a,p,o])=>{if(!u.user.roles.includes('vendor')){window.location.href='/vendor/onboarding';return;}setUser(u.user);setApp(a.application);setProducts(p.products);setOrders(o.orders);}).catch((e:unknown)=>setError(e instanceof Error?e.message:'Could not load the vendor workspace.')).finally(()=>setLoading(false));
+ const load=async()=>{
+  setError('');
+  try {
+   const u=await currentUser();
+   if(!u.user.verified){window.location.replace('/verify-email');return;}
+   const a=await vendorApplication();
+   if(!u.user.roles.includes('vendor')||a.application?.status!=='approved'){window.location.replace('/vendor/onboarding');return;}
+   const [p,o]=await Promise.all([listVendorProducts(),listVendorOrders()]);
+   setUser(u.user);setApp(a.application);setProducts(p.products);setOrders(o.orders);
+  }catch(e){setError(e instanceof Error?e.message:'Could not load the vendor workspace.');}
+  finally{setLoading(false);}
+ };
  useEffect(()=>{void load();},[]);
  if(loading)return <div className={styles.loading}><i/><b>Loading your store…</b></div>;
  if(error)return <div className={styles.loading}><b>We could not open your vendor workspace.</b><p>{error}</p><Link href="/login?next=/vendor">Sign in again</Link></div>;

@@ -22,3 +22,15 @@ export const verifyEmail = (token: string) => request<{ message: string }>('/api
 export const resetPassword = (token: string, password: string) => request<{ message: string }>('/api/auth/reset-password', { token, password });
 export function safeNext(value: string | null, fallback = '/account') { return value?.startsWith('/') && !value.startsWith('//') && !value.includes('\\') ? value : fallback; }
 export function reviewSignupDestination(accountType: AccountType) { return accountType === 'vendor' ? '/vendor/onboarding' : '/'; }
+
+// Navigation hints use server-returned identity; API permissions remain server-enforced.
+export function accountDestination(user: Pick<CurrentUser, 'roles' | 'onboardingIntent'>) {
+  if (user.roles.includes('admin')) return '/admin';
+  if (user.roles.includes('vendor')) return '/vendor';
+  return user.onboardingIntent === 'vendor' ? '/vendor/onboarding' : '/account';
+}
+export function signInDestination(user: Pick<CurrentUser, 'roles' | 'onboardingIntent'>, next: string | null) {
+  const destination = accountDestination(user);
+  const requested = safeNext(next, destination);
+  return requested === '/account' ? destination : requested;
+}

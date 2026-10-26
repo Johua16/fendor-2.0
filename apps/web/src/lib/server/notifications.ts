@@ -5,7 +5,7 @@ export async function notify(tx:Sql,userId:string,dedupe:string,title:string,mes
  const id=randomUUID();const inserted=(await tx.query('INSERT INTO notifications(id,user_id,dedupe_key,title,message) VALUES($1,$2,$3,$4,$5) ON CONFLICT(user_id,dedupe_key) DO NOTHING RETURNING id',[id,userId,dedupe,title,message])).rows;
  if(!inserted.length)return;
  const user=(await tx.query<{email:string}>('SELECT email FROM users WHERE id=$1 AND email_verified_at IS NOT NULL',[userId])).rows[0];
- if(user)await tx.query('INSERT INTO email_outbox(id,payload) VALUES($1,$2)',[randomUUID(),seal({to:user.email,purpose:'notification',subject:title,text:`${message}\nOpen Fendor to view the update: ${origin}/account/notifications`},key)]);
+ if(user)await tx.query('INSERT INTO email_outbox(id,payload) VALUES($1,$2)',[randomUUID(),seal({to:user.email,purpose:'notification',subject:title,text:`${message}\nOpen Fendor to view the update: ${origin}/notifications`},key)]);
 }
 export async function produceNotifications(db:Database,key:string,origin:string,now:Date=new Date()) {
  return db.transaction(async tx=>{

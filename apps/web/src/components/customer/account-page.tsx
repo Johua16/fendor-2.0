@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { AuthApiError, currentUser, CurrentUser, resendVerification, signOut } from '../../lib/client/auth';
+import { accountDestination, AuthApiError, currentUser, CurrentUser, resendVerification, signOut } from '../../lib/client/auth';
 import { listNotifications, listSupportCases } from '../../lib/client/customer-service';
 import { listOrderRequests, OrderRequest } from '../../lib/client/marketplace';
 import { CustomerHeader } from './customer-orders';
@@ -11,7 +11,29 @@ import styles from './account-page.module.css';
 
 export function AccountPage() {
   const [user, setUser] = useState<CurrentUser | null>(null); const [orders, setOrders] = useState<OrderRequest[]>([]); const [unread, setUnread] = useState(0); const [cases, setCases] = useState(0); const [loading, setLoading] = useState(true); const [error, setError] = useState<Error | null>(null); const [notice, setNotice] = useState('');
-  useEffect(() => { const controller = new AbortController(); Promise.all([currentUser(), listOrderRequests(controller.signal), listNotifications(controller.signal), listSupportCases(controller.signal)]).then(([identity, orderResult, notificationResult, caseResult]) => { setUser(identity.user); setOrders(orderResult.orders); setUnread(notificationResult.notifications.filter((item) => !item.read_at).length); setCases(caseResult.cases.filter((item) => item.status !== 'resolved').length); }).catch((reason: unknown) => setError(reason instanceof Error ? reason : new Error('Fendor could not load your account.'))).finally(() => setLoading(false)); return () => controller.abort(); }, []);
+  useEffect(() => {
+    const controller = new AbortController();
+    async function load() {
+      try {
+        const identity = await currentUser();
+        if (controller.signal.aborted) return;
+        const destination = accountDestination(identity.user);
+        if (destination !== '/account') { window.location.replace(destination); return; }
+        setUser(identity.user);
+        const [orderResult, notificationResult, caseResult] = await Promise.all([
+          listOrderRequests(controller.signal), listNotifications(controller.signal), listSupportCases(controller.signal),
+        ]);
+        if (controller.signal.aborted) return;
+        setOrders(orderResult.orders);
+        setUnread(notificationResult.notifications.filter((item) => !item.read_at).length);
+        setCases(caseResult.cases.filter((item) => item.status !== 'resolved').length);
+      } catch (reason) {
+        if (!controller.signal.aborted) setError(reason instanceof Error ? reason : new Error('Fendor could not load your account.'));
+      } finally { if (!controller.signal.aborted) setLoading(false); }
+    }
+    void load();
+    return () => controller.abort();
+  }, []);
   async function logout() { await signOut(); window.location.href = '/'; }
   async function resend() { if (!user) return; try { const response = await resendVerification(user.email); setNotice(response.message); } catch (reason) { setNotice(reason instanceof Error ? reason.message : 'Fendor could not queue a verification email.'); } }
   const signedOut = error instanceof AuthApiError && error.status === 401;
