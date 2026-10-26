@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { FormEvent, useEffect, useState } from 'react';
 import {
   AccountType, AuthApiError, forgotPassword, resendVerification, resetPassword,
-  accountDestination, signInDestination, signIn, signUp, verifyEmail,
+  reviewSignupDestination, signInDestination, signIn, signUp, verifyEmail,
 } from '../../lib/client/auth';
 import styles from './auth-page.module.css';
 
@@ -89,8 +89,7 @@ export function AuthPage({ mode }: { mode: Mode }) {
           setMessage('Your review account is ready. Signing you in…');
           try {
             const login = await signIn(email, password);
-            const destination = accountDestination(login.user);
-            window.location.replace(destination === '/account' ? '/' : destination);
+            window.location.replace(reviewSignupDestination(accountType, login.user));
           } catch {
             setMessage('Your review account is ready, but automatic sign-in did not complete. Continue to sign in.');
             setReviewSignup(true);

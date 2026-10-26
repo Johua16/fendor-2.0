@@ -21,7 +21,14 @@ export const forgotPassword = (email: string) => request<{ message: string }>('/
 export const verifyEmail = (token: string) => request<{ message: string }>('/api/auth/verify-email', { token });
 export const resetPassword = (token: string, password: string) => request<{ message: string }>('/api/auth/reset-password', { token, password });
 export function safeNext(value: string | null, fallback = '/account') { return value?.startsWith('/') && !value.startsWith('//') && !value.includes('\\') ? value : fallback; }
-export function reviewSignupDestination(accountType: AccountType) { return accountType === 'vendor' ? '/vendor/onboarding' : '/'; }
+export function reviewSignupDestination(accountType: AccountType, user?: Pick<CurrentUser, 'roles' | 'onboardingIntent'>) {
+  if (user) {
+    const destination = accountDestination(user);
+    if (destination !== '/account') return destination;
+  }
+  // Choosing to apply is a navigation hint, never approval to sell.
+  return accountType === 'vendor' ? '/vendor/onboarding' : '/';
+}
 
 // Navigation hints use server-returned identity; API permissions remain server-enforced.
 export function accountDestination(user: Pick<CurrentUser, 'roles' | 'onboardingIntent'>) {

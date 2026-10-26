@@ -28,6 +28,9 @@ test('server identity sends vendors, applicants and administrators to their own 
   const customer = { roles: ['customer'], onboardingIntent: 'customer' as const };
   const applicant = { roles: ['customer'], onboardingIntent: 'vendor' as const };
   const vendor = { roles: ['customer', 'vendor'], onboardingIntent: 'vendor' as const };
+  assert.equal(reviewSignupDestination('vendor', customer), '/vendor/onboarding');
+  assert.equal(reviewSignupDestination('customer', vendor), '/vendor');
+  assert.equal(reviewSignupDestination('customer', applicant), '/vendor/onboarding');
   assert.equal(accountDestination(customer), '/account');
   assert.equal(accountDestination(applicant), '/vendor/onboarding');
   assert.equal(accountDestination(vendor), '/vendor');
