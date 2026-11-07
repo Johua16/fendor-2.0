@@ -1,7 +1,8 @@
 export const REVIEW_ACCESS_COOKIE = 'fendor_review_access';
 
 export function reviewAccessEnabled() {
-  return process.env.BETA_REVIEW_MODE === 'true' && Boolean(process.env.REVIEW_ACCESS_CODE?.trim());
+  // The temporary team review programme has ended, including on older deployments.
+  return false;
 }
 
 export async function reviewAccessToken(code: string) {

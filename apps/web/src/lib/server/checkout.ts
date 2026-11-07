@@ -4,7 +4,7 @@ import type { Database, Sql } from './database.ts';
 import { actor, uuid } from './catalogue.ts';
 import { fail, text } from './identity.ts';
 import { transition, DomainError, type Order, type OrderState, type Command } from '../../../../../server/src/order.ts';
-type Row=Record<string,unknown>&{id:string;customer_id:string;vendor_id:string;product_variant_id:string;quantity:number;state:OrderState;version:number;stock_held:boolean;reservation_expires_at:Date|null;product_snapshot:{unitPriceKobo:number;productVersion:number};total_kobo:string|null;accepted_total_kobo:string|null;payment_verified:boolean;quote_id:string|null;accepted_quote_id:string|null};
+type Row=Record<string,unknown>&{id:string;customer_id:string;vendor_id:string;product_variant_id:string;quantity:number;state:OrderState;version:number;stock_held:boolean;reservation_expires_at:Date|null;product_snapshot:{unitPriceKobo:number;productVersion:number};total_kobo:string|null;accepted_total_kobo:string|null;payment_verified:boolean;financial_hold:boolean;quote_id:string|null;accepted_quote_id:string|null};
 function amount(value:unknown,min=0):number {
  if(typeof value!=='number'||!Number.isSafeInteger(value)||value<min) fail(400,'INVALID_AMOUNT','Use a valid integer amount in kobo.');return value;
 }
@@ -38,15 +38,18 @@ export function checkout(db:Database,now:()=>number=Date.now,options:{reviewMode
     const by=await actor(tx,secret,admin?'admin':'customer'),row=await load(tx,id);
     if(!admin && row.customer_id!==by) fail(404,'NOT_FOUND','Order not found.');
     const quote=row.quote_id?(await tx.query('SELECT id,details FROM order_quotes WHERE id=$1',[row.quote_id])).rows[0]:null;
-    const payments=admin?(await tx.query('SELECT id,bank_reference,received_kobo,status,receipt_note,received_at FROM payment_records WHERE order_id=$1 ORDER BY received_at,id',[id])).rows:undefined;
+    const payments=admin?(await tx.query('SELECT id,bank_reference,received_kobo,status,receipt_note,received_at,provider,provider_payment_id,verified_at FROM payment_records WHERE order_id=$1 ORDER BY received_at,id',[id])).rows:undefined;
+    const attempts=(await tx.query<{provider:string;reference:string;provider_payment_id:string|null;provider_amount:string;provider_currency:string;status:string;failure_reason:string|null;created_at:Date;updated_at:Date}>(`SELECT provider,reference,provider_payment_id,provider_amount,provider_currency,status,failure_reason,created_at,updated_at FROM payment_attempts WHERE order_id=$1 ORDER BY created_at DESC LIMIT ${admin?'25':'1'}`,[id])).rows;
     const ledger=await balances(tx,id);
+    const receipt=(await tx.query<{id:string;received_kobo:string;provider:string|null;verified_at:Date|null}>("SELECT id,received_kobo,provider,verified_at FROM payment_records WHERE order_id=$1 AND status='verified' ORDER BY verified_at DESC NULLS LAST,id DESC LIMIT 1",[id])).rows[0]??null;
     const refundRows=admin?(await tx.query('SELECT r.id,r.payment_id,r.bank_reference,r.amount_kobo,r.note,r.created_at FROM payment_refunds r JOIN payment_records p ON p.id=r.payment_id WHERE p.order_id=$1 ORDER BY r.created_at,r.id',[id])).rows:undefined;
     const recorded=(await tx.query('SELECT id FROM payment_records WHERE order_id=$1 LIMIT 1',[id])).rows.length>0;
-    return {orderId:id,version:row.version,state:row.state,quote,acceptedQuoteId:row.accepted_quote_id,orderConfirmed:row.payment_verified,reservationExpiresAt:row.reservation_expires_at,reservationActive:row.stock_held && !!row.reservation_expires_at && new Date(row.reservation_expires_at).getTime()>now(),fundsRecorded:recorded,netReceivedKobo:ledger.net.toString(),refundedKobo:ledger.rows.reduce((sum,p)=>sum+BigInt(p.refunded_kobo),0n).toString(),reviewMode,...(!admin&&row.accepted_quote_id&&!reviewMode?{paymentInstructions:paymentInstructions()}:{}),...(admin?{payments,refunds:refundRows}:{})};
+    const latestPayment=attempts[0]?{provider:attempts[0].provider,status:attempts[0].status,updatedAt:attempts[0].updated_at}:null;
+    return {orderId:id,version:row.version,state:row.state,quote,acceptedQuoteId:row.accepted_quote_id,orderConfirmed:row.payment_verified,financialHold:row.financial_hold,reservationExpiresAt:row.reservation_expires_at,reservationActive:row.stock_held && !!row.reservation_expires_at && new Date(row.reservation_expires_at).getTime()>now(),fundsRecorded:recorded,netReceivedKobo:ledger.net.toString(),refundedKobo:ledger.rows.reduce((sum,p)=>sum+BigInt(p.refunded_kobo),0n).toString(),reviewMode,latestPayment,receipt,...(!admin&&row.accepted_quote_id&&!reviewMode?{paymentInstructions:paymentInstructions()}:{}),...(admin?{payments,paymentAttempts:attempts,refunds:refundRows}:{})};
    });
   },
-  async change(secret:string|undefined,id:string,input:Record<string,unknown>,action:'quote'|'accept-quote'|'record-payment'|'verify-payment'|'simulate-payment') {
-   uuid(id);const version=amount(input.version),customer=action==='accept-quote';
+  async change(secret:string|undefined,id:string,input:Record<string,unknown>,action:'quote'|'auto-quote'|'accept-quote'|'record-payment'|'verify-payment'|'simulate-payment') {
+   uuid(id);const version=amount(input.version),customer=action==='accept-quote'||action==='auto-quote';
    return db.transaction(async tx=>{
     const by=await actor(tx,secret,customer?'customer':'admin'),initial=await load(tx,id);authorise(initial,by,customer);
     if(action==='simulate-payment' && (!reviewMode || input.reviewModeAcknowledged!==true)) fail(403,'REVIEW_MODE_REQUIRED','Test payment simulation is disabled.');
@@ -94,6 +97,19 @@ export function checkout(db:Database,now:()=>number=Date.now,options:{reviewMode
     active(row);
     const receipts=(await tx.query<{id:string;received_kobo:string;status:string}>('SELECT id,received_kobo,status FROM payment_records WHERE order_id=$1 ORDER BY id',[id])).rows;
     if(action!=='verify-payment' && receipts.length) fail(409,'PAYMENT_REVIEW_REQUIRED','Resolve recorded funds before changing this quote.');
+    if(action==='auto-quote') {
+     if((await tx.query("SELECT id FROM payment_attempts WHERE order_id=$1 AND status IN ('initializing','pending')",[id])).rows.length)fail(409,'PAYMENT_PENDING','Resolve the current payment attempt before changing the total.');
+     if(row.state!=='reserved') fail(409,'INVALID_STATE','Confirm stock before calculating checkout.');
+     const pack=(await tx.query<{id:string;name:string;price_kobo:string}>('SELECT id,name,price_kobo FROM packaging_options WHERE id=$1 AND active FOR SHARE',[text(input.packagingId,'packaging option',1,80)])).rows[0];
+     const zone=(await tx.query<{name:string;fee_kobo:string|null}>('SELECT z.name,z.fee_kobo FROM order_deliveries d JOIN delivery_zones z ON z.id=d.zone_id WHERE d.order_id=$1 AND z.active FOR SHARE OF z',[id])).rows[0];
+     if(!pack) fail(400,'PACKAGING_REQUIRED','Choose an available packaging option.');
+     if(!zone || zone.fee_kobo===null) fail(409,'DELIVERY_REQUIRED','Save an address in a delivery area with a configured price.');
+     const packaging=amount(Number(pack.price_kobo)),delivery=amount(Number(zone.fee_kobo)),subtotal=amount(row.product_snapshot.unitPriceKobo*row.quantity,1),total=amount(subtotal+packaging+delivery,1);
+     const quoteId=randomUUID(),details={productSubtotalKobo:subtotal,packagingKobo:packaging,deliveryKobo:delivery,totalKobo:total,currency:'NGN',fulfilmentPlan:`${pack.name}; delivery to ${zone.name}.`,fulfilmentChecked:true,pricingSource:'standard_rates',packagingId:pack.id};
+     await tx.query('INSERT INTO order_quotes(id,order_id,created_by,order_version,details) VALUES($1,$2,$3,$4,$5)',[quoteId,id,by,version+1,JSON.stringify(details)]);
+     await tx.query("UPDATE order_requests SET quote_id=$2,accepted_quote_id=NULL,total_kobo=$3,accepted_total_kobo=NULL,version=version+1 WHERE id=$1",[id,quoteId,total]);
+     await audit(tx,row,by,'reserved','quote_created');return {orderId:id,quoteId,version:version+1,totalKobo:total};
+    }
     if(action==='quote') {
      if(input.fulfilmentChecked!==true) fail(400,'FEASIBILITY_REQUIRED','Confirm packaging, delivery and preparation feasibility.');
      if(!(await tx.query('SELECT d.order_id FROM order_deliveries d JOIN delivery_zones z ON z.id=d.zone_id WHERE d.order_id=$1 AND z.active',[id])).rows.length) fail(409,'DELIVERY_REQUIRED','Select a supported delivery zone and save delivery details.');

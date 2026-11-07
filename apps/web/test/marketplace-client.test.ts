@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { acceptOrderQuote, cancelOrderRequest, createOrderRequest, getCheckoutSummary, getDeliveryDetails, getOrderHistory, getVendorProfile, listDeliveryZones, listOrderRequests, listProducts, MarketplaceApiError, saveDeliveryDetails, saveOrderPersonalisation, saveVendorProfile } from '../src/lib/client/marketplace.ts';
+import { acceptOrderQuote, cancelOrderRequest, createOrderRequest, editVendorProduct, getCheckoutSummary, getDeliveryDetails, getOrderHistory, getVendorProfile, listDeliveryZones, listOrderRequests, listProducts, MarketplaceApiError, saveDeliveryDetails, saveOrderPersonalisation, saveVendorProfile } from '../src/lib/client/marketplace.ts';
 
 test('catalogue client sends supported public filters', async () => {
   const originalFetch = globalThis.fetch;
@@ -120,5 +120,22 @@ test('vendor readiness uses the protected profile contract and preserves the cur
       { path: '/api/vendor/profile', method: undefined, body: undefined },
       { path: '/api/vendor/profile', method: 'POST', body: { version: 3, phone: '+2348000000000', backupPhone: '+2348111111111', pickupAddress: '12 Market Road, Abuja', documentId: 'document-1', windowStart: '2026-11-01T08:00:00.000Z', windowEnd: '2026-11-03T18:00:00.000Z' } },
     ]);
+  } finally { globalThis.fetch = originalFetch; }
+});
+
+test('vendor product edits preserve moderation version and complete catalogue data', async () => {
+  const originalFetch = globalThis.fetch;
+  let call: { path: string; method?: string; body?: unknown } | undefined;
+  globalThis.fetch = async (input, init) => {
+    call = { path: String(input), method: init?.method, body: JSON.parse(String(init?.body)) };
+    return Response.json({ product: { id: 'product-1', status: 'draft', version: 4 } });
+  };
+  try {
+    await editVendorProduct('product-1', { version: 3, title: 'Celebration hamper', description: 'A complete celebration gift hamper.', category: 'hampers', imagePath: '/api/media/image-1', sku: 'HAMPER-1', priceKobo: 2500000, stockQuantity: 8 });
+    assert.deepEqual(call, {
+      path: '/api/vendor/products/product-1/edit', method: 'POST', body: {
+        version: 3, title: 'Celebration hamper', description: 'A complete celebration gift hamper.', category: 'hampers', imagePath: '/api/media/image-1', sku: 'HAMPER-1', priceKobo: 2500000, stockQuantity: 8,
+      },
+    });
   } finally { globalThis.fetch = originalFetch; }
 });

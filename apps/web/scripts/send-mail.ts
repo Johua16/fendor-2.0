@@ -8,7 +8,7 @@ const transport=nodemailer.createTransport(process.env.SMTP_URL,{from:process.en
 const db=database();
 try {
   for(let i=0;i<50;i++) {
-    const result=await deliverOne(db,settings.outboxKey,mail=>transport.sendMail(mail));
+    const result=await deliverOne(db,settings.outboxKey,mail=>transport.sendMail(mail),true);
     if(result==='empty') break;
     if(result==='failed') {process.exitCode=1; console.error('Email delivery failed. Check transport configuration.'); break;}
   }

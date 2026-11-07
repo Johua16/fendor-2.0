@@ -68,8 +68,8 @@ test('database-backed identity and vendor lifecycle', async () => {
     assert.equal(response.status,200);
     assert.match(response.headers.get('set-cookie')!,/HttpOnly; SameSite=Lax/);
     assert.equal('secret' in await response.json(),false);
-    assert.equal(await deliverOne(db,key,async()=>{throw Error('offline')}),'failed');
-    assert.equal(await deliverOne(db,key,async mail=>{assert.match(mail.text,/http:\/\/localhost/);}), 'sent');
+    assert.equal(await deliverOne(db,key,async()=>{throw Error('offline')},false),'failed');
+    assert.equal(await deliverOne(db,key,async mail=>{assert.match(mail.text,/http:\/\/localhost/);},false), 'sent');
     assert.equal((await db.query("SELECT * FROM email_outbox WHERE sent_at IS NOT NULL AND payload='' ")).rows.length,1);
     time+=8*86400000;
     await assert.rejects(api.me(fresh.secret),{code:'UNAUTHENTICATED'});

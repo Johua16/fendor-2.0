@@ -14,8 +14,10 @@ export async function operationsResponse(req:Request,path:string[],db:Database,s
  const result=(value:unknown,status=200)=>Response.json(value,{status,headers});
  const query=new URL(req.url).searchParams;
  if(req.method==='GET') {
+  if(key==='admin/standard-prices'){await actor(db,secret,'admin');return result({packaging:(await db.query('SELECT id,name,price_kobo::text AS "priceKobo" FROM packaging_options WHERE active ORDER BY name')).rows,zones:(await db.query('SELECT id,name,city,state,fee_kobo::text AS "priceKobo" FROM delivery_zones WHERE active ORDER BY state,city,name')).rows});}
   if(path[0]==='media'&&path.length===2){const bytes=await files.read(secret,path[1]);return new Response(new Uint8Array(bytes),{headers:{'Content-Type':'image/webp','X-Content-Type-Options':'nosniff','Cache-Control':'private, no-store','Content-Security-Policy':"default-src 'none'",'Content-Disposition':'inline'}});}
   if(key==='delivery-zones')return result({zones:await ship.zones()});
+  if(key==='packaging-options')return result({options:(await db.query('SELECT id,name,price_kobo::text AS "priceKobo" FROM packaging_options WHERE active ORDER BY price_kobo,id')).rows});
   if(key==='vendor/profile')return result(await vendorProfile(db,settings.outboxKey,settings.origin).read(secret));
   if(path[0]==='admin'&&path[1]==='vendor-profiles'&&path.length===3){await actor(db,secret,'admin');const row=(await db.query<{private_details:string}>('SELECT * FROM vendor_profiles WHERE user_id=$1',[uuid(path[2])])).rows[0];if(!row)fail(404,'NOT_FOUND','Profile not found.');const {private_details,...rest}=row;return result({...rest,...unseal(private_details,settings.outboxKey) as Record<string,unknown>});}
   if(key==='notifications'){const u=await identity(db,settings).me(secret);const after=query.get('after');if(after)uuid(after);const rows=(await db.query('SELECT id,title,message,read_at,created_at FROM notifications WHERE user_id=$1 AND ($2::uuid IS NULL OR id>$2) ORDER BY id LIMIT 51',[u.id,after])).rows;return result({notifications:rows.slice(0,50),nextCursor:rows.length>50?rows[49].id:null});}
@@ -25,9 +27,9 @@ export async function operationsResponse(req:Request,path:string[],db:Database,s
    finance:(await db.query('SELECT id,state,version FROM order_requests WHERE financial_hold ORDER BY id LIMIT 100')).rows,
    remedies:(await db.query("SELECT id,order_id,status,kind FROM order_remedies WHERE status IN ('requested','approved') ORDER BY created_at LIMIT 100")).rows,
    workers:(await db.query('SELECT name,last_started,last_succeeded,last_failed,lease_until FROM worker_health')).rows,
-   mail:(await db.query('SELECT count(*)::int AS pending,count(*) FILTER(WHERE attempts>=5)::int AS failed FROM email_outbox WHERE sent_at IS NULL')).rows[0]});}
+   mail:(await db.query("SELECT count(*) FILTER(WHERE next_attempt_at<>'infinity'::timestamptz)::int AS pending,count(*) FILTER(WHERE attempts>=5 AND next_attempt_at<>'infinity'::timestamptz)::int AS failed,count(*) FILTER(WHERE next_attempt_at='infinity'::timestamptz)::int AS suppressed FROM email_outbox WHERE sent_at IS NULL")).rows[0]});}
   if(key==='admin/audit'){await actor(db,secret,'admin');const after=query.get('after');if(after)uuid(after);return result({events:(await db.query('SELECT * FROM operation_audit WHERE ($1::uuid IS NULL OR id>$1) ORDER BY id LIMIT 100',[after])).rows});}
-  if(key==='admin/mail-failures'){await actor(db,secret,'admin');return result({failures:(await db.query('SELECT id,attempts,created_at,next_attempt_at FROM email_outbox WHERE sent_at IS NULL AND attempts>=5 ORDER BY created_at LIMIT 100')).rows});}
+  if(key==='admin/mail-failures'){await actor(db,secret,'admin');return result({failures:(await db.query("SELECT id,attempts,created_at,next_attempt_at FROM email_outbox WHERE sent_at IS NULL AND attempts>=5 AND next_attempt_at<>'infinity'::timestamptz ORDER BY created_at LIMIT 100")).rows});}
   if(path[0]==='support' || (admin&&path[1]==='support')){const rest=path.slice(admin?2:1);if(!rest.length)return result(await help.list(secret,admin,query.get('after')??undefined));if(rest.length===1)return result(await help.read(secret,rest[0],admin,query.get('after')??undefined));}
  }
  const scoped=path[0]==='orders'?'customer':path[1]==='orders'&&['vendor','admin'].includes(path[0])?path[0] as 'vendor'|'admin':null;
@@ -44,6 +46,15 @@ export async function operationsResponse(req:Request,path:string[],db:Database,s
   }
  }}
  if(req.method==='POST') {
+  if(key==='admin/standard-prices'){
+   const input=await body(req);fields(input,['kind','id','priceKobo','previousPriceKobo']);
+   if(!['packaging','zone'].includes(String(input.kind))||typeof input.id!=='string'||!Number.isSafeInteger(input.priceKobo)||Number(input.priceKobo)<0)fail(400,'INVALID_INPUT','Choose a rate and non-negative integer price.');
+   if(input.previousPriceKobo!==null && (typeof input.previousPriceKobo!=='string'||!/^\d+$/.test(input.previousPriceKobo)))fail(400,'INVALID_INPUT','Reload the previous price.');
+   return result(await db.transaction(async tx=>{const by=await actor(tx,secret,'admin');const table=input.kind==='zone'?'delivery_zones':'packaging_options',column=input.kind==='zone'?'fee_kobo':'price_kobo';
+    const rows=(await tx.query(`UPDATE ${table} SET ${column}=$2 WHERE id=$1 AND ${column} IS NOT DISTINCT FROM $3::bigint RETURNING id`,[input.id,input.priceKobo,input.previousPriceKobo])).rows;
+    if(!rows.length)fail(409,'STALE_VERSION','This rate changed. Reload before saving.');
+    await tx.query('INSERT INTO operation_audit(id,actor_id,action,note) VALUES(gen_random_uuid(),$1,$2,$3)',[by,'standard_price_updated',`${input.kind}:${input.id} set to ${input.priceKobo} kobo`]);return {saved:true};}));
+  }
   if(key==='uploads') {
    await identity(db,settings).me(secret);
    const reader=req.body?.getReader();if(!reader)fail(400,'INVALID_IMAGE','Image required.');let size=0;const chunks:Uint8Array[]=[];
@@ -54,7 +65,7 @@ export async function operationsResponse(req:Request,path:string[],db:Database,s
   if(key==='vendor/profile'){const input=await body(req);fields(input,['version','phone','backupPhone','pickupAddress','documentId','windowStart','windowEnd']);return result(await vendorProfile(db,settings.outboxKey,settings.origin).save(secret,input));}
   if(key==='admin/delivery-zones'){const input=await body(req);fields(input,['id','name','state','city','active','version']);return result(await ship.zone(secret,input));}
   if(path[0]==='notifications'&&path.length===3&&path[2]==='read'){const u=await identity(db,settings).me(secret);const input=await body(req);fields(input,[]);const row=(await db.query('UPDATE notifications SET read_at=COALESCE(read_at,now()) WHERE id=$1 AND user_id=$2 RETURNING id',[uuid(path[1]),u.id])).rows[0];if(!row)fail(404,'NOT_FOUND','Notification not found.');return result(row);}
-  if(admin&&path[1]==='mail-failures'&&path.length===4&&path[3]==='retry'){await actor(db,secret,'admin');fields(await body(req),[]);await db.query('UPDATE email_outbox SET attempts=0,next_attempt_at=now() WHERE id=$1 AND sent_at IS NULL',[uuid(path[2])]);return result({message:'Queued for retry.'});}
+  if(admin&&path[1]==='mail-failures'&&path.length===4&&path[3]==='retry'){await actor(db,secret,'admin');fields(await body(req),[]);await db.query("UPDATE email_outbox SET attempts=0,next_attempt_at=now() WHERE id=$1 AND sent_at IS NULL AND next_attempt_at<>'infinity'::timestamptz",[uuid(path[2])]);return result({message:'Queued for retry.'});}
   if(key==='support'){const input=await body(req);fields(input,['requestId','subject','message','orderId']);return result(await help.create(secret,input),201);}
   if((path[0]==='support'&&path.length===2)||(admin&&path[1]==='support'&&path.length===3)){const input=await body(req);fields(input,admin?['version','message','internal','status','assignedTo']:['version','message']);return result(await help.update(secret,path[admin?2:1],input,admin));}
  }

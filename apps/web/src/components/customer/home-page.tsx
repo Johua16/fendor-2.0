@@ -44,13 +44,13 @@ const categoryArt: Record<string, Pick<DisplayProduct, 'art' | 'tint'>> = {
 };
 
 function catalogueProduct(product: CatalogueProduct): DisplayProduct {
-  return { id: product.id, variantId: product.variantId, name: product.title, vendor: 'Verified Fendor vendor', price: `₦${Math.round(product.priceKobo / 100).toLocaleString('en-NG')}`, imagePath: product.imagePath, description: product.description, category: product.category, ...(categoryArt[product.category] ?? categoryArt.other) };
+  return { id: product.id, variantId: product.variantId, name: product.title, vendor: 'Verified Fendora vendor', price: `₦${Math.round(product.priceKobo / 100).toLocaleString('en-NG')}`, imagePath: product.imagePath, description: product.description, category: product.category, ...(categoryArt[product.category] ?? categoryArt.other) };
 }
 
 const heroSlides = [
   { eyebrow: 'Curated for meaningful moments', title: 'Find Your Next Favourite Thing', copy: 'Discover thoughtful products from verified Nigerian vendors, brought together in one dependable marketplace.', position: '50% 48%' },
-  { eyebrow: 'Gifts with more meaning', title: 'Make Every Gift Feel Personal', copy: 'Choose a product, add the recipient details, and let Fendor guide the order from confirmation to fulfilment.', position: '28% 50%' },
-  { eyebrow: 'Local makers, closer to you', title: 'Discover Trusted Nigerian Vendors', copy: 'Explore independent stores and distinctive products, with Fendor coordinating every confirmed order.', position: '73% 50%' },
+  { eyebrow: 'Gifts with more meaning', title: 'Make Every Gift Feel Personal', copy: 'Choose a product, add the recipient details, and let Fendora guide the order from confirmation to fulfilment.', position: '28% 50%' },
+  { eyebrow: 'Local makers, closer to you', title: 'Discover Trusted Nigerian Vendors', copy: 'Explore independent stores and distinctive products, with Fendora coordinating every confirmed order.', position: '73% 50%' },
 ];
 
 const collections = [
@@ -125,7 +125,7 @@ export function HomePage() {
       if (controller.signal.aborted) return;
       setCatalogue([]);
       setCatalogueState('error');
-      setNotice(error instanceof MarketplaceApiError && error.status === 503 ? 'The live marketplace is temporarily unavailable.' : 'Fendor could not load the live catalogue.');
+      setNotice(error instanceof MarketplaceApiError && error.status === 503 ? 'The live marketplace is temporarily unavailable.' : 'Fendora could not load the live catalogue.');
     });
     return () => controller.abort();
   }, []);
@@ -144,15 +144,15 @@ export function HomePage() {
 
   return <div className={styles.page}>
     <header className={styles.header}>
-      <div className={styles.utility}><div className={styles.shell}><span>Help & Support</span><span>Sell on Fendor</span></div></div>
+      <div className={styles.utility}><div className={styles.shell}><span className={styles.betaBadge}>PUBLIC BETA</span><span>Help & Support</span><span>Sell on Fendora</span></div></div>
       <div className={`${styles.shell} ${styles.mainHeader}`}>
-        <Link href="/" className={styles.logo} aria-label="Fendor home"><Image src="/icons/home/logo.svg" width={40} height={40} alt="" priority /><span><b>Fendor</b><small>MARKETPLACE</small></span></Link>
+        <Link href="/" className={styles.logo} aria-label="Fendora home"><Image src="/icons/home/logo.svg" width={40} height={40} alt="" priority /><span><b>Fendora</b><small>MARKETPLACE</small></span></Link>
         <form className={styles.search} onSubmit={handleSearch} role="search">
-          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search products, brands and categories" aria-label="Search Fendor" />
+          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search products, brands and categories" aria-label="Search Fendora" />
           <button aria-label="Submit search"><Icon name="search" size={19} /></button>
         </form>
         <nav className={styles.actions} aria-label="Account actions">
-          <Link href="/account"><Icon name="user" size={21} /><span>Account</span></Link>
+          <Link href="/account" aria-label="My Account"><Icon name="user" size={21} /><span>My Account</span></Link>
           <Link href="/help"><Icon name="circle-help" size={21} /><span>Help</span></Link>
           <Link href="/cart" className={styles.cart}><Icon name="shopping-cart" size={23} /><span>Cart</span>{cartCount > 0 && <b>{cartCount}</b>}</Link>
         </nav>
@@ -166,7 +166,7 @@ export function HomePage() {
     {notice && <button className={styles.toast} onClick={() => setNotice('')} aria-live="polite">{notice}<span>×</span></button>}
 
     <main>
-      <section className={`${styles.shell} ${styles.hero}`} aria-roledescription="carousel" aria-label="Fendor highlights">
+      <section className={`${styles.shell} ${styles.hero}`} aria-roledescription="carousel" aria-label="Fendora highlights">
         <div className={styles.heroCopy}>
           <p className={styles.eyebrow}>{heroSlides[slide].eyebrow}</p>
           <h1>{heroSlides[slide].title}</h1>
@@ -213,23 +213,23 @@ export function HomePage() {
       </section>
 
       <section className={`${styles.shell} ${styles.section} ${styles.trust}`}>
-        <div className={styles.centeredHead}><h2>Why shop on Fendor</h2><p>Built to make discovery, confirmation, and fulfilment feel clear from the start.</p></div>
+        <div className={styles.centeredHead}><h2>Why shop on Fendora</h2><p>Built to make discovery, confirmation, and fulfilment feel clear from the start.</p></div>
         <div className={styles.trustGrid}>{[
           ['shield-check', 'Verified vendors', 'Vendors submit identity and business information before their products can be approved.'],
-          ['package', 'Stock confirmation', 'The vendor confirms availability before Fendor asks you to complete an offline payment.'],
+          ['package', 'Stock confirmation', 'The vendor confirms availability before Fendora asks you to complete an offline payment.'],
           ['truck', 'Clear order updates', 'Follow each order through confirmation, payment review, preparation, and fulfilment.'],
-          ['message-circle', 'Fendor support', 'Questions and order issues stay inside Fendor so every request has a visible record.'],
+          ['message-circle', 'Fendora support', 'Questions and order issues stay inside Fendora so every request has a visible record.'],
         ].map(([icon, title, copy]) => <article key={title}><span aria-hidden="true"><Icon name={icon as IconName} size={26}/></span><h3>{title}</h3><p>{copy}</p></article>)}</div>
       </section>
 
       <section className={`${styles.shell} ${styles.vendorCta}`}>
-        <div><span className={styles.lightPill}>VENDOR APPLICATIONS OPEN</span><h2>Have products to sell? Meet Fendor.</h2><p>Join a marketplace built around verified products, responsive stock confirmation, and a clear order process.</p><div className={styles.heroButtons}><Link href="/signup" className={styles.primaryButton}>Open your storefront</Link><a href="#support" className={styles.secondaryButton}>Learn how it works</a></div></div>
+        <div><span className={styles.lightPill}>VENDOR APPLICATIONS OPEN</span><h2>Have products to sell? Meet Fendora.</h2><p>Join a marketplace built around verified products, responsive stock confirmation, and a clear order process.</p><div className={styles.heroButtons}><Link href="/signup" className={styles.primaryButton}>Open your storefront</Link><a href="#support" className={styles.secondaryButton}>Learn how it works</a></div></div>
         <div className={styles.protocol}><h3>WHAT WE LOOK FOR</h3><ul><li>Verified identity and business details</li><li>Accurate product and stock information</li><li>Fast responses to order requests</li><li>Reliable preparation and handover</li></ul></div>
       </section>
 
-      <section className={`${styles.shell} ${styles.newsletter}`}><div><span className={styles.pill}>CURATED UPDATES</span><h2>Stay in the loop</h2><p>Receive new collections, vendor stories, and thoughtful gift ideas.</p></div><form onSubmit={(e) => { e.preventDefault(); setNotice('You’re on the Fendor updates list.'); }}><div><input required type="email" placeholder="Enter your email address" aria-label="Email address" /><button>Subscribe</button></div><small>No spam. Unsubscribe at any time.</small></form></section>
+      <section className={`${styles.shell} ${styles.newsletter}`}><div><span className={styles.pill}>CURATED UPDATES</span><h2>Stay in the loop</h2><p>Receive new collections, vendor stories, and thoughtful gift ideas.</p></div><form onSubmit={(e) => { e.preventDefault(); setNotice('You’re on the Fendora updates list.'); }}><div><input required type="email" placeholder="Enter your email address" aria-label="Email address" /><button>Subscribe</button></div><small>No spam. Unsubscribe at any time.</small></form></section>
     </main>
 
-    <footer className={styles.footer} id="support"><div className={`${styles.shell} ${styles.footerGrid}`}><div><Link href="/" className={styles.logo}><Image src="/icons/home/logo.svg" width={40} height={40} alt="" /><span><b>Fendor</b><small>MARKETPLACE</small></span></Link><p>Thoughtful products from verified vendors, coordinated through one dependable marketplace.</p><span className={styles.footerBadge}><Icon name="check-circle" size={15}/> Verified marketplace</span></div><div><h3>Shopping</h3><Link href="/shop">Browse products</Link><Link href="/saved">Saved products</Link><Link href="/cart">Cart</Link></div><div><h3>Customer care</h3><Link href="/help">Help centre</Link><Link href="/orders">Order tracking</Link><Link href="/support">Contact Fendor</Link></div><div><h3>Trust & policies</h3><Link href="/policies/returns">Returns</Link><Link href="/policies/privacy">Privacy</Link><Link href="/policies/terms">Terms</Link></div></div><div className={`${styles.shell} ${styles.copyright}`}>© 2026 Fendor Marketplace. Built for meaningful commerce.</div></footer>
+    <footer className={styles.footer} id="support"><div className={`${styles.shell} ${styles.footerGrid}`}><div><Link href="/" className={styles.logo}><Image src="/icons/home/logo.svg" width={40} height={40} alt="" /><span><b>Fendora</b><small>MARKETPLACE</small></span></Link><p>Thoughtful products from verified vendors, coordinated through one dependable marketplace.</p><span className={styles.footerBadge}><Icon name="check-circle" size={15}/> Verified marketplace</span></div><div><h3>Shopping</h3><Link href="/shop">Browse products</Link><Link href="/saved">Saved products</Link><Link href="/cart">Cart</Link></div><div><h3>Customer care</h3><Link href="/help">Help centre</Link><Link href="/orders">Order tracking</Link><Link href="/support">Contact Fendora</Link></div><div><h3>Trust & policies</h3><Link href="/policies/returns">Returns</Link><Link href="/policies/privacy">Privacy</Link><Link href="/policies/terms">Terms</Link></div></div><div className={`${styles.shell} ${styles.copyright}`}>© 2026 Fendora Marketplace. Built for meaningful commerce.</div></footer>
   </div>;
 }

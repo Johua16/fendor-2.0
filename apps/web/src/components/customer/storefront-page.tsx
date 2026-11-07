@@ -23,7 +23,7 @@ const categoryArt: Record<string, Pick<DisplayProduct, 'art' | 'tint'>> = {
 
 function toDisplayProduct(product: CatalogueProduct): DisplayProduct {
   const visual = categoryArt[product.category] ?? categoryArt.other;
-  return { id: product.id, variantId: product.variantId, name: product.title, vendor: 'Verified Fendor vendor', price: `₦${Math.round(product.priceKobo / 100).toLocaleString('en-NG')}`, imagePath: product.imagePath, description: product.description, category: product.category, ...visual };
+  return { id: product.id, variantId: product.variantId, name: product.title, vendor: 'Verified Fendora vendor', price: `₦${Math.round(product.priceKobo / 100).toLocaleString('en-NG')}`, imagePath: product.imagePath, description: product.description, category: product.category, ...visual };
 }
 
 export function StorefrontPage() {
@@ -53,7 +53,7 @@ export function StorefrontPage() {
       .catch((error: unknown) => {
         if (controller.signal.aborted) return;
         setCatalogue([]);
-        setLoadError(error instanceof MarketplaceApiError && error.status === 503 ? 'The marketplace catalogue is temporarily unavailable. Please try again shortly.' : error instanceof Error ? error.message : 'Fendor could not load the catalogue.');
+        setLoadError(error instanceof MarketplaceApiError && error.status === 503 ? 'The marketplace catalogue is temporarily unavailable. Please try again shortly.' : error instanceof Error ? error.message : 'Fendora could not load the catalogue.');
       })
       .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => controller.abort();
@@ -80,9 +80,9 @@ export function StorefrontPage() {
 
   return <div className={home.page}>
     <header className={home.header}>
-      <div className={home.utility}><div className={home.shell}><span>Help & Support</span><span>Sell on Fendor</span></div></div>
+      <div className={home.utility}><div className={home.shell}><span className={home.betaBadge}>PUBLIC BETA</span><span>Help & Support</span><span>Sell on Fendora</span></div></div>
       <div className={`${home.shell} ${home.mainHeader}`}>
-        <Link href="/" className={home.logo} aria-label="Fendor home"><Image src="/icons/home/logo.svg" width={40} height={40} alt="" priority /><span><b>Fendor</b><small>MARKETPLACE</small></span></Link>
+        <Link href="/" className={home.logo} aria-label="Fendora home"><Image src="/icons/home/logo.svg" width={40} height={40} alt="" priority /><span><b>Fendora</b><small>MARKETPLACE</small></span></Link>
         <form className={home.search} onSubmit={runSearch} role="search">
           <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search products, brands or vendors" aria-label="Search products" />
           <button aria-label="Submit search"><Icon name="search" size={19}/></button>
@@ -103,7 +103,7 @@ export function StorefrontPage() {
 
     <main>
       <section className={`${home.shell} ${styles.intro}`}>
-        <div><p className={home.kicker}>FENDOR MARKETPLACE</p><h1>Shop products from verified vendors</h1><p>Browse the marketplace freely. Fendor confirms stock with the vendor before asking you to complete payment.</p></div>
+        <div><p className={home.kicker}>FENDORA MARKETPLACE</p><h1>Shop products from verified vendors</h1><p>Browse the marketplace freely. Fendora confirms stock with the vendor before asking you to complete payment.</p></div>
         <div className={styles.promise}><b>✓</b><span><strong>Confirmation before payment</strong><small>No payment request until stock and order details are approved.</small></span></div>
       </section>
 
@@ -113,14 +113,14 @@ export function StorefrontPage() {
       </section>
 
       <section className={`${home.shell} ${styles.catalogue}`}>
-        <div className={styles.catalogueHead}><div><p className={home.kicker}>BROWSE THE MARKETPLACE</p><h2>Popular on Fendor</h2><p>{`${visibleProducts.length} product${visibleProducts.length === 1 ? '' : 's'} available to request`}</p></div><label>Sort by<select value={sort} onChange={(event) => setSort(event.target.value)}><option value="popular">Popular</option><option value="price-low">Price: low to high</option><option value="price-high">Price: high to low</option></select></label></div>
+        <div className={styles.catalogueHead}><div><p className={home.kicker}>BROWSE THE MARKETPLACE</p><h2>Popular on Fendora</h2><p>{`${visibleProducts.length} product${visibleProducts.length === 1 ? '' : 's'} available to request`}</p></div><label>Sort by<select value={sort} onChange={(event) => setSort(event.target.value)}><option value="popular">Popular</option><option value="price-low">Price: low to high</option><option value="price-high">Price: high to low</option></select></label></div>
         <div className={styles.filters} aria-label="Filter by category">{categoryOptions.map(([label, value]) => <button key={value || 'all'} className={category === value ? styles.activeFilter : ''} onClick={() => setCategory(value)}>{label}</button>)}</div>
-        {loading ? <div className={styles.statePanel} aria-live="polite"><span className={styles.loader} /><h3>Loading verified products</h3><p>Fendor is checking the current public catalogue.</p></div> : loadError ? <div className={styles.statePanel} role="alert"><span><Icon name="alert-triangle" size={28}/></span><h3>We couldn’t load the marketplace</h3><p>{loadError}</p><button onClick={() => setReloadKey((key) => key + 1)}>Try again</button></div> : visibleProducts.length ? <div className={styles.grid}>{visibleProducts.map((product) => <ProductCard key={product.id ?? product.name} product={product} onAdd={() => addToCart(product)} />)}</div> : <div className={styles.empty}><span><Icon name="search" size={28}/></span><h3>No products match this search</h3><p>Try another keyword or clear the current category.</p><button onClick={() => { setCategory(''); setQuery(''); setSubmittedQuery(''); }}>Clear filters</button></div>}
+        {loading ? <div className={styles.statePanel} aria-live="polite"><span className={styles.loader} /><h3>Loading verified products</h3><p>Fendora is checking the current public catalogue.</p></div> : loadError ? <div className={styles.statePanel} role="alert"><span><Icon name="alert-triangle" size={28}/></span><h3>We couldn’t load the marketplace</h3><p>{loadError}</p><button onClick={() => setReloadKey((key) => key + 1)}>Try again</button></div> : visibleProducts.length ? <div className={styles.grid}>{visibleProducts.map((product) => <ProductCard key={product.id ?? product.name} product={product} onAdd={() => addToCart(product)} />)}</div> : <div className={styles.empty}><span><Icon name="search" size={28}/></span><h3>No products match this search</h3><p>Try another keyword or clear the current category.</p><button onClick={() => { setCategory(''); setQuery(''); setSubmittedQuery(''); }}>Clear filters</button></div>}
       </section>
 
-      <section className={`${home.shell} ${home.newsletter}`}><div><span className={home.pill}>CURATED UPDATES</span><h2>Stay in the loop</h2><p>Receive new collections, vendor stories, and thoughtful gift ideas.</p></div><form onSubmit={(event) => { event.preventDefault(); setNotice('You’re on the Fendor updates list.'); }}><div><input required type="email" placeholder="Enter your email address" aria-label="Email address" /><button>Subscribe</button></div><small>No spam. Unsubscribe at any time.</small></form></section>
+      <section className={`${home.shell} ${home.newsletter}`}><div><span className={home.pill}>CURATED UPDATES</span><h2>Stay in the loop</h2><p>Receive new collections, vendor stories, and thoughtful gift ideas.</p></div><form onSubmit={(event) => { event.preventDefault(); setNotice('You’re on the Fendora updates list.'); }}><div><input required type="email" placeholder="Enter your email address" aria-label="Email address" /><button>Subscribe</button></div><small>No spam. Unsubscribe at any time.</small></form></section>
     </main>
 
-    <footer className={home.footer} id="support"><div className={`${home.shell} ${home.footerGrid}`}><div><Link href="/" className={home.logo}><Image src="/icons/home/logo.svg" width={40} height={40} alt="" /><span><b>Fendor</b><small>MARKETPLACE</small></span></Link><p>Thoughtful products from verified vendors, coordinated through one dependable marketplace.</p><span className={home.footerBadge}>✓ Verified marketplace</span></div>{[['Shopping', 'Browse products', 'Categories', 'Featured vendors'], ['Selling', 'Sell on Fendor', 'Vendor hub', 'Vendor standards'], ['Customer care', 'Help centre', 'Order tracking', 'Contact Fendor'], ['Trust & policies', 'Vendor verification', 'Returns', 'Privacy policy']].map(([title, ...links]) => <div key={title}><h3>{title}</h3>{links.map((link) => <a href="#" key={link}>{link}</a>)}</div>)}</div><div className={`${home.shell} ${home.copyright}`}>© 2026 Fendor Marketplace. Built for meaningful commerce.</div></footer>
+    <footer className={home.footer} id="support"><div className={`${home.shell} ${home.footerGrid}`}><div><Link href="/" className={home.logo}><Image src="/icons/home/logo.svg" width={40} height={40} alt="" /><span><b>Fendora</b><small>MARKETPLACE</small></span></Link><p>Thoughtful products from verified vendors, coordinated through one dependable marketplace.</p><span className={home.footerBadge}>✓ Verified marketplace</span></div>{[['Shopping', 'Browse products', 'Categories', 'Featured vendors'], ['Selling', 'Sell on Fendora', 'Vendor hub', 'Vendor standards'], ['Customer care', 'Help centre', 'Order tracking', 'Contact Fendora'], ['Trust & policies', 'Vendor verification', 'Returns', 'Privacy policy']].map(([title, ...links]) => <div key={title}><h3>{title}</h3>{links.map((link) => <a href="#" key={link}>{link}</a>)}</div>)}</div><div className={`${home.shell} ${home.copyright}`}>© 2026 Fendora Marketplace. Built for meaningful commerce.</div></footer>
   </div>;
 }

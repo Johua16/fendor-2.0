@@ -9,6 +9,6 @@ export function config() {
     origin: url.origin,
     outboxKey,
     secure: url.protocol === 'https:',
-    reviewMode: process.env.BETA_REVIEW_MODE === 'true',
+    reviewMode: false,
   };
 }

@@ -48,9 +48,9 @@ export function CartPage() {
 
   return <div className={home.page}>
     <header className={home.header}>
-      <div className={home.utility}><div className={home.shell}><span>Help & Support</span><span>Sell on Fendor</span></div></div>
+      <div className={home.utility}><div className={home.shell}><span className={home.betaBadge}>PUBLIC BETA</span><span>Help & Support</span><span>Sell on Fendora</span></div></div>
       <div className={`${home.shell} ${home.mainHeader}`}>
-        <Link href="/" className={home.logo} aria-label="Fendor home"><Image src="/icons/home/logo.svg" width={40} height={40} alt="" priority /><span><b>Fendor</b><small>MARKETPLACE</small></span></Link>
+        <Link href="/" className={home.logo} aria-label="Fendora home"><Image src="/icons/home/logo.svg" width={40} height={40} alt="" priority /><span><b>Fendora</b><small>MARKETPLACE</small></span></Link>
         <form className={home.search} onSubmit={handleSearch} role="search"><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search products, brands or vendors" aria-label="Search products" /><button aria-label="Submit search"><Icon name="search" size={19}/></button></form>
         <nav className={home.actions} aria-label="Account actions"><Link href="/account"><Icon name="user" size={21}/><span>Account</span></Link><Link href="/help"><Icon name="circle-help" size={21}/><span>Help</span></Link><Link href="/cart" className={home.cart}><Icon name="shopping-cart" size={23}/><span>Cart</span>{itemCount > 0 && <b>{itemCount}</b>}</Link></nav>
       </div>
@@ -64,11 +64,11 @@ export function CartPage() {
         <span aria-hidden="true"><Icon name="shopping-cart" size={32}/></span>
         <p className={home.kicker}>YOUR CART IS READY FOR A FRESH START</p>
         <h1>Your cart is empty</h1>
-        <p>Explore products from verified vendors and save the ones you would like Fendor to confirm.</p>
+        <p>Explore products from verified vendors and save the ones you would like Fendora to confirm.</p>
         <Link href="/shop" className={styles.primary}>Browse the marketplace</Link>
       </section> : <>
         <div className={styles.pageHead}>
-          <div><p className={home.kicker}>REVIEW BEFORE REQUESTING</p><div className={styles.titleLine}><h1>My Cart</h1><span>{itemCount} {itemCount === 1 ? 'item' : 'items'}</span></div><p>Check quantities and product choices before Fendor sends availability requests to the vendors.</p></div>
+          <div><p className={home.kicker}>REVIEW BEFORE REQUESTING</p><div className={styles.titleLine}><h1>My Cart</h1><span>{itemCount} {itemCount === 1 ? 'item' : 'items'}</span></div><p>Check quantities and product choices before Fendora sends availability requests to the vendors.</p></div>
           <Link href="/shop">← Continue shopping</Link>
         </div>
 
@@ -85,7 +85,7 @@ export function CartPage() {
               </div>
             </article>)}
 
-            <section className={styles.location}><span aria-hidden="true"><Icon name="map-pin" size={28}/></span><div><small>DELIVERY DETAILS COME NEXT</small><h2>Where should Fendor deliver?</h2><p>The recipient’s location, preferred date, packaging and delivery instructions are collected after availability requests are created. Delivery fees are quoted before payment.</p></div><Link href="/orders/new">Add after request</Link></section>
+            <section className={styles.location}><span aria-hidden="true"><Icon name="map-pin" size={28}/></span><div><small>DELIVERY DETAILS COME NEXT</small><h2>Where should Fendora deliver?</h2><p>The recipient’s location, preferred date, packaging and delivery instructions are collected after availability requests are created. Delivery fees are quoted before payment.</p></div><Link href="/orders/new">Add after request</Link></section>
           </div>
 
           <aside className={styles.summary}>
@@ -94,7 +94,7 @@ export function CartPage() {
             <div className={styles.estimate}><span>Current product total</span><strong>{formatNaira(subtotal)}</strong><small>This is not the final payable amount.</small></div>
             <Link className={styles.primary} href="/orders/new">Continue to order request</Link>
             <p className={styles.signIn}>You’ll be asked to sign in if needed.</p>
-            <ol className={styles.nextSteps}><li><span>1</span><div><b>Tell us about the recipient</b><small>Add delivery and optional gift details.</small></div></li><li><span>2</span><div><b>Vendors confirm availability</b><small>Each vendor checks the exact product and quantity.</small></div></li><li><span>3</span><div><b>Fendor sends the final quote</b><small>Pay only after stock, packaging and delivery are confirmed.</small></div></li></ol>
+            <ol className={styles.nextSteps}><li><span>1</span><div><b>Tell us about the recipient</b><small>Add delivery and optional gift details.</small></div></li><li><span>2</span><div><b>Vendors confirm availability</b><small>Each vendor checks the exact product and quantity.</small></div></li><li><span>3</span><div><b>Fendora sends the final quote</b><small>Pay only after stock, packaging and delivery are confirmed.</small></div></li></ol>
           </aside>
         </div>
 
@@ -102,6 +102,6 @@ export function CartPage() {
       </>}
     </main>
 
-    <footer className={home.footer} id="support"><div className={`${home.shell} ${home.copyright}`}>© 2026 Fendor Marketplace. Stock and final costs are confirmed before payment.</div></footer>
+    <footer className={home.footer} id="support"><div className={`${home.shell} ${home.copyright}`}>© 2026 Fendora Marketplace. Stock and final costs are confirmed before payment.</div></footer>
   </div>;
 }

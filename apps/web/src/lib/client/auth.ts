@@ -38,6 +38,6 @@ export function accountDestination(user: Pick<CurrentUser, 'roles' | 'onboarding
 }
 export function signInDestination(user: Pick<CurrentUser, 'roles' | 'onboardingIntent'>, next: string | null) {
   const destination = accountDestination(user);
-  const requested = safeNext(next, destination);
+  const requested = safeNext(next, destination === '/account' ? '/' : destination);
   return requested === '/account' ? destination : requested;
 }

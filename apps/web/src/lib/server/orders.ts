@@ -11,7 +11,7 @@ function number(value:unknown,name:string,min=0,max=2147483647):number {
 }
 function gifts(value:unknown) {
   if(!value||typeof value!=='object'||Array.isArray(value)) fail(400,'INVALID_INPUT','Gift details must be an object.');
-  const fields:Record<string,number>={recipientName:100,occasion:100,relationship:100,giftMessage:1000,packagingPreference:200};
+  const fields:Record<string,number>={recipientName:100,occasion:100,relationship:100,giftMessage:1000,packagingPreference:200,packagingId:80};
   const result:Record<string,string>={};
   for(const [key,item] of Object.entries(value)) {
     if(!Object.hasOwn(fields,key)) fail(400,'UNKNOWN_FIELD','Unsupported gift detail.');
@@ -23,7 +23,7 @@ export function orders(db:Database,options:{now?:()=>number;reservationMinutes?:
   const now=options.now??Date.now;
   function present(row:Stored,scope:Scope) {
     const base={id:row.id,productVariantId:row.product_variant_id,quantity:row.quantity,state:row.state,version:row.version,product:row.product_snapshot,
-      reservationExpiresAt:row.reservation_expires_at, reservationExpired:row.stock_held && !!row.reservation_expires_at && new Date(row.reservation_expires_at).getTime()<=now(),financialHold:row.financial_hold,orderConfirmed:row.payment_verified&&!['refunded','cancelled','returned'].includes(row.state)};
+      reservationExpiresAt:row.reservation_expires_at, reservationExpired:row.stock_held && !!row.reservation_expires_at && new Date(row.reservation_expires_at).getTime()<=now(),financialHold:row.financial_hold,fundsRecorded:row.funds_recorded===true,orderConfirmed:row.payment_verified&&!['refunded','cancelled','returned'].includes(row.state)};
     // Vendors only need the item/quantity to answer availability; personalisation stays with Fendor.
     return scope==='vendor'?base:{...base,giftDetails:row.gift_details,quoteId:row.quote_id??null,acceptedQuoteId:row.accepted_quote_id??null,totalKobo:row.total_kobo==null?null:Number(row.total_kobo)};
   }
@@ -31,7 +31,7 @@ export function orders(db:Database,options:{now?:()=>number;reservationMinutes?:
     await tx.query('INSERT INTO order_events(id,order_id,actor_id,from_state,to_state,order_version,event_type) VALUES($1,$2,$3,$4,$5,$6,$7)',[randomUUID(),row.id,by,row.state,to,row.version+1,type]);
   }
   async function owned(tx:Sql,id:string,by:string,scope:Scope,lock=false):Promise<Stored> {
-    const row=(await tx.query<Stored>(`SELECT * FROM order_requests WHERE id=$1 ${lock?'FOR UPDATE':''}`,[id])).rows[0];
+    const row=(await tx.query<Stored>(`SELECT *,EXISTS(SELECT 1 FROM payment_records p WHERE p.order_id=order_requests.id) AS funds_recorded FROM order_requests WHERE id=$1 ${lock?'FOR UPDATE':''}`,[id])).rows[0];
     if(!row || (scope==='customer'&&row.customer_id!==by)||(scope==='vendor'&&row.vendor_id!==by)) fail(404,'NOT_FOUND','Order request not found.');
     return row;
   }
@@ -86,7 +86,7 @@ export function orders(db:Database,options:{now?:()=>number;reservationMinutes?:
       const limit=number(Number(raw),'limit',1,50);
       return db.transaction(async tx=>{
         const by=await actor(tx,secret,scope);
-        const rows=(await tx.query<Stored>(`SELECT * FROM order_requests WHERE ($1::uuid IS NULL OR id>$1) ${scope==='admin'?'':`AND ${scope==='customer'?'customer_id':'vendor_id'}=$3`} ORDER BY id LIMIT $2`,scope==='admin'?[after,limit+1]:[after,limit+1,by])).rows;
+        const rows=(await tx.query<Stored>(`SELECT *,EXISTS(SELECT 1 FROM payment_records p WHERE p.order_id=order_requests.id) AS funds_recorded FROM order_requests WHERE ($1::uuid IS NULL OR id>$1) ${scope==='admin'?'':`AND ${scope==='customer'?'customer_id':'vendor_id'}=$3`} ORDER BY id LIMIT $2`,scope==='admin'?[after,limit+1]:[after,limit+1,by])).rows;
         return {orders:rows.slice(0,limit).map(row=>present(row,scope)),nextCursor:rows.length>limit?rows[limit-1].id:null};
       });
     },
@@ -106,7 +106,10 @@ export function orders(db:Database,options:{now?:()=>number;reservationMinutes?:
         const stock=(await tx.query<{stock_quantity:number;reserved_quantity:number}>('SELECT stock_quantity,reserved_quantity FROM product_variants WHERE id=$1 FOR UPDATE',[initial.product_variant_id])).rows[0];
         const row=await owned(tx,id,by,scope,true);
         if((await tx.query('SELECT id FROM payment_records WHERE order_id=$1 LIMIT 1',[id])).rows.length) fail(409,'PAYMENT_REVIEW_REQUIRED','Fendor must review recorded funds before changing this request.');
-        if(row.version!==version) fail(409,'STALE_VERSION','Request changed. Reload before continuing.');
+        // Reconfirmation may itself expire the hold and increment the version once.
+        // Accept only that exact transition; unrelated concurrent edits still conflict.
+        const reconfirmingOwnExpiry=action==='reserve' && initial.version===version && initial.stock_held && !!initial.reservation_expires_at && new Date(initial.reservation_expires_at).getTime()<=now() && row.version===version+1 && row.state==='checking_availability' && !row.stock_held;
+        if(row.version!==version && !reconfirmingOwnExpiry) fail(409,'STALE_VERSION','Request changed. Reload before continuing.');
         if(details) {
           if(!['checking_availability','reserved'].includes(row.state)) fail(409,'INVALID_STATE','Personalisation cannot be changed now.');
           await tx.query('UPDATE order_requests SET gift_details=$2,version=version+1,total_kobo=NULL,accepted_total_kobo=NULL,quote_id=NULL,accepted_quote_id=NULL WHERE id=$1',[id,JSON.stringify(details)]);

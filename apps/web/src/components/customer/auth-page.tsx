@@ -11,8 +11,8 @@ import styles from './auth-page.module.css';
 
 type Mode = 'login' | 'signup' | 'forgot' | 'verify' | 'reset' | 'password-created';
 const copy: Record<Mode, [string, string]> = {
-  login: ['Welcome back', 'Sign in to continue your Fendor journey.'],
-  signup: ['Create an account', 'Join Fendor as a customer or marketplace vendor.'],
+  login: ['Welcome back', 'Sign in to continue your Fendora journey.'],
+  signup: ['Create an account', 'Join Fendora as a customer or marketplace vendor.'],
   forgot: ['Forgot password?', 'Enter your email to request a secure reset link.'],
   verify: ['Verify your email', 'We are confirming your email address.'],
   reset: ['Create new password', 'Choose a secure password you have not used before.'],
@@ -25,7 +25,7 @@ function errorMessage(error: unknown) {
     if (error.status === 503) return 'This service is temporarily unavailable. Please try again shortly.';
     return error.message;
   }
-  return error instanceof Error ? error.message : 'Fendor could not complete this request.';
+  return error instanceof Error ? error.message : 'Fendora could not complete this request.';
 }
 
 export function AuthPage({ mode }: { mode: Mode }) {
@@ -137,13 +137,13 @@ export function AuthPage({ mode }: { mode: Mode }) {
     : mode === 'signup' ? 'Create account' : mode === 'forgot' ? 'Send reset link' : 'Reset password';
   return <main className={styles.page}>
     <section className={styles.visual} aria-hidden="true">
-      <Link href="/" className={styles.logo}><Image src="/icons/home/logo.svg" width={42} height={42} alt="" /><b>Fendor</b></Link>
+      <Link href="/" className={styles.logo}><Image src="/icons/home/logo.svg" width={42} height={42} alt="" /><b>Fendora</b></Link>
       <Image className={styles.ribbon} src="/images/onboarding/74583795-5c3f-4f99-bd29-e22e03973ebe" width={896} height={1200} alt="" priority />
-      <p>Thoughtful gifting, coordinated by Fendor.</p>
+      <p>Thoughtful gifting, coordinated by Fendora.</p>
     </section>
     <section className={styles.formSide}><div className={styles.card}>
       <Link className={styles.back} href={mode === 'signup' ? '/welcome' : '/'}>← Back</Link>
-      <p className={styles.eyebrow}>{mode === 'signup' ? accountType.toUpperCase() : 'FENDOR ACCOUNT'}</p>
+      <p className={styles.eyebrow}>{mode === 'signup' ? accountType.toUpperCase() : 'FENDORA ACCOUNT'}</p>
       <h1>{copy[mode][0]}</h1><p className={styles.intro}>{copy[mode][1]}</p>
       {loginReason && <div className={styles.notice} role="status">{loginReason}</div>}
       {message && <div className={success ? styles.success : mode === 'verify' && !token ? styles.notice : styles.error} role={success || (mode === 'verify' && !token) ? 'status' : 'alert'}>{message}</div>}
@@ -152,11 +152,11 @@ export function AuthPage({ mode }: { mode: Mode }) {
           ? <><b>✓ Email verified</b><Link href="/login">Continue to sign in</Link></>
           : !token ? <><b>Check your inbox</b><p>Follow the email link to verify your account. You can request another link below.</p></> : <><b>Verification could not be completed</b><p>The link may have expired or already been used.</p></>}
       </div> : mode === 'password-created' ? <div className={styles.verify}>
-        <b>✓ Your new password is ready</b><p>Use it to sign in to your Fendor account.</p>
+        <b>✓ Your new password is ready</b><p>Use it to sign in to your Fendora account.</p>
         <Link href="/login">Continue to sign in</Link>
       </div> : success && mode === 'signup' ? <div className={styles.verify}>
         <span className={styles.mail}>{reviewSignup ? '✓' : '✉'}</span><b>{reviewSignup ? 'Private-review account ready' : 'Check your inbox'}</b>
-        <p>{reviewSignup ? 'Email verification is temporarily bypassed for this private product review. No payment will be collected.' : `If the address is eligible, Fendor will send a verification link to ${email}.`}</p>
+        <p>{reviewSignup ? 'Email verification is temporarily bypassed for this private product review. No payment will be collected.' : `If the address is eligible, Fendora will send a verification link to ${email}.`}</p>
         <Link href="/login">Go to sign in</Link>
         {!reviewSignup && <Link className={styles.secondaryLink} href="/verify-email">Need another verification link?</Link>}
       </div> : <form onSubmit={submit}>
@@ -172,7 +172,7 @@ export function AuthPage({ mode }: { mode: Mode }) {
           <span className={styles.password}><input required minLength={mode === 'login' ? 1 : 12} maxLength={128} type={show ? 'text' : 'password'} autoComplete={mode === 'login' ? 'current-password' : 'new-password'} placeholder="••••••••••••" value={password} onChange={(event) => setPassword(event.target.value)} /><button type="button" aria-label={show ? 'Hide password' : 'Show password'} onClick={() => setShow(!show)}>{show ? 'Hide' : 'Show'}</button></span>
           {mode !== 'login' && <small>Use at least 12 characters.</small>}</label>}
         {['signup', 'reset'].includes(mode) && <label>Confirm password<input required minLength={12} maxLength={128} type={show ? 'text' : 'password'} autoComplete="new-password" placeholder="Repeat password" value={confirm} onChange={(event) => setConfirm(event.target.value)} /></label>}
-        {mode === 'signup' && <label className={styles.consent}><input required type="checkbox" /><span>I agree to Fendor’s <Link href="/policies/terms">Terms</Link> and <Link href="/policies/privacy">Privacy Policy</Link>.</span></label>}
+        {mode === 'signup' && <label className={styles.consent}><input required type="checkbox" /><span>I agree to Fendora’s <Link href="/policies/terms">Terms</Link> and <Link href="/policies/privacy">Privacy Policy</Link>.</span></label>}
         {mode === 'login' && <Link className={styles.forgot} href="/forgot-password">Forgot password?</Link>}
         {mode === 'reset' && !token && <div className={styles.error} role="alert">This reset link is incomplete. Request a new one.</div>}
         <button className={styles.primary} disabled={busy || (mode === 'reset' && !token)}>{submitLabel}</button>
@@ -182,7 +182,7 @@ export function AuthPage({ mode }: { mode: Mode }) {
         <button className={styles.primary} disabled={resendBusy}>{resendBusy ? 'Please wait…' : 'Resend verification link'}</button>
         {resendMessage && <div className={styles.notice} role="status">{resendMessage}</div>}
       </form>}
-      <div className={styles.switch}>{mode === 'login' ? <>New to Fendor? <Link href="/welcome">Create account</Link></>
+      <div className={styles.switch}>{mode === 'login' ? <>New to Fendora? <Link href="/welcome">Create account</Link></>
         : mode === 'signup' ? <>Already have an account? <Link href={accountType === 'vendor' ? '/login?next=/vendor' : '/login'}>Sign in</Link></>
           : mode === 'forgot' || mode === 'reset' ? <Link href="/login">Back to sign in</Link> : null}</div>
     </div></section>

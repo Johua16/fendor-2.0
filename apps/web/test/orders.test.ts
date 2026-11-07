@@ -3,6 +3,30 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { orders } from '../src/lib/server/orders.ts';
 import { handleIdentity } from '../src/lib/server/http-identity.ts';
+test('vendor sees payment-review flag without receipt details and cannot reserve recorded funds',async()=>{
+ const f=await fixture();try{
+  const o=await f.api.create(f.customer.secret,f.input());
+  await f.db.query("INSERT INTO payment_records(id,order_id,bank_reference,received_kobo,status) VALUES(gen_random_uuid(),$1,'PRIVATE-RECEIPT',10000,'under_review')",[o.id]);
+  const detail=await f.api.detail(f.vendor.secret,o.id,'vendor');
+  const list=await f.api.list(f.vendor.secret,'vendor',new URLSearchParams());
+  assert.equal(detail.fundsRecorded,true);assert.equal(list.orders[0].fundsRecorded,true);
+  assert.equal(JSON.stringify(detail).includes('PRIVATE-RECEIPT'),false);
+  await assert.rejects(f.api.change(f.vendor.secret,o.id,{version:o.version},'reserve'),{code:'PAYMENT_REVIEW_REQUIRED'});
+ }finally{await f.db.close();}
+});
+test('vendor can reconfirm an expired hold directly without a worker or stale-version retry',async()=>{
+ const f=await fixture();
+ try {
+  const request=await f.api.create(f.customer.secret,f.input());
+  const held=await f.api.change(f.vendor.secret,request.id,{version:request.version},'reserve');
+  f.advance();
+  const renewed=await f.api.change(f.vendor.secret,request.id,{version:held.version},'reserve');
+  assert.equal(renewed.state,'reserved');assert.equal(renewed.reservationExpired,false);
+  assert.equal(renewed.version,held.version+2);
+  assert.equal((await f.db.query('SELECT reserved_quantity FROM product_variants WHERE id=$1',[f.variantId])).rows[0].reserved_quantity,1);
+  await assert.rejects(f.api.change(f.vendor.secret,request.id,{version:held.version},'reserve'),{code:'STALE_VERSION'});
+ } finally {await f.db.close();}
+});
 test('request retries, private personalisation, ownership and cancellation release',async()=>{
   const f=await fixture();const {db,api,customer,other,vendor,outsider,input}=f;
   try {

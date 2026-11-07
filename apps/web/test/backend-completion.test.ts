@@ -16,6 +16,31 @@ import {handleIdentity} from '../src/lib/server/http-identity.ts';
 const key='ab'.repeat(32),origin='http://localhost:3000';
 const image=()=>sharp({create:{width:8,height:8,channels:3,background:'#ff7700'}}).png().toBuffer();
 const reason='Operator reviewed the evidence and recorded the outcome.';
+test('customers can save gift details while waiting and add delivery before vendor confirmation',async()=>{
+ const f=await setup();try{
+  const request=await f.api.create(f.customer.secret,f.input());
+  const gift=await f.api.change(f.customer.secret,request.id,{version:request.version,giftDetails:{recipientName:'Recipient',occasion:'Birthday',relationship:'Sister',packagingId:'test-wrap',giftMessage:'Enjoy your gift'}},'personalise');
+  const zone=await f.ship.zone(f.admin.secret,{name:'Wuse',state:'FCT',city:'Abuja'});
+  await f.ship.delivery(f.customer.secret,request.id,{version:gift.version,zoneId:zone.id,recipientName:'Recipient',phone:'+2348012345678',address:'10 Test Street, Wuse, Abuja'});
+  const pending=await f.api.detail(f.customer.secret,request.id,'customer');
+  assert.ok('giftDetails' in pending);assert.equal(pending.giftDetails.relationship,'Sister');assert.equal(pending.giftDetails.occasion,'Birthday');
+  const vendor=await f.api.detail(f.vendor.secret,request.id,'vendor');assert.equal('giftDetails' in vendor,false);
+  const confirmed=await f.api.change(f.vendor.secret,request.id,{version:pending.version},'reserve');assert.equal(confirmed.state,'reserved');assert.equal(confirmed.orderConfirmed,false);
+  assert.equal((await f.ship.read(f.customer.secret,request.id,'customer'))?.deliveryDate,null);
+ }finally{await f.db.close();}
+});
+test('delivery preserves the exact area without asking customers for a date',async()=>{
+ const f=await setup();try{
+  const request=await f.api.create(f.customer.secret,f.input());
+  await f.ship.zone(f.admin.secret,{name:'Wuse',state:'FCT',city:'Abuja'});
+  const zone=await f.ship.zone(f.admin.secret,{name:'Garki',state:'FCT',city:'Abuja'});
+  await f.ship.delivery(f.customer.secret,request.id,{version:0,zoneId:zone.id,recipientName:'Recipient',phone:'+2348012345678',address:'10 Test Street, Garki, Abuja'});
+  const saved=await f.ship.read(f.customer.secret,request.id,'customer');
+  assert.ok(saved && 'zoneId' in saved);assert.equal(saved.zoneId,zone.id);assert.equal(saved.deliveryDate,null);
+  const vendor=await f.ship.read(f.vendor.secret,request.id,'vendor');
+  assert.equal('address' in vendor!,false);assert.equal('zoneId' in vendor!,false);
+ }finally{await f.db.close();}
+});
 async function setup() {
  const f=await fixture(),pay=checkout(f.db),ship=fulfilment(f.db,key),files=uploads(f.db,key,origin),remedy=remedies(f.db);
  await f.db.query("INSERT INTO user_roles(user_id,role) VALUES($1,'admin')",[f.other.id]);
@@ -42,7 +67,7 @@ test('full paid order: private delivery, failed dispatch, delivery proof, review
   await f.ship.advance(f.admin.secret,id,{version:8,note:reason,assignedTo:f.admin.id,trackingReference:'DISPATCH-1'},'dispatch','admin');
   await f.ship.advance(f.admin.secret,id,{version:9,note:reason},'delivery-failed','admin');
   await f.ship.advance(f.admin.secret,id,{version:10,note:reason,assignedTo:f.admin.id,trackingReference:'DISPATCH-2'},'dispatch','admin');
-  const proof=await f.files.create(f.admin.secret,'proof',await image());await f.files.review(f.other.secret,proof.id,{status:'approved',note:reason});
+  const proof=await f.files.create(f.admin.secret,'proof',await image());assert.equal(proof.status,'approved');
   await f.ship.advance(f.admin.secret,id,{version:11,note:reason,proofId:proof.id,proofChecked:true},'delivered','admin');
   assert.ok((await f.files.read(f.customer.secret,proof.id)).length>0);
   await assert.rejects(f.files.read(f.outsider.secret,proof.id),{code:'NOT_FOUND'});
@@ -108,9 +133,29 @@ test('deadline escalation and durable notifications deduplicate; worker retries 
   await produceNotifications(f.db,key,origin);const count=(await f.db.query('SELECT id FROM notifications')).rows.length;
   await produceNotifications(f.db,key,origin);assert.equal((await f.db.query('SELECT id FROM notifications')).rows.length,count);
   assert.ok((await f.db.query('SELECT escalated_at FROM order_requests WHERE id=$1',[order.id])).rows[0].escalated_at);
-  const first=await runWorker(f.db,key,origin,async()=>{throw Error('Test SMTP offline');});assert.ok('failures' in first&&first.failures!>0);
+  const first=await runWorker(f.db,key,origin,async()=>{throw Error('Test SMTP offline');},20,false);assert.ok('failures' in first&&first.failures!>0);
   await f.db.query('UPDATE email_outbox SET next_attempt_at=now()');const sent:string[]=[];
-  await runWorker(f.db,key,origin,async mail=>{sent.push(mail.subject);});assert.ok(sent.length>0);
+  await runWorker(f.db,key,origin,async mail=>{sent.push(mail.subject);},20,false);assert.ok(sent.length>0);
   assert.ok((await f.db.query("SELECT last_succeeded FROM worker_health WHERE name='operations'")).rows[0].last_succeeded);
+ }finally{await f.db.close();}
+});
+
+test('fulfilment updates reach customer, vendor and admins and queue email once',async()=>{
+ const f=await setup();try{
+  const {id}=await paid(f);
+  await f.ship.advance(f.vendor.secret,id,{version:6,note:reason},'prepare','vendor');
+  await f.ship.advance(f.vendor.secret,id,{version:7,note:reason},'ready','vendor');
+  await produceNotifications(f.db,key,origin);
+  const event=(await f.db.query<{id:string}>("SELECT id FROM order_events WHERE order_id=$1 AND event_type='ready'",[id])).rows[0];
+  const notices=(await f.db.query<{user_id:string;message:string}>('SELECT user_id,message FROM notifications WHERE dedupe_key=$1',[`order:${event.id}`])).rows;
+  assert.equal(notices.length,4);
+  assert.ok(notices.some(n=>n.user_id===f.vendor.id && n.message.includes('coordinate dispatch')));
+  assert.ok(notices.some(n=>n.user_id===f.admin.id && n.message.includes('Arrange packaging')));
+  assert.ok(notices.some(n=>n.user_id===f.customer.id && n.message.includes('arrange dispatch')));
+  assert.ok(notices.every(n=>!n.message.includes('Test Street')&&!n.message.includes('+234')));
+  const before=(await f.db.query('SELECT id FROM email_outbox')).rows.length;
+  assert.ok(before>=notices.length);
+  await produceNotifications(f.db,key,origin);
+  assert.equal((await f.db.query('SELECT id FROM email_outbox')).rows.length,before);
  }finally{await f.db.close();}
 });
