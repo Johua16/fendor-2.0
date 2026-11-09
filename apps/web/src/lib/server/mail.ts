@@ -1,5 +1,6 @@
 import type { Database } from './database.ts';
 import { unseal } from './security.ts';
+const legalFooter='\n\n—\nFendora Innovations Limited · RC 9980315\nNigeria · officialfendora@gmail.com\nPlease keep order and payment communication inside Fendora.';
 export function isPlaceholderEmail(address:string) {
  const domain=address.trim().toLowerCase().split('@').at(-1)?.replace(/\.$/,'')??'';
  return ['example.com','example.net','example.org','test','invalid','localhost','local','example'].some(reserved=>domain===reserved||domain.endsWith('.'+reserved));
@@ -12,8 +13,8 @@ export async function deliverOne(db: Database, key: string, send: (mail: {to:str
     try {
       const mail=unseal(row.payload,key) as {to:string;purpose:string;url:string;subject?:string;text?:string};
       if(blockTestRecipients && isPlaceholderEmail(mail.to)) {await tx.query("UPDATE email_outbox SET next_attempt_at='infinity'::timestamptz,attempts=attempts-1 WHERE id=$1",[row.id]);return 'suppressed';}
-      if(mail.purpose==='notification') {await send({to:mail.to,subject:mail.subject!,text:mail.text!});}
-      else await send({to:mail.to,subject:mail.purpose==='verify'?'Verify your Fendora email':'Reset your Fendora password',text:`Use this link to ${mail.purpose==='verify'?'verify your email':'reset your password'}: ${mail.url}\nIf you did not request this, ignore this email.`});
+      if(mail.purpose==='notification') {await send({to:mail.to,subject:mail.subject!,text:`${mail.text!}${legalFooter}`});}
+      else await send({to:mail.to,subject:mail.purpose==='verify'?'Verify your Fendora email':'Reset your Fendora password',text:`Use this link to ${mail.purpose==='verify'?'verify your email':'reset your password'}: ${mail.url}\nIf you did not request this, ignore this email.${legalFooter}`});
     } catch {await tx.query("UPDATE email_outbox SET next_attempt_at=now()+LEAST(900,power(2,attempts)::int*30)*interval '1 second' WHERE id=$1",[row.id]);return 'failed';}
     await tx.query("UPDATE email_outbox SET sent_at=now(),payload='' WHERE id=$1",[row.id]);
     return 'sent';
