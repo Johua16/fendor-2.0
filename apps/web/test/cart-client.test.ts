@@ -28,6 +28,8 @@ test('cart persists products and combines repeat additions', () => {
 test('cart ignores malformed stored data and caps quantity', () => {
   const invalidStorage = memoryStorage('{broken');
   assert.deepEqual(readCart(invalidStorage), []);
+  const legacyPreview = memoryStorage(JSON.stringify([{ ...product, productId: undefined, variantId: undefined }]));
+  assert.deepEqual(readCart(legacyPreview), []);
 
   const storage = memoryStorage();
   addCartItem({ ...product, quantity: 10 }, storage);

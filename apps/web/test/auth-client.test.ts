@@ -40,5 +40,8 @@ test('server identity sends vendors, applicants and administrators to their own 
   assert.equal(signInDestination(applicant, '/account'), '/vendor/onboarding');
   assert.equal(signInDestination(vendor, '/orders/123'), '/orders/123');
   assert.equal(signInDestination(vendor, '//evil.example'), '/vendor');
-  assert.equal(signInDestination(customer, null), '/account');
+  assert.equal(signInDestination(customer, null), '/');
+  assert.equal(signInDestination(customer, '/account'), '/account');
+  assert.equal(signInDestination(customer, '/orders/123'), '/orders/123');
+  assert.equal(signInDestination(customer, 'https://example.com'), '/');
 });

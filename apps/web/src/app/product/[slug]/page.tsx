@@ -2,8 +2,8 @@ import type { Metadata } from 'next';
 import { ProductDetailPage } from '../../../components/customer/product-detail-page';
 
 export const metadata: Metadata = {
-  title: 'Product details — Fendor',
-  description: 'Review product, vendor, personalisation, and fulfilment information on Fendor.',
+  title: 'Product details — Fendora',
+  description: 'Review product, vendor, personalisation, and fulfilment information on Fendora.',
 };
 
 export default async function ProductPage({ params }: { params: Promise<{ slug: string }> }) {

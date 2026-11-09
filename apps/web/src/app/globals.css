@@ -1,8 +1,8 @@
 @import '../styles/tokens.css';
 
-* { box-sizing: border-box; }
-html { scroll-behavior: smooth; }
-body { margin: 0; background: var(--color-background); color: var(--color-text); font-family: Arial, Helvetica, sans-serif; line-height: 1.5; }
-button, input { font: inherit; }
-a:focus-visible, button:focus-visible, input:focus-visible { outline: 3px solid var(--color-accent); outline-offset: 3px; }
-img { max-width: 100%; }
+*, *::before, *::after { box-sizing: border-box; }
+html { max-width: 100%; scroll-behavior: smooth; overflow-x: clip; }
+body { min-width: 0; max-width: 100%; margin: 0; overflow-x: clip; background: var(--color-background); color: var(--color-text); font-family: Arial, Helvetica, sans-serif; line-height: 1.5; }
+button, input, select, textarea { max-width: 100%; font: inherit; }
+a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 3px solid var(--color-accent); outline-offset: 3px; }
+img, svg, video { max-width: 100%; }

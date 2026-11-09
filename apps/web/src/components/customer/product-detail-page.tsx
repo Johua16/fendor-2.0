@@ -2,23 +2,18 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { FormEvent, useEffect, useState } from 'react';
 import { createOrderRequest, getProduct, MarketplaceApiError, saveOrderPersonalisation } from '../../lib/client/marketplace';
 import { addCartItem, cartItemCount } from '../../lib/client/cart';
 import { useCart } from '../../lib/client/use-cart';
 import { isSaved, toggleSavedItem } from '../../lib/client/saved';
-import { DisplayProduct, displayProductToCartItem, ProductArt, ProductCard, products } from './home-page';
+import { DisplayProduct, displayProductToCartItem, ProductArt } from './home-page';
 import { Icon } from '../ui/icon';
 import home from './home-page.module.css';
 import styles from './product-detail-page.module.css';
 
-function slugify(value: string) {
-  return value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-}
-
 export function ProductDetailPage({ slug }: { slug: string }) {
-  const previewProduct = useMemo(() => products.find((item) => slugify(item.name) === slug), [slug]);
-  const [product, setProduct] = useState<DisplayProduct | null>(previewProduct ?? null);
+  const [product, setProduct] = useState<DisplayProduct | null>(null);
   const [productError, setProductError] = useState('');
   const [quantity, setQuantity] = useState(1);
   const [gallery, setGallery] = useState(0);
@@ -33,22 +28,17 @@ export function ProductDetailPage({ slug }: { slug: string }) {
   const oldUnitPrice = product?.old ? Number(product.old.replace(/\D/g, '')) : null;
 
   useEffect(() => {
-    if (previewProduct) {
-      setProduct(previewProduct);
-      setProductError('');
-      return;
-    }
     const controller = new AbortController();
     setProduct(null);
     setProductError('');
     getProduct(slug, controller.signal).then(({ product: result }) => {
       const visual = result.category === 'fashion' ? { art: 'fashion', tint: '#d8ded8' } : result.category === 'home' ? { art: 'tea', tint: '#ead9cc' } : { art: 'bag', tint: '#ead8c6' };
-      setProduct({ id: result.id, variantId: result.variantId, name: result.title, description: result.description, category: result.category, vendor: 'Verified Fendor vendor', price: `₦${Math.round(result.priceKobo / 100).toLocaleString('en-NG')}`, imagePath: result.imagePath, ...visual });
+      setProduct({ id: result.id, variantId: result.variantId, name: result.title, description: result.description, category: result.category, vendor: 'Approved Fendora vendor', price: `₦${Math.round(result.priceKobo / 100).toLocaleString('en-NG')}`, imagePath: result.imagePath, ...visual });
     }).catch((error: unknown) => {
-      if (!controller.signal.aborted) setProductError(error instanceof Error ? error.message : 'Fendor could not load this product.');
+      if (!controller.signal.aborted) setProductError(error instanceof Error ? error.message : 'Fendora could not load this product.');
     });
     return () => controller.abort();
-  }, [previewProduct, slug]);
+  }, [slug]);
 
   useEffect(() => {
     if (product) setSaved(isSaved(displayProductToCartItem(product).id));
@@ -61,7 +51,7 @@ export function ProductDetailPage({ slug }: { slug: string }) {
 
   async function requestOrder() {
     if (!product?.variantId) {
-      setNotice('This preview product is not connected to a live catalogue listing yet.');
+      setNotice('This product is not connected to an approved catalogue listing.');
       return;
     }
     setRequesting(true);
@@ -79,7 +69,7 @@ export function ProductDetailPage({ slug }: { slug: string }) {
         window.location.href = `/login?next=${encodeURIComponent(window.location.pathname)}`;
         return;
       }
-      setNotice(error instanceof Error ? error.message : 'Fendor could not send this request.');
+      setNotice(error instanceof Error ? error.message : 'Fendora could not send this request.');
     } finally {
       setRequesting(false);
     }
@@ -103,9 +93,9 @@ export function ProductDetailPage({ slug }: { slug: string }) {
 
   return <div className={home.page}>
     <header className={home.header}>
-      <div className={home.utility}><div className={home.shell}><span>Help & Support</span><span>Sell on Fendor</span></div></div>
+      <div className={home.utility}><div className={home.shell}><span className={home.betaBadge}>PUBLIC BETA</span><span>Help & Support</span><span>Sell on Fendora</span></div></div>
       <div className={`${home.shell} ${home.mainHeader}`}>
-        <Link href="/" className={home.logo} aria-label="Fendor home"><Image src="/icons/home/logo.svg" width={40} height={40} alt="" priority /><span><b>Fendor</b><small>MARKETPLACE</small></span></Link>
+        <Link href="/" className={home.logo} aria-label="Fendora home"><Image src="/icons/home/logo.svg" width={40} height={40} alt="" priority /><span><b>Fendora</b><small>MARKETPLACE</small></span></Link>
         <form className={home.search} onSubmit={runSearch} role="search"><input placeholder="Search products, brands or vendors" aria-label="Search products" /><button aria-label="Submit search"><Icon name="search" size={19}/></button></form>
         <nav className={home.actions} aria-label="Account actions"><Link href="/account"><Icon name="user" size={21}/><span>Account</span></Link><Link href="/help"><Icon name="circle-help" size={21}/><span>Help</span></Link><Link href="/cart" className={home.cart}><Icon name="shopping-cart" size={23}/><span>Cart</span>{cartCount > 0 && <b>{cartCount}</b>}</Link></nav>
       </div>
@@ -121,37 +111,34 @@ export function ProductDetailPage({ slug }: { slug: string }) {
         <div className={styles.gallery}>
           <div className={styles.mainVisual}>
             {product.imagePath ? <Image className={styles.liveProductImage} src={product.imagePath} fill sizes="(max-width: 720px) 100vw, 40vw" alt={product.name} /> : <ProductArt type={product.art} tint={[product.tint, '#f2dfd6', '#dedfe4'][gallery]} />}
-            <div className={styles.badges}><span>VERIFIED PRODUCT</span><small>Confirmation required</small></div>
+            <div className={styles.badges}><span>APPROVED LISTING</span><small>Stock confirmation required</small></div>
             <button className={`${styles.save} ${saved ? styles.saved : ''}`} onClick={saveProduct} aria-label={saved ? 'Remove from saved items' : 'Save product'}><Icon name="heart" size={20} fill={saved?'currentColor':'none'}/></button>
           </div>
           {!product.imagePath && <div className={styles.thumbnails}>{[product.tint, '#f2dfd6', '#dedfe4'].map((tint, index) => <button key={tint} className={gallery === index ? styles.activeThumb : ''} onClick={() => setGallery(index)} aria-label={`View product image ${index + 1}`}><ProductArt type={product.art} tint={tint} /></button>)}</div>}
-          <div className={styles.microProof}><span>✓ Product reviewed by Fendor</span><span>Communication stays on Fendor</span></div>
+          <div className={styles.microProof}><span>✓ Public catalogue approved</span><span>Communication stays on Fendora</span></div>
         </div>
 
         <div className={styles.details}>
-          <div className={styles.brandRow}><Link href="#vendor">Brand: {product.vendor}</Link><span>SKU: FEN-{slug.slice(0, 8).toUpperCase()}</span></div>
+          <div className={styles.brandRow}><Link href="#vendor">Sold by an {product.vendor.toLowerCase()}</Link><span>Listing ID: {slug.slice(0, 8).toUpperCase()}</span></div>
           <h1>{product.name}</h1>
-          <div className={styles.reviews}><span>★★★★★</span><b>4.8</b><a href="#reviews">Customer reviews</a></div>
           <div className={styles.confirmation}><b><i /> Confirmation required</b><span>Vendor checks current stock after your request</span></div>
 
-          <div className={styles.benefits}><h2>PRODUCT HIGHLIGHTS</h2><ul><li><b>Verified listing:</b> reviewed before publication on Fendor.</li><li><b>Clear product details:</b> price and selected options are recorded with your request.</li><li><b>Protected communication:</b> order updates stay inside the Fendor process.</li><li><b>Flexible gifting:</b> choose packaging and add a recipient message.</li></ul></div>
+          <div className={styles.benefits}><h2>PRODUCT HIGHLIGHTS</h2><ul><li><b>Verified listing:</b> reviewed before publication on Fendora.</li><li><b>Clear product details:</b> price and selected options are recorded with your request.</li><li><b>Protected communication:</b> order updates stay inside the Fendora process.</li><li><b>Flexible gifting:</b> choose packaging and add a recipient message.</li></ul></div>
 
           <fieldset className={styles.options}><legend>How should this be prepared?</legend><button type="button" className={gift === 'standard' ? styles.selectedOption : ''} onClick={() => setGift('standard')}><b>Standard order</b><small>Product only</small></button><button type="button" className={gift === 'gift' ? styles.selectedOption : ''} onClick={() => setGift('gift')}><b>Prepare as a gift</b><small>Packaging confirmed later</small></button></fieldset>
           {gift === 'gift' && <label className={styles.message}>Gift message <textarea value={message} maxLength={180} onChange={(event) => setMessage(event.target.value)} placeholder="Write a short message for the recipient" /><small>{message.length}/180 characters</small></label>}
           <div className={styles.quantity}><b>Quantity</b><div><button onClick={() => setQuantity(Math.max(1, quantity - 1))} aria-label="Decrease quantity">−</button><span>{quantity}</span><button onClick={() => setQuantity(Math.min(10, quantity + 1))} aria-label="Increase quantity">+</button></div><small>Maximum 10 per order</small></div>
-          <div className={styles.processNote}><b>What happens after you request?</b><span>Fendor sends the request to the vendor, confirms stock and preparation details, then gives you the offline-payment instructions.</span></div>
+          <div className={styles.processNote}><b>What happens after you request?</b><span>Fendora sends the request to the vendor, records the stock response, and opens checkout only after the complete order total is ready.</span></div>
         </div>
 
         <aside className={styles.sidebar}>
-          <section className={styles.vendorCard} id="vendor"><div className={styles.vendorTitle}><span>{product.vendor.split(' ').map((word) => word[0]).slice(0, 2).join('')}</span><div><small>VERIFIED VENDOR</small><h2>{product.vendor}</h2></div></div><div className={styles.vendorFacts}><span><b>Identity</b>Checked</span><span><b>Listings</b>Reviewed</span></div><Link href="/shop">Visit storefront</Link></section>
-          <section className={styles.orderCard}><small>PRODUCT PRICE</small><div className={styles.price}><strong>₦{(unitPrice * quantity).toLocaleString()}</strong>{oldUnitPrice !== null && <del>₦{(oldUnitPrice * quantity).toLocaleString()}</del>}</div><p>Delivery and optional packaging are calculated after recipient details are confirmed.</p><button className={styles.secondaryAction} onClick={addProductToCart}>Add to cart</button><button className={styles.primaryAction} disabled={requesting} onClick={requestOrder}>{requesting ? 'Sending request…' : 'Request to order'}</button><div className={styles.delivery}><h3>FULFILMENT</h3><p><b>Stock:</b> Confirmed by the vendor after request</p><p><b>Delivery:</b> Priced from the recipient’s location</p><p><b>Returns:</b> Reviewed under Fendor’s return policy</p></div></section>
+          <section className={styles.vendorCard} id="vendor"><div className={styles.vendorTitle}><span>FV</span><div><small>APPROVED MARKETPLACE VENDOR</small><h2>Fendora vendor</h2></div></div><div className={styles.vendorFacts}><span><b>Marketplace status</b>Approved</span><span><b>Exact stock</b>Confirmed after request</span></div><Link href="/shop">Browse approved listings</Link></section>
+          <section className={styles.orderCard}><small>PRODUCT PRICE</small><div className={styles.price}><strong>₦{(unitPrice * quantity).toLocaleString()}</strong>{oldUnitPrice !== null && <del>₦{(oldUnitPrice * quantity).toLocaleString()}</del>}</div><p>Delivery and optional packaging are calculated after recipient details are confirmed.</p><button className={styles.secondaryAction} onClick={addProductToCart}>Add to cart</button><button className={styles.primaryAction} disabled={requesting} onClick={requestOrder}>{requesting ? 'Sending request…' : 'Request to order'}</button><div className={styles.delivery}><h3>FULFILMENT</h3><p><b>Stock:</b> Confirmed by the vendor after request</p><p><b>Delivery:</b> Priced from the recipient’s location</p><p><b>Returns:</b> Reviewed under Fendora’s return policy</p></div></section>
         </aside>
       </section>
 
-      <section className={styles.information}><article><h2>Product details</h2><p>{product.description ?? 'This verified listing includes the product and quantity selected above. Final availability, packaging options, delivery fee, and delivery timeline are confirmed before payment.'}</p><dl><div><dt>Vendor</dt><dd>{product.vendor}</dd></div><div><dt>Category</dt><dd>{product.category ?? 'Curated marketplace product'}</dd></div><div><dt>Order type</dt><dd>{gift === 'gift' ? 'Gift preparation requested' : 'Standard product order'}</dd></div></dl></article><article id="reviews"><h2>How reviews work</h2><p>Reviews are connected to completed Fendor orders. This helps customers understand the product and the vendor’s fulfilment quality.</p><div className={styles.reviewScore}><strong>4.8</strong><span>★★★★★<small>Customer rating</small></span></div></article></section>
-
-      <section className={styles.related}><div><p className={home.kicker}>YOU MAY ALSO LIKE</p><h2>More from verified vendors</h2></div><div className={styles.relatedGrid}>{products.filter((item) => item.name !== product.name).slice(0, 4).map((item) => <ProductCard key={item.name} product={item} compact />)}</div></section>
+      <section className={styles.information}><article><h2>Product details</h2><p>{product.description ?? 'This approved listing includes the product and quantity selected above. Final availability, packaging options, delivery fee, and delivery timeline are confirmed before payment.'}</p><dl><div><dt>Seller</dt><dd>{product.vendor}</dd></div><div><dt>Category</dt><dd>{product.category ?? 'Marketplace product'}</dd></div><div><dt>Order type</dt><dd>{gift === 'gift' ? 'Gift preparation requested' : 'Standard product order'}</dd></div></dl></article><article><h2>Availability and fulfilment</h2><p>The vendor must confirm and reserve the exact quantity. Fendora then records your recipient, packaging and delivery details before checkout becomes available.</p></article></section>
     </main>
-    <footer className={home.footer} id="support"><div className={`${home.shell} ${home.copyright}`}>© 2026 Fendor Marketplace. Product requests and communication stay within Fendor.</div></footer>
+    <footer className={home.footer} id="support"><div className={`${home.shell} ${home.copyright}`}>Fendora is operated by Fendora Innovations Limited · RC 9980315 · Nigeria · © 2026</div></footer>
   </div>;
 }

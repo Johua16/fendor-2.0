@@ -1,4 +1,5 @@
 export type CatalogueProduct = {
+// Catalogue products are priced by the server.
   id: string;
   title: string;
   description: string;
@@ -18,10 +19,11 @@ export type OrderRequest = {
   state: 'draft' | 'checking_availability' | 'reserved' | 'awaiting_payment' | 'confirmed' | 'preparing' | 'ready_for_dispatch' | 'out_for_delivery' | 'delivered' | 'unavailable' | 'cancelled' | 'delivery_failed' | 'returned' | 'refunded';
   version: number;
   product: { title: string; imagePath: string | null; unitPriceKobo: number; currency: 'NGN'; productVersion: number };
-  giftDetails: { recipientName?: string; occasion?: string; relationship?: string; giftMessage?: string; packagingPreference?: string };
+  giftDetails: { recipientName?: string; occasion?: string; relationship?: string; giftMessage?: string; packagingPreference?: string; packagingId?:string };
   reservationExpiresAt: string | null;
   reservationExpired: boolean;
   financialHold?: boolean;
+  fundsRecorded?: boolean;
   orderConfirmed: boolean;
   quoteId?: string | null;
   acceptedQuoteId?: string | null;
@@ -35,6 +37,7 @@ export type CheckoutSummary = {
   quote: null | { id: string; details: { productSubtotalKobo: number; packagingKobo: number; deliveryKobo: number; totalKobo: number; currency: 'NGN'; fulfilmentPlan: string; fulfilmentChecked: true } };
   acceptedQuoteId: string | null;
   orderConfirmed: boolean;
+  financialHold?: boolean;
   reservationExpiresAt: string | null;
   reservationActive: boolean;
   fundsRecorded: boolean;
@@ -42,10 +45,16 @@ export type CheckoutSummary = {
   refundedKobo: string;
   paymentInstructions?: null | { bankName: string; accountName: string; accountNumber: string };
   reviewMode?: boolean;
+  paymentProviders?: Array<'paystack'|'flutterwave'|'paypal'>;
+  latestPayment?: null | { provider: 'paystack'|'flutterwave'|'paypal'; status: 'initializing'|'pending'|'succeeded'|'failed'|'cancelled'; updatedAt: string };
+  receipt?: null | { id: string; received_kobo: string; provider: 'paystack'|'flutterwave'|'paypal'|null; verified_at: string|null };
 };
 
 export type DeliveryZone = { id: string; name: string; state: string; city: string; version: number };
-export type DeliveryDetails = { recipientName: string; phone: string; address: string; instructions: string; state: string; city: string; country: 'NG'; deliveryDate: string; proofId: string | null; trackingReference: string | null; attempts: number };
+export type PackagingOption = {id:string;name:string;priceKobo:string};
+export const listPackagingOptions=()=>requestJson<{options:PackagingOption[]}>('/api/packaging-options');
+export const calculateOrderTotal=(id:string,version:number,packagingId:string)=>requestJson(`/api/orders/${encodeURIComponent(id)}/auto-quote`,{method:'POST',body:JSON.stringify({version,packagingId})});
+export type DeliveryDetails = { zoneId:string; recipientName: string; phone: string; address: string; instructions: string; state: string; city: string; country: 'NG'; deliveryDate: string | null; proofId: string | null; trackingReference: string | null; attempts: number };
 export type OrderHistoryEvent = { id: string; from_state: string; to_state: string; event_type: string; order_version: number; created_at: string };
 
 type ErrorEnvelope = { error?: { code?: string; message?: string } };
@@ -86,6 +95,7 @@ export async function getProduct(id: string, signal?: AbortSignal) {
 }
 export async function listVendorProducts(signal?:AbortSignal){return requestJson<{products:VendorProduct[];nextCursor:string|null}>('/api/vendor/products?limit=50',{signal});}
 export async function createVendorProduct(input:{title:string;description:string;category:string;imagePath:string|null;sku:string;priceKobo:number;stockQuantity:number}){return requestJson<{product:VendorProduct}>('/api/vendor/products',{method:'POST',body:JSON.stringify(input)});}
+export async function editVendorProduct(id:string,input:{version:number;title:string;description:string;category:string;imagePath:string|null;sku:string;priceKobo:number;stockQuantity:number}){return requestJson<{product:VendorProduct}>(`/api/vendor/products/${encodeURIComponent(id)}/edit`,{method:'POST',body:JSON.stringify(input)});}
 export async function submitVendorProduct(id:string,version:number){return requestJson<{product:VendorProduct}>(`/api/vendor/products/${encodeURIComponent(id)}/submit`,{method:'POST',body:JSON.stringify({version})});}
 export async function pauseVendorProduct(id:string,version:number){return requestJson<{product:VendorProduct}>(`/api/vendor/products/${encodeURIComponent(id)}/pause`,{method:'POST',body:JSON.stringify({version})});}
 export async function listVendorOrders(signal?:AbortSignal){return requestJson<{orders:OrderRequest[];nextCursor:string|null}>('/api/vendor/orders?limit=50',{signal});}
@@ -132,6 +142,7 @@ export async function acceptOrderQuote(id: string, version: number, quoteId: str
     method: 'POST', body: JSON.stringify({ version, quoteId, totalKobo }),
   });
 }
+export async function startOnlinePayment(id:string,provider:'paystack'|'flutterwave'|'paypal'){return requestJson<{confirmed:boolean;url:string|null}>(`/api/orders/${encodeURIComponent(id)}/pay`,{method:'POST',body:JSON.stringify({provider})});}
 
 export async function listDeliveryZones(signal?: AbortSignal) {
   return requestJson<{ zones: DeliveryZone[] }>('/api/delivery-zones', { signal });

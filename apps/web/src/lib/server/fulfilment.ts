@@ -15,7 +15,8 @@ export function fulfilment(db:Database,key:string) {
   async delivery(secret:string|undefined,id:string,input:Record<string,unknown>) {
    const zoneId=uuid(input.zoneId),recipientName=text(input.recipientName,'recipient name',2,100),phone=text(input.phone,'phone',7,25),address=text(input.address,'address',10,1000),instructions=text(input.instructions??'','instructions',0,1000);
    if(!/^\+?[0-9 ()-]+$/.test(phone)) fail(400,'INVALID_INPUT','Invalid phone.');
-   const day=text(input.deliveryDate,'delivery date',10,10);if(!/^\d{4}-\d{2}-\d{2}$/.test(day)||!Number.isFinite(Date.parse(day))||new Date(day).toISOString().slice(0,10)!==day||Date.parse(day)<Date.now()-86400000) fail(400,'INVALID_INPUT','Choose a valid future delivery date.');
+   // Delivery timing is coordinated by Fendora; customer input is not a promised date.
+   const day=null;
    return db.transaction(async tx=>{const {by,row}=await lockOrder(tx,id,secret,'customer',input.version);
     if(!['checking_availability','reserved'].includes(row.state)||row.payment_verified||(await tx.query('SELECT id FROM payment_records WHERE order_id=$1',[id])).rows.length) fail(409,'DELIVERY_LOCKED','Contact Fendor to change this delivery.');
     const zone=(await tx.query('SELECT id,state,city FROM delivery_zones WHERE id=$1 AND active FOR SHARE',[zoneId])).rows[0];if(!zone) fail(400,'UNSUPPORTED_ZONE','Delivery zone unavailable.');
@@ -24,9 +25,9 @@ export function fulfilment(db:Database,key:string) {
     await tx.query('UPDATE order_requests SET quote_id=NULL,accepted_quote_id=NULL,total_kobo=NULL,accepted_total_kobo=NULL WHERE id=$1',[id]);return orderEvent(tx,row,by,row.state,'delivery_saved');});
   },
   async read(secret:string|undefined,id:string,scope:'customer'|'admin'|'vendor') {
-   return db.transaction(async tx=>{const {row}=await lockOrder(tx,id,secret,scope);const d=(await tx.query<{private_details:string;delivery_date:Date;proof_id:string|null;tracking_reference:string|null;attempts:number}>('SELECT * FROM order_deliveries WHERE order_id=$1',[id])).rows[0];if(!d)return null;
+   return db.transaction(async tx=>{const {row}=await lockOrder(tx,id,secret,scope);const d=(await tx.query<{zone_id:string;private_details:string;delivery_date:Date|null;proof_id:string|null;tracking_reference:string|null;attempts:number}>('SELECT * FROM order_deliveries WHERE order_id=$1',[id])).rows[0];if(!d)return null;
     if(scope==='vendor')return {state:row.state,deliveryDate:d.delivery_date};
-    return {...unseal(d.private_details,key) as Record<string,unknown>,deliveryDate:d.delivery_date,proofId:d.proof_id,trackingReference:d.tracking_reference,attempts:d.attempts};});
+    return {...unseal(d.private_details,key) as Record<string,unknown>,zoneId:d.zone_id,deliveryDate:d.delivery_date,proofId:d.proof_id,trackingReference:d.tracking_reference,attempts:d.attempts};});
   },
   async advance(secret:string|undefined,id:string,input:Record<string,unknown>,action:string,scope:'vendor'|'admin') {
    const note=text(input.note,'operation note',5,1000);

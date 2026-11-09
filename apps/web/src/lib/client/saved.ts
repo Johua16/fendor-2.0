@@ -8,7 +8,8 @@ const CHANGE_EVENT = 'fendor-saved-change';
 function validItem(value: unknown): value is SavedItem {
   if (!value || typeof value !== 'object') return false;
   const item = value as Partial<SavedItem>;
-  return typeof item.id === 'string' && typeof item.name === 'string' && typeof item.vendor === 'string'
+  return typeof item.id === 'string' && typeof item.productId === 'string' && typeof item.variantId === 'string'
+    && typeof item.name === 'string' && typeof item.vendor === 'string'
     && Number.isInteger(item.priceKobo) && item.priceKobo! >= 0 && typeof item.art === 'string'
     && typeof item.tint === 'string' && typeof item.option === 'string';
 }

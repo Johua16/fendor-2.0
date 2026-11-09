@@ -25,9 +25,9 @@ const places: Record<string, string[]> = {
 };
 const headings = [
   ['Choose your country', 'Tell us where your business operates.'],
-  ['Set up your account', 'Add the contact details Fendor will use for marketplace operations.'],
+  ['Set up your account', 'Add the contact details Fendora will use for marketplace operations.'],
   ['Confirm your details', 'Review your personal information before adding the business.'],
-  ['Business details', 'Tell Fendor about the business you want us to verify.'],
+  ['Business details', 'Tell Fendora about the business you want us to verify.'],
   ['Business document', 'Upload an image of your registration document for separate review.'],
 ];
 
@@ -124,30 +124,30 @@ export function VendorOnboarding() {
     } finally { setBusy(false); }
   }
 
-  if (loading) return <main className={styles.page}><div className={styles.loading} role="status"><i /><p>Preparing your Fendor application…</p></div></main>;
+  if (loading) return <main className={styles.page}><div className={styles.loading} role="status"><i /><p>Preparing your Fendora application…</p></div></main>;
   if (application && !['draft', 'changes_requested'].includes(application.status)) return <Status application={application} refresh={setApplication} />;
   const [title, intro] = headings[step - 1];
   return <main className={styles.page}>
     <Image className={styles.ribbonTop} src="/images/onboarding/74583795-5c3f-4f99-bd29-e22e03973ebe" width={720} height={965} alt="" />
     <Image className={styles.ribbonBottom} src="/images/onboarding/f1af9ffc-3a90-4e5b-8855-a2ee994d3a59" width={320} height={320} alt="" />
-    <header><Link href="/"><Image src="/icons/home/logo.svg" width={39} height={39} alt="" /><b>Fendor</b></Link><Link href="/account">Exit setup</Link></header>
+    <header><Link href="/"><Image src="/icons/home/logo.svg" width={39} height={39} alt="" /><b>Fendora</b></Link><Link href="/account">Exit setup</Link></header>
     <section className={styles.card}>
       <div className={styles.progress} aria-label={`Step ${step} of 5`}>{[1, 2, 3, 4, 5].map((number) => <span key={number} className={number <= step ? styles.done : ''} />)}</div>
       <p className={styles.kicker}>VENDOR APPLICATION · STEP {step} OF 5</p>
       <h1>{title}</h1><p className={styles.intro}>{intro}</p><p className={styles.privacy}>Personal details are saved after step 2. Business details are saved when you submit for review; keep this page open until then.</p>
       {application?.status === 'changes_requested' && <div className={styles.note} role="status"><b>Changes requested</b><span>{application.review_note || 'Please update and resubmit your business details.'}</span></div>}
       {error && <div className={styles.error} role="alert">{error}</div>}
-      {step === 1 && <form onSubmit={next}><label>Country<select value={country} onChange={(event) => setCountry(event.target.value)}><option value="NG">Nigeria</option></select><small>Fendor’s first vendor network currently operates in Nigeria.</small></label><button>Next</button></form>}
+      {step === 1 && <form onSubmit={next}><label>Country<select value={country} onChange={(event) => setCountry(event.target.value)}><option value="NG">Nigeria</option></select><small>Fendora’s first vendor network currently operates in Nigeria.</small></label><button>Next</button></form>}
       {step === 2 && <form onSubmit={saveContact}>
         <label>Date of birth<input required type="date" value={dob} onChange={(event) => setDob(event.target.value)} /><small>You must be at least 18 to operate a vendor account.</small></label>
         <label>Email address<input readOnly value={user?.email ?? ''} /><small className={styles.verified}>{user?.verified ? '✓ Email verified' : 'Verify your email before uploading documents.'}</small></label>
-        <label>Phone number<input required inputMode="tel" autoComplete="tel" placeholder="0801 234 5678" value={phone} onChange={(event) => setPhone(event.target.value)} /><small>Used by Fendor operations. It is never shown to customers.</small></label>
+        <label>Phone number<input required inputMode="tel" autoComplete="tel" placeholder="0801 234 5678" value={phone} onChange={(event) => setPhone(event.target.value)} /><small>Used by Fendora operations. It is never shown to customers.</small></label>
         <Nav back={() => setStep(1)} busy={busy} />
       </form>}
       {step === 3 && <form onSubmit={next}><div className={styles.review}>
         <span><small>Full name</small><b>{user?.fullName}</b></span><span><small>Email</small><b>{user?.email}</b></span>
         <span><small>Date of birth</small><b>{dob}</b></span><span><small>Phone</small><b>{phone}</b></span>
-      </div><p className={styles.privacy}>Fendor keeps vendor and customer contact details private. All order communication stays inside the platform.</p><Nav back={() => setStep(2)} /></form>}
+      </div><p className={styles.privacy}>Fendora keeps vendor and customer contact details private. All order communication stays inside the platform.</p><Nav back={() => setStep(2)} /></form>}
       {step === 4 && <form onSubmit={next}>
         <fieldset><legend>Account type</legend><div className={styles.choice}>
           <label className={type === 'individual' ? styles.selected : ''}><input type="radio" name="type" checked={type === 'individual'} onChange={() => setType('individual')} />Individual</label>
@@ -156,16 +156,16 @@ export function VendorOnboarding() {
         <label>Business name<input required minLength={2} value={business} onChange={(event) => setBusiness(event.target.value)} placeholder="Your trading or company name" /></label>
         <label>Business registration number<input required value={rc} onChange={(event) => setRc(event.target.value)} placeholder="Registration number" /><small>The current application service requires this number for all applicants.</small></label>
         <div className={styles.location}><label>State<select value={state} onChange={(event) => { const selected = event.target.value; setState(selected); setCity(places[selected][0]); }}>{Object.keys(places).map((item) => <option key={item}>{item}</option>)}</select></label><label>City<select value={city} onChange={(event) => setCity(event.target.value)}>{cities.map((item) => <option key={item}>{item}</option>)}</select></label></div>
-        <p className={styles.privacy}>Pilot city options are limited. If your business city is missing, contact Fendor before submitting.</p>
+        <p className={styles.privacy}>Pilot city options are limited. If your business city is missing, contact Fendora before submitting.</p>
         <label>Business address<input required minLength={5} value={address} onChange={(event) => setAddress(event.target.value)} placeholder="Street or area" /></label>
         <Nav back={() => setStep(3)} />
       </form>}
       {step === 5 && <form onSubmit={submit}>
-        <label>Business document image<input type="file" accept="image/jpeg,image/png,image/webp" disabled={busy || !user?.verified} onChange={(event) => { const file = event.target.files?.[0]; if (file) void upload(file); }} /><small>JPEG, PNG or WebP, up to 5 MB. Fendor reviews uploaded documents separately. An upload does not mean approval.</small></label>
+        <label>Business document image<input type="file" accept="image/jpeg,image/png,image/webp" disabled={busy || !user?.verified} onChange={(event) => { const file = event.target.files?.[0]; if (file) void upload(file); }} /><small>JPEG, PNG or WebP, up to 5 MB. Fendora reviews uploaded documents separately. An upload does not mean approval.</small></label>
         {!user?.verified && <p className={styles.privacy}>Verify your email before uploading a business document. <Link href="/verify-email">Request a new link</Link></p>}
         {document && <div className={styles.note} role="status"><b>{documentName} uploaded</b><span>Document status: pending review. Reference {document.id}.</span></div>}
         <p className={styles.privacy}>Your application will be submitted for review. The document upload is a separate review item and is not automatically attached to your application.</p>
-        <label className={styles.terms}><input required type="checkbox" checked={terms} onChange={(event) => setTerms(event.target.checked)} /><span>I agree to the <Link href="/policies/terms">vendor terms</Link> and understand that Fendor will review this application.</span></label>
+        <label className={styles.terms}><input required type="checkbox" checked={terms} onChange={(event) => setTerms(event.target.checked)} /><span>I agree to the <Link href="/policies/terms">vendor terms</Link> and understand that Fendora will review this application.</span></label>
         <Nav back={() => setStep(4)} busy={busy} final />
       </form>}
     </section>
@@ -177,11 +177,11 @@ function Nav({ back, busy = false, final = false }: { back: () => void; busy?: b
 }
 
 const statusContent: Record<string, { title: string; detail: string; action: string; href: string }> = {
-  submitted: { title: 'Application submitted', detail: 'Fendor has received your application. Our team will review your business details and notify you of a decision.', action: 'Browse marketplace while we review', href: '/shop' },
+  submitted: { title: 'Application submitted', detail: 'Fendora has received your application. Our team will review your business details and notify you of a decision.', action: 'Browse marketplace while we review', href: '/shop' },
   under_review: { title: 'Application under review', detail: 'Our team is reviewing your business details. You do not need to submit again.', action: 'Browse marketplace while we review', href: '/shop' },
   approved: { title: 'Your application is approved', detail: 'Your vendor access is active. You can open your workspace and prepare your business profile.', action: 'Open vendor workspace', href: '/vendor' },
-  rejected: { title: 'Application rejected', detail: 'This application cannot be resubmitted through the current service. Review the reason below and contact Fendor support if you need help.', action: 'Contact Fendor support', href: '/support' },
-  suspended: { title: 'Vendor access suspended', detail: 'Your vendor workspace is unavailable while this suspension is active. Review the reason below and contact Fendor support.', action: 'Contact Fendor support', href: '/support' },
+  rejected: { title: 'Application rejected', detail: 'This application cannot be resubmitted through the current service. Review the reason below and contact Fendora support if you need help.', action: 'Contact Fendora support', href: '/support' },
+  suspended: { title: 'Vendor access suspended', detail: 'Your vendor workspace is unavailable while this suspension is active. Review the reason below and contact Fendora support.', action: 'Contact Fendora support', href: '/support' },
 };
 function Status({ application, refresh }: { application: VendorApplication; refresh: (application: VendorApplication) => void }) {
   const [checking, setChecking] = useState(false);
@@ -191,7 +191,7 @@ function Status({ application, refresh }: { application: VendorApplication; refr
     try {
       const result = await vendorApplication();
       if (result.application) refresh(result.application);
-      else setError('No application was returned. Contact Fendor support.');
+      else setError('No application was returned. Contact Fendora support.');
     } catch (caught) { setError(caught instanceof Error ? caught.message : 'Could not refresh your application.'); }
     finally { setChecking(false); }
   }
@@ -201,11 +201,11 @@ function Status({ application, refresh }: { application: VendorApplication; refr
     return () => window.clearInterval(timer);
   }, [application.status]);
   const content = statusContent[application.status] ?? statusContent.submitted;
-  return <main className={styles.page}><header><Link href="/"><Image src="/icons/home/logo.svg" width={39} height={39} alt="" /><b>Fendor</b></Link></header>
+  return <main className={styles.page}><header><Link href="/"><Image src="/icons/home/logo.svg" width={39} height={39} alt="" /><b>Fendora</b></Link></header>
     <section className={`${styles.card} ${styles.status}`}><span aria-hidden="true"><Icon name={application.status === 'approved' ? 'check-circle' : application.status === 'rejected' || application.status === 'suspended' ? 'alert-triangle' : 'clock'} size={34}/></span>
       <p className={styles.kicker}>APPLICATION {application.status.replaceAll('_', ' ').toUpperCase()}</p><h1>{content.title}</h1><p>{content.detail}</p>
-      {application.review_note && <div className={styles.note}><b>Fendor review note</b><span>{application.review_note}</span></div>}
-      {application.status !== 'approved' && <p>Your account is a vendor application. Selling access begins after Fendor approves your business.</p>}
+      {application.review_note && <div className={styles.note}><b>Fendora review note</b><span>{application.review_note}</span></div>}
+      {application.status !== 'approved' && <p>Your account is a vendor application. Selling access begins after Fendora approves your business.</p>}
       {error && <div className={styles.error} role="alert">{error}</div>}
       <button type="button" disabled={checking} onClick={checkStatus}>{checking ? 'Checking…' : 'Check application status'}</button>
       <Link href={content.href}>{content.action}</Link>

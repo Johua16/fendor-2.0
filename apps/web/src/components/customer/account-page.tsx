@@ -6,6 +6,8 @@ import { accountDestination, AuthApiError, currentUser, CurrentUser, resendVerif
 import { listNotifications, listSupportCases } from '../../lib/client/customer-service';
 import { listOrderRequests, OrderRequest } from '../../lib/client/marketplace';
 import { CustomerHeader } from './customer-orders';
+import { AccountOverview } from './account-overview';
+import { Icon } from '../ui/icon';
 import home from './home-page.module.css';
 import styles from './account-page.module.css';
 
@@ -28,14 +30,25 @@ export function AccountPage() {
         setUnread(notificationResult.notifications.filter((item) => !item.read_at).length);
         setCases(caseResult.cases.filter((item) => item.status !== 'resolved').length);
       } catch (reason) {
-        if (!controller.signal.aborted) setError(reason instanceof Error ? reason : new Error('Fendor could not load your account.'));
+        if (!controller.signal.aborted) setError(reason instanceof Error ? reason : new Error('Fendora could not load your account.'));
       } finally { if (!controller.signal.aborted) setLoading(false); }
     }
     void load();
     return () => controller.abort();
   }, []);
   async function logout() { await signOut(); window.location.href = '/'; }
-  async function resend() { if (!user) return; try { const response = await resendVerification(user.email); setNotice(response.message); } catch (reason) { setNotice(reason instanceof Error ? reason.message : 'Fendor could not queue a verification email.'); } }
+  async function resend() { if (!user) return; try { const response = await resendVerification(user.email); setNotice(response.message); } catch (reason) { setNotice(reason instanceof Error ? reason.message : 'Fendora could not queue a verification email.'); } }
   const signedOut = error instanceof AuthApiError && error.status === 401;
-  return <div className={home.page}><CustomerHeader />{notice && <button className={home.toast} onClick={() => setNotice('')}>{notice}<span>×</span></button>}<main className={`${home.shell} ${styles.main}`}>{loading ? <section className={styles.state}><i /><h1>Loading your account</h1></section> : error ? <section className={styles.state}><span>○</span><h1>{signedOut ? 'Sign in to your Fendor account' : 'We couldn’t load your account'}</h1><p>{error.message}</p><Link href="/login?next=/account">Sign in</Link></section> : user ? <><section className={styles.welcome}><div><p className={home.kicker}>CUSTOMER ACCOUNT</p><h1>Welcome, {user.fullName}</h1><p>{user.email}</p></div><button onClick={logout}>Sign out</button></section>{!user.verified && <section className={styles.verify}><div><b>Verify your email to use protected order actions</b><p>Your account exists, but some marketplace actions remain unavailable.</p></div><button onClick={resend}>Resend verification email</button></section>}<section className={styles.stats}><Link href="/orders"><span>{orders.length}</span><b>Order requests</b><small>Availability through delivery</small></Link><Link href="/notifications"><span>{unread}</span><b>Unread updates</b><small>Notifications from Fendor</small></Link><Link href="/support"><span>{cases}</span><b>Open support cases</b><small>Private Fendor conversations</small></Link></section><section className={styles.sections}><div><h2>Your marketplace</h2><Link href="/shop">Browse verified products <span>→</span></Link><Link href="/saved">View saved products <span>→</span></Link><Link href="/cart">Review cart <span>→</span></Link><Link href="/orders/new">Send availability requests <span>→</span></Link></div><div><h2>Orders and help</h2><Link href="/orders">Track order requests <span>→</span></Link><Link href="/notifications">Notification inbox <span>→</span></Link><Link href="/support">Support conversations <span>→</span></Link><Link href="/help">Help centre and policies <span>→</span></Link></div></section><section className={styles.recent}><div><h2>Recent requests</h2><Link href="/orders">View all</Link></div>{orders.length ? orders.slice(0, 4).map((order) => <Link key={order.id} href={`/orders/${order.id}`}><span>{order.product.title}</span><b>{order.state.replaceAll('_', ' ')}</b></Link>) : <p>You have not sent an availability request yet.</p>}</section></> : null}</main></div>;
+  return <div className={home.page}>
+    <CustomerHeader />
+    {notice && <button className={home.toast} onClick={() => setNotice('')}>{notice}<span>×</span></button>}
+    <main className={`${home.shell} ${styles.main}`}>
+      {loading ? <section className={styles.state} role="status"><i /><h1>Opening your Fendora space…</h1></section>
+        : error ? <section className={styles.state} role="alert"><span><Icon name={signedOut ? 'user' : 'alert-triangle'} size={28} /></span><h1>{signedOut ? 'Your thoughtful moments, in one place.' : 'We couldn’t load your account'}</h1><p>{signedOut ? 'Sign in to see your orders, follow deliveries and pick up where you left off.' : error.message}</p><Link href="/login?next=/account">Sign in <Icon name="arrow-right" size={17} /></Link></section>
+        : user ? <>
+          {!user.verified && <section className={styles.verify}><div><b>Verify your email to use protected order actions</b><p>Your account exists, but some marketplace actions remain unavailable.</p></div><button onClick={resend}>Resend verification email</button></section>}
+          <AccountOverview user={user} orders={orders} unread={unread} cases={cases} logout={logout} />
+        </> : null}
+    </main>
+  </div>;
 }

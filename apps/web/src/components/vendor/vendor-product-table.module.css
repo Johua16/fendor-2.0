@@ -1,0 +1,7 @@
+.actions{display:flex;gap:6px;flex-wrap:wrap}
+.actions button{border:0;background:#2f2623;color:#fff;border-radius:7px;padding:7px 9px;font-size:10px;cursor:pointer}
+.actions .edit{background:#fff;color:#2f2623;border:1px solid #d9ccc6}
+.actions .pause{background:#fff2ec;color:#9a381b}
+.reviewNote{color:#8b3b20!important;max-width:230px;margin-top:3px}
+.stock small{display:block;color:#8a7a73;font-size:9px;margin-top:3px}
+@media(max-width:560px){.actions{min-width:130px}}

@@ -35,7 +35,8 @@ VENDOR_RESPONSE_MINUTES=30
 SMTP_URL=smtps://resend:<resend-api-key>@smtp.resend.com:465
 MAIL_FROM=Fendor <notifications@<verified-domain>>
 BETA_REVIEW_MODE=false
-REVIEW_ACCESS_CODE=<long-random-team-review-code>
+PUBLIC_CHECKOUT_ENABLED=false
+ALLOW_SANDBOX_PAYMENTS=false
 ```
 
 Add the approved bank details only when payment testing begins. Leaving any value unset keeps payment instructions closed.
@@ -46,7 +47,7 @@ PAYMENT_ACCOUNT_NAME=
 PAYMENT_ACCOUNT_NUMBER=
 ```
 
-For a private product review before Fendor has approved bank details or a verified sending domain, set `BETA_REVIEW_MODE=true` and configure a long, unique `REVIEW_ACCESS_CODE`. The review code protects every product page and API except health/readiness checks with an HTTP-only seven-day access cookie, allowing Netlify's site visibility to remain public without exposing the beta to casual visitors. Set `APP_ORIGIN` to the primary beta origin without a trailing slash; the review gate canonicalises Netlify deploy aliases to that origin so authenticated POST requests pass the server's origin check. Successful access begins at `/welcome`, where the reviewer chooses the customer or vendor journey. New review accounts are verified and signed in immediately; customers continue to the homepage while vendors continue to the application flow. Administrators receive a **Simulate test payment** action after a customer accepts a quote. No transfer is requested or recorded as real money. Rotate the review code if it is shared outside the approved team. Remove `REVIEW_ACCESS_CODE` and set `BETA_REVIEW_MODE=false` before the public beta, configure branded email and approved payment details, then repeat the payment and identity release checks.
+The shared private-review programme has ended. Keep `BETA_REVIEW_MODE=false`, remove `REVIEW_ACCESS_CODE`, and keep both `PUBLIC_CHECKOUT_ENABLED=false` and `ALLOW_SANDBOX_PAYMENTS=false` on the public beta. `PUBLIC_CHECKOUT_ENABLED` is an independent release switch: checkout remains closed even if provider credentials are present. Provider test credentials belong only in local development or a separately protected test deployment. Add live provider keys only after merchant approval, settlement-account verification and a complete live-provider acceptance test, then enable public checkout in a separately approved release.
 
 ## Database and account setup
 

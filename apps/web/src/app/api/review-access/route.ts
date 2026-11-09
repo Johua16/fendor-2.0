@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { canonicalReviewOrigin, REVIEW_ACCESS_COOKIE, reviewAccessEnabled, reviewAccessToken, reviewEntryDestination, safeReviewDestination } from '@/lib/review-access';
 
 export async function POST(request: NextRequest) {
+  if (!reviewAccessEnabled()) {
+    return NextResponse.redirect(new URL('/', request.url), 303);
+  }
   const form = await request.formData();
   const submittedCode = String(form.get('code') ?? '').trim();
   const requestedDestination = safeReviewDestination(String(form.get('next') ?? '/'));

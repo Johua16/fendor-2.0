@@ -22,8 +22,10 @@ export function uploads(db:Database,key:string,origin:string) {
     await tx.query('SELECT id FROM users WHERE id=$1 FOR UPDATE',[u.id]);
     const total=(await tx.query<{total:string}>('SELECT COALESCE(sum(bytes),0)::text AS total FROM uploads WHERE owner_id=$1',[u.id])).rows[0];
     if(Number(total.total)+clean.length>100*1024*1024) fail(409,'UPLOAD_QUOTA','Account upload quota reached.');
-    const id=randomUUID();await tx.query('INSERT INTO uploads(id,owner_id,purpose,payload,bytes) VALUES($1,$2,$3,$4,$5)',[id,u.id,purpose,seal(clean.toString('base64'),key),clean.length]);
-    return {id,purpose,status:'pending',imagePath:`/api/media/${id}`};
+    const id=randomUUID(),status=purpose==='proof'?'approved':'pending';
+    await tx.query('INSERT INTO uploads(id,owner_id,purpose,payload,bytes,status) VALUES($1,$2,$3,$4,$5,$6)',[id,u.id,purpose,seal(clean.toString('base64'),key),clean.length,status]);
+    if(purpose==='proof') await audit(tx,u.id,id,'proof_uploaded','Delivery or return evidence uploaded by the assigned operator.');
+    return {id,purpose,status,imagePath:`/api/media/${id}`};
    });
   },
   async review(secret:string|undefined,id:string,input:Record<string,unknown>) {

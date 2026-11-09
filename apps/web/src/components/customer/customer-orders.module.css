@@ -3,3 +3,4 @@
 .checkout{display:block;width:100%;border-radius:10px;padding:11px;background:#fd7a49;color:#2f2623;text-align:center;text-decoration:none;font-weight:800;margin:14px 0 9px}
 .deliveryLink{display:block;width:100%;border:1px solid #fd7a49;border-radius:10px;padding:10px;color:#a63b0c;text-align:center;text-decoration:none;font-weight:800;margin:14px 0 9px}.deliveryLink+.checkout{margin-top:0}
 .remedyLink{display:block;color:#8e2f23;text-align:center;text-decoration:none;font-size:10px;font-weight:800;margin:12px 0}
+.formGrid select{display:block;width:100%;padding:11px;margin-top:6px;border:1px solid #ddcfca;border-radius:9px;background:#fff;color:#2f2623;font:inherit}

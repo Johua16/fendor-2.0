@@ -1,0 +1,11 @@
+'use client';
+import Link from 'next/link';
+import {useEffect,useState} from 'react';
+type Rate={id:string;name:string;city?:string;state?:string;priceKobo:string|null};
+export default function Pricing(){
+ const [data,setData]=useState<{packaging:Rate[];zones:Rate[]}|null>(null),[notice,setNotice]=useState('');
+ async function load(){try{const r=await fetch('/api/admin/standard-prices');const d=await r.json();if(!r.ok)throw Error(d.error?.message||'Administrator login required.');setData(d);}catch(e){setNotice(e instanceof Error?e.message:'Could not load rates.');}}
+ useEffect(()=>{void load();},[]);
+ async function save(kind:string,row:Rate,form:HTMLFormElement){const value=Number(new FormData(form).get('price'));if(!Number.isFinite(value)||value<0)return;const r=await fetch('/api/admin/standard-prices',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({kind,id:row.id,priceKobo:Math.round(value*100),previousPriceKobo:row.priceKobo})});const d=await r.json();setNotice(r.ok?'Rate saved. Existing quotes keep their agreed totals.':d.error?.message||'Could not save.');await load();}
+ return <main style={{maxWidth:850,margin:'40px auto',padding:20}}><Link href="/admin">← Admin dashboard</Link><h1>Packaging and delivery prices</h1><p>Set the average delivery fee for each supported destination. These rates calculate customer totals automatically. Existing quotes retain their prices.</p>{notice&&<p role="status">{notice}</p>}{!data?<Link href="/login?next=/admin/pricing">Sign in as administrator</Link>:([['packaging','Packaging',data.packaging],['zone','Delivery areas',data.zones]] as const).map(([kind,title,rows])=><section key={kind}><h2>{title}</h2>{rows.map(row=><form key={`${row.id}:${row.priceKobo}`} onSubmit={e=>{e.preventDefault();void save(kind,row,e.currentTarget);}} style={{display:'flex',flexWrap:'wrap',alignItems:'center',gap:12,padding:'16px 0',borderBottom:'1px solid #ddd'}}><label style={{flex:1}}>{row.name}{row.city?` · ${row.city}, ${row.state}`:''}<input name="price" aria-label={`${row.name} price in naira`} type="number" min="0" step="0.01" required defaultValue={row.priceKobo===null?'':Number(row.priceKobo)/100} style={{display:'block',padding:10,marginTop:8}}/></label><span>NGN</span><button type="submit">Save rate</button></form>)}</section>)}</main>;
+}
