@@ -29,41 +29,19 @@ export type DisplayProduct = {
   category?: string;
 };
 
-export const products: DisplayProduct[] = [
-  { name: 'Samsung Galaxy A55 5G', vendor: 'AfriTech Direct', price: '₦385,000', old: '₦440,000', tint: '#dce3df', art: 'phone' },
-  { name: 'Vegetable-Tanned Field Satchel', vendor: 'Maro Leather Works', price: '₦48,500', old: '₦55,000', tint: '#ead8c6', art: 'bag' },
-  { name: 'Soundcore Space One ANC', vendor: 'Sound District', price: '₦124,900', old: '₦139,000', tint: '#dddde5', art: 'headphones' },
-  { name: 'Ojai Matte Clay Tea Set', vendor: 'Earth & Ember', price: '₦36,000', old: '₦42,000', tint: '#ead9cc', art: 'tea' },
-  { name: 'Men’s Slim-Fit Chinos', vendor: 'Defacto Abuja', price: '₦29,900', old: '₦34,000', tint: '#d8ded8', art: 'fashion' },
-  { name: 'Precision Espresso Tamper', vendor: 'Brew Culture', price: '₦18,500', old: '₦22,000', tint: '#ddd1c4', art: 'tamper' },
-];
-
 const categoryArt: Record<string, Pick<DisplayProduct, 'art' | 'tint'>> = {
   flowers: { art: 'tea', tint: '#ead9cc' }, cakes: { art: 'tea', tint: '#f1dfd8' }, hampers: { art: 'bag', tint: '#ead8c6' },
   'personalised-gifts': { art: 'tamper', tint: '#ddd1c4' }, fashion: { art: 'fashion', tint: '#d8ded8' }, home: { art: 'tea', tint: '#ead9cc' }, other: { art: 'bag', tint: '#dedfe4' },
 };
 
 function catalogueProduct(product: CatalogueProduct): DisplayProduct {
-  return { id: product.id, variantId: product.variantId, name: product.title, vendor: 'Verified Fendora vendor', price: `₦${Math.round(product.priceKobo / 100).toLocaleString('en-NG')}`, imagePath: product.imagePath, description: product.description, category: product.category, ...(categoryArt[product.category] ?? categoryArt.other) };
+  return { id: product.id, variantId: product.variantId, name: product.title, vendor: 'Approved Fendora vendor', price: `₦${Math.round(product.priceKobo / 100).toLocaleString('en-NG')}`, imagePath: product.imagePath, description: product.description, category: product.category, ...(categoryArt[product.category] ?? categoryArt.other) };
 }
 
 const heroSlides = [
-  { eyebrow: 'Curated for meaningful moments', title: 'Find Your Next Favourite Thing', copy: 'Discover thoughtful products from verified Nigerian vendors, brought together in one dependable marketplace.', position: '50% 48%' },
+  { eyebrow: 'Curated for meaningful moments', title: 'Find Your Next Favourite Thing', copy: 'Discover thoughtful products from approved Nigerian vendors, brought together in one coordinated marketplace.', position: '50% 48%' },
   { eyebrow: 'Gifts with more meaning', title: 'Make Every Gift Feel Personal', copy: 'Choose a product, add the recipient details, and let Fendora guide the order from confirmation to fulfilment.', position: '28% 50%' },
   { eyebrow: 'Local makers, closer to you', title: 'Discover Trusted Nigerian Vendors', copy: 'Explore independent stores and distinctive products, with Fendora coordinating every confirmed order.', position: '73% 50%' },
-];
-
-const collections = [
-  { title: 'Phones, Tablets & Audio', subtitle: 'Everyday technology from verified sellers', items: products.slice(0, 3) },
-  { title: 'Fashion, Bags & Apparel', subtitle: 'Pieces selected for style and quality', items: [products[1], products[4], products[5]] },
-  { title: 'Home, Living & Gifting', subtitle: 'Beautiful finds for people and spaces', items: [products[3], products[5], products[1]] },
-];
-
-const vendors = [
-  { initials: 'AT', name: 'AfriTech Direct', specialty: 'Phones & electronics', items: ['phone', 'headphones', 'tamper'] },
-  { initials: 'ML', name: 'Maro Leather Works', specialty: 'Hand-finished leather goods', items: ['bag', 'fashion', 'bag'] },
-  { initials: 'EE', name: 'Earth & Ember', specialty: 'Homeware & ceramics', items: ['tea', 'tamper', 'tea'] },
-  { initials: 'SD', name: 'Sound District', specialty: 'Audio & accessories', items: ['headphones', 'phone', 'headphones'] },
 ];
 
 export function ProductArt({ type, tint }: { type: string; tint: string }) {
@@ -95,9 +73,8 @@ export function ProductCard({ product, compact = false, onAdd }: { product: Disp
     {product.imagePath ? <div className={styles.productImage}><Image src={product.imagePath} fill sizes="(max-width: 720px) 55vw, 25vw" alt={product.name} /></div> : <ProductArt type={product.art} tint={product.tint} />}
     <div className={styles.vendorLine}><span className={styles.verifiedDot}><Icon name="check" size={12} /></span>{product.vendor}</div>
     <h3><Link className={styles.productLink} href={productHref(product)}>{product.name}</Link></h3>
-    <div className={styles.rating}>★ <b>4.8</b> <span>(120+)</span></div>
     <div className={styles.priceRow}><strong>{product.price}</strong>{product.old && <del>{product.old}</del>}</div>
-    {!compact && <><div className={styles.stock}><span style={{ width: '72%' }} /></div><small>Available after vendor confirmation</small></>}
+    {!compact && <small>Exact stock is confirmed by the vendor before checkout.</small>}
     {onAdd && <button className={styles.addButton} onClick={onAdd}>Add to cart</button>}
   </article>;
 }
@@ -171,7 +148,7 @@ export function HomePage() {
           <p className={styles.eyebrow}>{heroSlides[slide].eyebrow}</p>
           <h1>{heroSlides[slide].title}</h1>
           <p>{heroSlides[slide].copy}</p>
-          <div className={styles.heroButtons}><Link href="/shop" className={styles.primaryButton}>Start shopping</Link><a href="#vendors" className={styles.textButton}>Explore vendors <Icon name="arrow-right" size={16}/></a></div>
+          <div className={styles.heroButtons}><Link href="/shop" className={styles.primaryButton}>Browse approved products</Link><a href="#how-it-works" className={styles.textButton}>How gifting works <Icon name="arrow-right" size={16}/></a></div>
         </div>
         <div className={styles.heroImage}>
           <Image src="/images/home/hero-pottery.png" fill sizes="(max-width: 720px) 100vw, 50vw" alt="A curated handmade pottery collection" priority style={{ objectPosition: heroSlides[slide].position }} />
@@ -183,41 +160,41 @@ export function HomePage() {
       </section>
 
       <section className={`${styles.shell} ${styles.section}`} id="categories">
-        <div className={styles.sectionHead}><div><p className={styles.kicker}>SHOP YOUR WAY</p><h2>Browse popular categories</h2></div><a href="#collections">View all <span>→</span></a></div>
-        <div className={styles.categoryGrid}>{categories.map(([name, icon]) => <a href="#collections" className={styles.category} key={name}><span><Icon name={icon} size={25}/></span><b>{name}</b></a>)}</div>
+        <div className={styles.sectionHead}><div><p className={styles.kicker}>SHOP YOUR WAY</p><h2>Browse popular categories</h2></div><Link href="/shop">View all <span>→</span></Link></div>
+        <div className={styles.categoryGrid}>{categories.map(([name, icon]) => <Link href="/shop" className={styles.category} key={name}><span><Icon name={icon} size={25}/></span><b>{name}</b></Link>)}</div>
       </section>
 
       <section className={`${styles.shell} ${styles.section} ${styles.panel}`}>
         <div className={styles.sectionHead}><div className={styles.titleWithBadge}><span className={styles.pill}>FLASH WINDOW</span><div><h2>Deals worth discovering</h2><p>Limited offers from verified vendors. Stock is confirmed before payment.</p></div></div><Link href="/shop">View all deals <span>→</span></Link></div>
-        {catalogueState === 'loading' ? <div className={styles.catalogueState}>Loading approved products…</div> : catalogueState === 'error' ? <div className={styles.catalogueState}>Live products are unavailable right now. <Link href="/shop">Try the marketplace again</Link>.</div> : catalogue.length ? <div className={styles.productScroller}>{catalogue.slice(0, 6).map((product) => <ProductCard key={product.id} product={product} onAdd={() => addToCart(product)} />)}</div> : <div className={styles.catalogueState}>Approved products will appear here as soon as vendors publish them.</div>}
+        {catalogueState === 'loading' ? <div className={styles.catalogueState}>Loading approved products…</div> : catalogueState === 'error' ? <div className={styles.catalogueState}>Live products are unavailable right now. <Link href="/shop">Try the marketplace again</Link>.</div> : catalogue.length ? <div className={styles.productScroller}>{catalogue.slice(0, 6).map((product) => <ProductCard key={product.id} product={product} onAdd={() => addToCart(product)} />)}</div> : <div className={styles.catalogueState}><strong>Our approved catalogue is being prepared.</strong><br />No product is available to request until its vendor and listing pass Fendora review.</div>}
       </section>
 
-      <section className={`${styles.shell} ${styles.section}`} id="popular">
+      {catalogueState === 'ready' && catalogue.length > 0 && <section className={`${styles.shell} ${styles.section}`} id="popular">
         <div className={styles.sectionHead}><div><p className={styles.kicker}>CUSTOMER FAVOURITES</p><h2>Popular right now</h2></div><Link href="/shop">Shop all products <span>→</span></Link></div>
-        {catalogueState === 'ready' && catalogue.length > 0 && <div className={styles.popularGrid}>{catalogue.slice(0, 5).map((product) => <ProductCard key={product.id} product={product} compact onAdd={() => addToCart(product)} />)}</div>}
-      </section>
+        <div className={styles.popularGrid}>{catalogue.slice(0, 5).map((product) => <ProductCard key={product.id} product={product} compact onAdd={() => addToCart(product)} />)}</div>
+      </section>}
 
-      <section className={`${styles.shell} ${styles.section}`} id="collections">
-        <div className={styles.sectionHead}><div><p className={styles.kicker}>CURATED COLLECTIONS</p><h2>Find something for every moment</h2></div></div>
-        <div className={styles.collections}>{collections.map((collection) => <article className={styles.collection} key={collection.title}><div className={styles.collectionHead}><div><h3>{collection.title}</h3><p>{collection.subtitle}</p></div><a href="#popular">Explore <span>→</span></a></div><div className={styles.collectionProducts}>{collection.items.map((product) => <ProductCard key={product.name} product={product} compact />)}</div></article>)}</div>
-      </section>
-
-      <section className={`${styles.shell} ${styles.section}`} id="vendors">
-        <div className={styles.sectionHead}><div><p className={styles.kicker}>SHOP FROM PEOPLE YOU CAN TRUST</p><h2>Discover our vendors</h2></div><a href="#vendors">See all vendors <span>→</span></a></div>
-        <div className={styles.vendorGrid}>{vendors.map((vendor) => <article className={styles.vendorCard} key={vendor.name}><div className={styles.vendorHeader}><span>{vendor.initials}</span><div><h3>{vendor.name} <b>✓</b></h3><p>{vendor.specialty}</p></div></div><div className={styles.vendorProducts}>{vendor.items.map((type, index) => <ProductArt key={`${type}-${index}`} type={type} tint={['#ead8c6', '#e8ddd5', '#dedfe4'][index]} />)}</div><button>Visit storefront <span>→</span></button></article>)}</div>
-      </section>
-
-      <section className={`${styles.shell} ${styles.section} ${styles.discovery}`}>
+      {catalogue.length > 0 && <section className={`${styles.shell} ${styles.section} ${styles.discovery}`}>
         <div><p className={styles.kicker}>NEW TO THE MARKETPLACE</p><h2>Fresh approved products</h2><div className={styles.recentList}>{catalogue.slice(0, 3).map((p) => <ProductCard key={p.id} product={p} compact />)}</div></div>
         <div><p className={styles.kicker}>MORE TO EXPLORE</p><h2>Made for thoughtful gifting</h2><div className={styles.recentList}>{catalogue.slice(3, 6).map((p) => <ProductCard key={p.id} product={p} compact />)}</div></div>
+      </section>}
+
+      <section className={`${styles.shell} ${styles.section} ${styles.trust}`} id="how-it-works">
+        <div className={styles.centeredHead}><p className={styles.kicker}>PERSONALISED GIFTING, STEP BY STEP</p><h2>From a thoughtful idea to a coordinated delivery</h2><p>Fendora keeps the customer journey clear while approved vendors focus on supplying the product.</p></div>
+        <div className={styles.trustGrid}>{[
+          ['shopping-basket', '1. Choose an approved product', 'Browse only listings approved for the public catalogue. Availability is still confirmed for your exact quantity.'],
+          ['message-circle', '2. Personalise the request', 'Tell us about the recipient, occasion and relationship, then add a message and packaging preference.'],
+          ['package', '3. Vendor confirms exact stock', 'The approved vendor reserves the requested quantity. A listing is never treated as in stock before this step.'],
+          ['truck', '4. Review, pay and follow delivery', 'Review product, packaging and delivery costs before checkout. Fendora then coordinates preparation and delivery updates.'],
+        ].map(([icon, title, copy]) => <article key={title}><span aria-hidden="true"><Icon name={icon as IconName} size={26}/></span><h3>{title}</h3><p>{copy}</p></article>)}</div>
       </section>
 
       <section className={`${styles.shell} ${styles.section} ${styles.trust}`}>
         <div className={styles.centeredHead}><h2>Why shop on Fendora</h2><p>Built to make discovery, confirmation, and fulfilment feel clear from the start.</p></div>
         <div className={styles.trustGrid}>{[
-          ['shield-check', 'Verified vendors', 'Vendors submit identity and business information before their products can be approved.'],
-          ['package', 'Stock confirmation', 'The vendor confirms availability before Fendora asks you to complete an offline payment.'],
-          ['truck', 'Clear order updates', 'Follow each order through confirmation, payment review, preparation, and fulfilment.'],
+          ['shield-check', 'Approved vendors', 'Vendors submit identity and business information before their products can be approved.'],
+          ['package', 'Stock confirmation', 'The vendor confirms and reserves the exact quantity before checkout can open.'],
+          ['truck', 'Clear order updates', 'Follow each order through stock confirmation, payment, preparation, and fulfilment.'],
           ['message-circle', 'Fendora support', 'Questions and order issues stay inside Fendora so every request has a visible record.'],
         ].map(([icon, title, copy]) => <article key={title}><span aria-hidden="true"><Icon name={icon as IconName} size={26}/></span><h3>{title}</h3><p>{copy}</p></article>)}</div>
       </section>
@@ -230,6 +207,6 @@ export function HomePage() {
       <section className={`${styles.shell} ${styles.newsletter}`}><div><span className={styles.pill}>CURATED UPDATES</span><h2>Stay in the loop</h2><p>Receive new collections, vendor stories, and thoughtful gift ideas.</p></div><form onSubmit={(e) => { e.preventDefault(); setNotice('You’re on the Fendora updates list.'); }}><div><input required type="email" placeholder="Enter your email address" aria-label="Email address" /><button>Subscribe</button></div><small>No spam. Unsubscribe at any time.</small></form></section>
     </main>
 
-    <footer className={styles.footer} id="support"><div className={`${styles.shell} ${styles.footerGrid}`}><div><Link href="/" className={styles.logo}><Image src="/icons/home/logo.svg" width={40} height={40} alt="" /><span><b>Fendora</b><small>MARKETPLACE</small></span></Link><p>Thoughtful products from verified vendors, coordinated through one dependable marketplace.</p><span className={styles.footerBadge}><Icon name="check-circle" size={15}/> Verified marketplace</span></div><div><h3>Shopping</h3><Link href="/shop">Browse products</Link><Link href="/saved">Saved products</Link><Link href="/cart">Cart</Link></div><div><h3>Customer care</h3><Link href="/help">Help centre</Link><Link href="/orders">Order tracking</Link><Link href="/support">Contact Fendora</Link></div><div><h3>Trust & policies</h3><Link href="/policies/refunds">Refunds & cancellations</Link><Link href="/policies/privacy">Privacy notice</Link><Link href="/policies/terms">Marketplace terms</Link><Link href="/policies/vendor-agreement">Vendor agreement</Link></div></div><div className={`${styles.shell} ${styles.copyright}`}>© 2026 Fendora Innovations Limited · RC 9980315 · Nigeria</div></footer>
+    <footer className={styles.footer} id="support"><div className={`${styles.shell} ${styles.footerGrid}`}><div><Link href="/" className={styles.logo}><Image src="/icons/home/logo.svg" width={40} height={40} alt="" /><span><b>Fendora</b><small>MARKETPLACE</small></span></Link><p>Thoughtful products from approved vendors, coordinated through one dependable marketplace.</p><a href="mailto:officialfendora@gmail.com">officialfendora@gmail.com</a></div><div><h3>Shopping</h3><Link href="/shop">Browse products</Link><Link href="/saved">Saved products</Link><Link href="/cart">Cart</Link></div><div><h3>Customer care</h3><Link href="/help">Help centre</Link><Link href="/orders">Order tracking</Link><Link href="/support">Contact Fendora</Link></div><div><h3>Trust & policies</h3><Link href="/policies/refunds">Refunds & cancellations</Link><Link href="/policies/returns">Returns</Link><Link href="/policies/privacy">Privacy notice</Link><Link href="/policies/terms">Marketplace terms</Link><Link href="/policies/vendor-agreement">Vendor agreement</Link></div></div><div className={`${styles.shell} ${styles.copyright}`}>Fendora is operated by Fendora Innovations Limited · RC 9980315 · Nigeria · © 2026</div></footer>
   </div>;
 }

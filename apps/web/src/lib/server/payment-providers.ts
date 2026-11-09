@@ -16,6 +16,10 @@ function sandboxPaymentsAllowed() {
   return process.env.NODE_ENV !== 'production' || process.env.ALLOW_SANDBOX_PAYMENTS === 'true';
 }
 
+export function publicCheckoutEnabled() {
+  return process.env.PUBLIC_CHECKOUT_ENABLED === 'true';
+}
+
 function productionCredential(provider: PaymentProvider) {
   if (provider === 'paystack') return process.env.PAYSTACK_SECRET_KEY?.trim().startsWith('sk_live_') === true;
   if (provider === 'flutterwave') {
@@ -47,6 +51,7 @@ function paystackWebhookValid(rawBody: string, headers: Headers) {
 }
 
 export function configuredProviders(): PaymentProvider[] {
+  if (!publicCheckoutEnabled()) return [];
   const out: PaymentProvider[] = [];
   if (process.env.PAYSTACK_SECRET_KEY?.trim() && providerAllowed('paystack')) out.push('paystack');
   if (process.env.FLUTTERWAVE_SECRET_KEY?.trim() && process.env.FLUTTERWAVE_WEBHOOK_SECRET_HASH?.trim() && providerAllowed('flutterwave')) out.push('flutterwave');

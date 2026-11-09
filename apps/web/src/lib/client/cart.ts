@@ -20,7 +20,8 @@ const CHANGE_EVENT = 'fendor-cart-change';
 function validItem(value: unknown): value is CartItem {
   if (!value || typeof value !== 'object') return false;
   const item = value as Partial<CartItem>;
-  return typeof item.id === 'string' && typeof item.name === 'string' && typeof item.vendor === 'string'
+  return typeof item.id === 'string' && typeof item.productId === 'string' && typeof item.variantId === 'string'
+    && typeof item.name === 'string' && typeof item.vendor === 'string'
     && Number.isInteger(item.priceKobo) && item.priceKobo! >= 0 && Number.isInteger(item.quantity)
     && item.quantity! >= 1 && item.quantity! <= 10 && typeof item.art === 'string'
     && typeof item.tint === 'string' && typeof item.option === 'string';

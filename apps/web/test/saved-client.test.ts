@@ -12,6 +12,8 @@ const product = { id: 'variant-1', productId: 'product-1', variantId: 'variant-1
 test('saved products toggle predictably and malformed browser data is ignored', () => {
   const storage = memoryStorage('{broken');
   assert.deepEqual(readSaved(storage), []);
+  const legacyPreview = memoryStorage(JSON.stringify([{ ...product, productId: undefined, variantId: undefined }]));
+  assert.deepEqual(readSaved(legacyPreview), []);
   assert.equal(toggleSavedItem(product, storage).saved, true);
   assert.equal(isSaved(product.id, storage), true);
   assert.equal(toggleSavedItem(product, storage).saved, false);

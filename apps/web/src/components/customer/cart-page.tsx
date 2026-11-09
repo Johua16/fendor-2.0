@@ -6,7 +6,7 @@ import { FormEvent, useMemo, useState } from 'react';
 import { cartItemCount } from '../../lib/client/cart';
 import { useCart } from '../../lib/client/use-cart';
 import { isSaved, toggleSavedItem } from '../../lib/client/saved';
-import { ProductArt, ProductCard, products } from './home-page';
+import { ProductArt } from './home-page';
 import { Icon } from '../ui/icon';
 import home from './home-page.module.css';
 import styles from './cart-page.module.css';
@@ -64,7 +64,7 @@ export function CartPage() {
         <span aria-hidden="true"><Icon name="shopping-cart" size={32}/></span>
         <p className={home.kicker}>YOUR CART IS READY FOR A FRESH START</p>
         <h1>Your cart is empty</h1>
-        <p>Explore products from verified vendors and save the ones you would like Fendora to confirm.</p>
+        <p>Explore approved listings and save the products you would like Fendora to confirm.</p>
         <Link href="/shop" className={styles.primary}>Browse the marketplace</Link>
       </section> : <>
         <div className={styles.pageHead}>
@@ -75,7 +75,7 @@ export function CartPage() {
         <div className={styles.layout}>
           <div className={styles.items}>
             {items.map((item) => <article className={styles.vendorGroup} key={item.id}>
-              <header className={styles.vendorHead}><div className={styles.vendorIdentity}><span>{item.vendor.split(' ').map((word) => word[0]).slice(0, 2).join('')}</span><div><h2>{item.vendor} <b>✓</b></h2><small>Verified vendor · Availability confirmation required</small></div></div><Link href="/shop">Visit storefront →</Link></header>
+              <header className={styles.vendorHead}><div className={styles.vendorIdentity}><span>{item.vendor.split(' ').map((word) => word[0]).slice(0, 2).join('')}</span><div><h2>{item.vendor}</h2><small>Approved listing · Exact stock confirmation required</small></div></div><Link href="/shop">Browse products →</Link></header>
               <div className={styles.itemRow}>
                 <Link className={styles.visual} href={`/product/${item.productId ?? item.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')}`}>{item.imagePath ? <Image src={item.imagePath} fill sizes="150px" alt={item.name} /> : <ProductArt type={item.art} tint={item.tint} />}</Link>
                 <div className={styles.itemInfo}><div className={styles.itemTop}><div><h3>{item.name}</h3><p>{item.option}</p></div><div className={styles.itemPrice}><strong>{formatNaira(item.priceKobo * item.quantity)}</strong>{item.oldPriceKobo && <del>{formatNaira(item.oldPriceKobo * item.quantity)}</del>}</div></div>
@@ -85,7 +85,7 @@ export function CartPage() {
               </div>
             </article>)}
 
-            <section className={styles.location}><span aria-hidden="true"><Icon name="map-pin" size={28}/></span><div><small>DELIVERY DETAILS COME NEXT</small><h2>Where should Fendora deliver?</h2><p>The recipient’s location, preferred date, packaging and delivery instructions are collected after availability requests are created. Delivery fees are quoted before payment.</p></div><Link href="/orders/new">Add after request</Link></section>
+            <section className={styles.location}><span aria-hidden="true"><Icon name="map-pin" size={28}/></span><div><small>DELIVERY DETAILS COME NEXT</small><h2>Where should Fendora deliver?</h2><p>The recipient’s address, occasion, relationship, packaging and delivery instructions are collected after availability requests are created. Fendora schedules delivery after preparation.</p></div><Link href="/orders/new">Add after request</Link></section>
           </div>
 
           <aside className={styles.summary}>
@@ -98,10 +98,9 @@ export function CartPage() {
           </aside>
         </div>
 
-        <section className={styles.recommendations}><div><p className={home.kicker}>KEEP DISCOVERING</p><h2>You might also like</h2></div><div className={styles.recommendationGrid}>{products.filter((product) => !items.some((item) => item.name === product.name)).slice(0, 4).map((product) => <ProductCard key={product.name} product={product} compact />)}</div></section>
       </>}
     </main>
 
-    <footer className={home.footer} id="support"><div className={`${home.shell} ${home.copyright}`}>© 2026 Fendora Marketplace. Stock and final costs are confirmed before payment.</div></footer>
+    <footer className={home.footer} id="support"><div className={`${home.shell} ${home.copyright}`}>Fendora is operated by Fendora Innovations Limited · RC 9980315 · Nigeria · © 2026</div></footer>
   </div>;
 }

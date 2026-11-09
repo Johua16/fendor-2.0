@@ -35,6 +35,7 @@ VENDOR_RESPONSE_MINUTES=30
 SMTP_URL=smtps://resend:<resend-api-key>@smtp.resend.com:465
 MAIL_FROM=Fendor <notifications@<verified-domain>>
 BETA_REVIEW_MODE=false
+PUBLIC_CHECKOUT_ENABLED=false
 ALLOW_SANDBOX_PAYMENTS=false
 ```
 
@@ -46,7 +47,7 @@ PAYMENT_ACCOUNT_NAME=
 PAYMENT_ACCOUNT_NUMBER=
 ```
 
-The shared private-review programme has ended. Keep `BETA_REVIEW_MODE=false`, remove `REVIEW_ACCESS_CODE`, and keep `ALLOW_SANDBOX_PAYMENTS=false` on the public beta. Provider test credentials belong only in local development or a separately protected test deployment. Production automatically hides sandbox providers unless the explicit sandbox switch is enabled; never enable that switch on a public site. Add live provider keys only after merchant approval, settlement-account verification and a complete live-provider acceptance test.
+The shared private-review programme has ended. Keep `BETA_REVIEW_MODE=false`, remove `REVIEW_ACCESS_CODE`, and keep both `PUBLIC_CHECKOUT_ENABLED=false` and `ALLOW_SANDBOX_PAYMENTS=false` on the public beta. `PUBLIC_CHECKOUT_ENABLED` is an independent release switch: checkout remains closed even if provider credentials are present. Provider test credentials belong only in local development or a separately protected test deployment. Add live provider keys only after merchant approval, settlement-account verification and a complete live-provider acceptance test, then enable public checkout in a separately approved release.
 
 ## Database and account setup
 

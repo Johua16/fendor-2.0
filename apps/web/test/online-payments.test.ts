@@ -9,7 +9,7 @@ import { fixture } from './order-fixture.ts';
 const origin = 'http://localhost:3000';
 const quote = { packagingKobo: 1000, deliveryKobo: 2000, fulfilmentChecked: true, fulfilmentPlan: 'Standard gift box, Abuja delivery and route checked.' };
 const originalFetch = globalThis.fetch;
-const envNames = ['ALLOW_SANDBOX_PAYMENTS','PAYSTACK_SECRET_KEY','PAYSTACK_WEBHOOK_SECRET','FLUTTERWAVE_SECRET_KEY','FLUTTERWAVE_WEBHOOK_SECRET_HASH','PAYPAL_CLIENT_ID','PAYPAL_CLIENT_SECRET','PAYPAL_CURRENCY','PAYPAL_NGN_PER_UNIT','PAYPAL_API_ORIGIN','PAYPAL_WEBHOOK_ID'] as const;
+const envNames = ['PUBLIC_CHECKOUT_ENABLED','ALLOW_SANDBOX_PAYMENTS','PAYSTACK_SECRET_KEY','PAYSTACK_WEBHOOK_SECRET','FLUTTERWAVE_SECRET_KEY','FLUTTERWAVE_WEBHOOK_SECRET_HASH','PAYPAL_CLIENT_ID','PAYPAL_CLIENT_SECRET','PAYPAL_CURRENCY','PAYPAL_NGN_PER_UNIT','PAYPAL_API_ORIGIN','PAYPAL_WEBHOOK_ID'] as const;
 const originalEnv = Object.fromEntries(envNames.map(name => [name, process.env[name]]));
 const originalNodeEnv = process.env.NODE_ENV;
 function response(value: unknown) { return new Response(JSON.stringify(value), { status: 200, headers: { 'content-type': 'application/json' } }); }
@@ -29,6 +29,8 @@ test('public production checkout hides sandbox providers until live credentials 
   process.env.PAYPAL_API_ORIGIN = 'https://api-m.sandbox.paypal.com';
   try {
     assert.deepEqual(configuredProviders(), []);
+    process.env.PUBLIC_CHECKOUT_ENABLED = 'true';
+    assert.deepEqual(configuredProviders(), []);
     process.env.ALLOW_SANDBOX_PAYMENTS = 'true';
     assert.deepEqual(configuredProviders(), ['paystack', 'flutterwave', 'paypal']);
     delete process.env.ALLOW_SANDBOX_PAYMENTS;
@@ -40,7 +42,7 @@ test('public production checkout hides sandbox providers until live credentials 
 });
 
 test('Paystack, Flutterwave and PayPal use server-created hosted checkout and provider verification', { concurrency: false }, async () => {
-  process.env.PAYSTACK_SECRET_KEY = 'paystack-test'; process.env.FLUTTERWAVE_SECRET_KEY = 'flutterwave-test'; process.env.FLUTTERWAVE_WEBHOOK_SECRET_HASH = 'flutterwave-hook'; process.env.PAYPAL_CLIENT_ID = 'paypal-id'; process.env.PAYPAL_CLIENT_SECRET = 'paypal-secret'; process.env.PAYPAL_CURRENCY = 'USD'; process.env.PAYPAL_NGN_PER_UNIT = '1600'; process.env.PAYPAL_API_ORIGIN = 'https://paypal.test';
+  process.env.PUBLIC_CHECKOUT_ENABLED = 'true'; process.env.PAYSTACK_SECRET_KEY = 'paystack-test'; process.env.FLUTTERWAVE_SECRET_KEY = 'flutterwave-test'; process.env.FLUTTERWAVE_WEBHOOK_SECRET_HASH = 'flutterwave-hook'; process.env.PAYPAL_CLIENT_ID = 'paypal-id'; process.env.PAYPAL_CLIENT_SECRET = 'paypal-secret'; process.env.PAYPAL_CURRENCY = 'USD'; process.env.PAYPAL_NGN_PER_UNIT = '1600'; process.env.PAYPAL_API_ORIGIN = 'https://paypal.test';
   globalThis.fetch = (async (input, init) => {
     const url = String(input);
     if (url.endsWith('/transaction/initialize')) { const sent = JSON.parse(String(init?.body)); assert.equal(sent.amount, 160000); assert.equal(sent.currency, 'NGN'); return response({ data: { authorization_url: 'https://paystack.test/pay' } }); }
@@ -89,7 +91,7 @@ async function payable() {
 }
 
 test('verified online payment confirms once and stores provider evidence', { concurrency: false }, async () => {
-  process.env.PAYSTACK_SECRET_KEY = 'paystack-test'; const f = await payable(); let reference = '';
+  process.env.PUBLIC_CHECKOUT_ENABLED = 'true'; process.env.PAYSTACK_SECRET_KEY = 'paystack-test'; const f = await payable(); let reference = '';
   globalThis.fetch = (async (input, init) => { const url = String(input); if (url.endsWith('/transaction/initialize')) { reference = JSON.parse(String(init?.body)).reference; return response({ data: { authorization_url: 'https://paystack.test/pay' } }); } if (url.includes('/transaction/verify/')) return response({ data: { reference, id: 321, amount: 13000, currency: 'NGN', status: 'success' } }); throw Error(`Unexpected provider request: ${url}`); }) as typeof fetch;
   try {
     const payments = onlinePayments(f.db, origin), started = await payments.start(f.customer.secret, f.orderId, 'paystack'); assert.equal(started.url, 'https://paystack.test/pay');
@@ -105,7 +107,7 @@ test('verified online payment confirms once and stores provider evidence', { con
 });
 
 test('successful charge after reservation expiry is retained for Fendor financial review', { concurrency: false }, async () => {
-  process.env.PAYSTACK_SECRET_KEY = 'paystack-test'; const f = await payable(); let reference = '';
+  process.env.PUBLIC_CHECKOUT_ENABLED = 'true'; process.env.PAYSTACK_SECRET_KEY = 'paystack-test'; const f = await payable(); let reference = '';
   globalThis.fetch = (async (input, init) => { const url = String(input); if (url.endsWith('/transaction/initialize')) { reference = JSON.parse(String(init?.body)).reference; return response({ data: { authorization_url: 'https://paystack.test/pay' } }); } return response({ data: { reference, id: 654, amount: 13000, currency: 'NGN', status: 'success' } }); }) as typeof fetch;
   try {
     const payments = onlinePayments(f.db, origin); await payments.start(f.customer.secret, f.orderId, 'paystack'); await f.db.query("UPDATE order_requests SET reservation_expires_at=now()-interval '1 minute' WHERE id=$1", [f.orderId]);
