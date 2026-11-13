@@ -22,6 +22,7 @@ export default async function operationsWorker() {
 
   const settings = applicationConfig();
   const smtpUrl = new URL(process.env.SMTP_URL);
+  const senderDomain = process.env.MAIL_FROM.match(/@([^>\s]+)/)?.[1]?.toLowerCase();
   smtpUrl.searchParams.set('connectionTimeout', '5000');
   smtpUrl.searchParams.set('socketTimeout', '3000');
   const transport = nodemailer.createTransport(smtpUrl.toString(), {
@@ -41,7 +42,11 @@ export default async function operationsWorker() {
         catch (error) {
           // Log only SMTP protocol metadata. Never log the recipient, message,
           // provider response text or credentials.
-          console.error(JSON.stringify(smtpFailure(error)));
+          console.error(JSON.stringify({
+            ...smtpFailure(error),
+            smtpHost: smtpUrl.hostname,
+            senderDomain,
+          }));
           throw error;
         }
       },
