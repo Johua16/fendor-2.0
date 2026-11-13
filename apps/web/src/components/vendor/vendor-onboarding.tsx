@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import {
   AuthApiError, currentUser, CurrentUser, saveOnboardingProfile,
-  submitVendorApplication, vendorApplication, VendorApplication,
+  resendVerification, submitVendorApplication, vendorApplication, VendorApplication,
 } from '../../lib/client/auth';
 import { DocumentUpload, uploadBusinessDocument } from '../../lib/client/onboarding';
 import { Icon } from '../ui/icon';
@@ -50,6 +50,8 @@ export function VendorOnboarding() {
   const [terms, setTerms] = useState(false);
   const [document, setDocument] = useState<DocumentUpload | null>(null);
   const [documentName, setDocumentName] = useState('');
+  const [verificationBusy, setVerificationBusy] = useState(false);
+  const [verificationMessage, setVerificationMessage] = useState('');
 
   useEffect(() => {
     Promise.all([currentUser(), vendorApplication()])
@@ -85,6 +87,10 @@ export function VendorOnboarding() {
   }
   async function saveContact(event: FormEvent) {
     event.preventDefault();
+    if (!user?.verified) {
+      setError('Verify your email before continuing. Use the verification controls below.');
+      return;
+    }
     setBusy(true);
     setError('');
     try {
@@ -94,6 +100,31 @@ export function VendorOnboarding() {
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'Could not save your details.');
     } finally { setBusy(false); }
+  }
+  async function requestVerification() {
+    if (!user?.email) return;
+    setVerificationBusy(true);
+    setVerificationMessage('');
+    setError('');
+    try {
+      const result = await resendVerification(user.email);
+      setVerificationMessage(`${result.message} Check your inbox and spam folder.`);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'Could not request a verification email.');
+    } finally { setVerificationBusy(false); }
+  }
+  async function checkVerification() {
+    setVerificationBusy(true);
+    setVerificationMessage('');
+    setError('');
+    try {
+      const result = await currentUser();
+      setUser(result.user);
+      if (result.user.verified) setVerificationMessage('✓ Email verified. You can continue your application.');
+      else setVerificationMessage('Your email is not verified yet. Open the link in the verification email, then check again.');
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'Could not check your verification status.');
+    } finally { setVerificationBusy(false); }
   }
   async function upload(file: File) {
     setBusy(true);
@@ -141,8 +172,19 @@ export function VendorOnboarding() {
       {step === 2 && <form onSubmit={saveContact}>
         <label>Date of birth<input required type="date" value={dob} onChange={(event) => setDob(event.target.value)} /><small>You must be at least 18 to operate a vendor account.</small></label>
         <label>Email address<input readOnly value={user?.email ?? ''} /><small className={styles.verified}>{user?.verified ? '✓ Email verified' : 'Verify your email before uploading documents.'}</small></label>
+        {!user?.verified && <div className={styles.verification}>
+          <b>Email verification required</b>
+          <p>We will send the verification link to the account email shown above. Open the link, return here and check your status.</p>
+          <div className={styles.verificationActions}>
+            <button type="button" disabled={verificationBusy} onClick={() => void requestVerification()}>{verificationBusy ? 'Please wait…' : 'Send verification email'}</button>
+            <button type="button" disabled={verificationBusy} onClick={() => void checkVerification()}>I have verified — check again</button>
+          </div>
+          <Link href="/verify-email">Open the verification help page</Link>
+          {verificationMessage && <span role="status">{verificationMessage}</span>}
+        </div>}
+        {user?.verified && verificationMessage && <div className={styles.success} role="status">{verificationMessage}</div>}
         <label>Phone number<input required inputMode="tel" autoComplete="tel" placeholder="0801 234 5678" value={phone} onChange={(event) => setPhone(event.target.value)} /><small>Used by Fendora operations. It is never shown to customers.</small></label>
-        <Nav back={() => setStep(1)} busy={busy} />
+        <Nav back={() => setStep(1)} busy={busy} disabled={!user?.verified} disabledLabel="Verify email to continue" />
       </form>}
       {step === 3 && <form onSubmit={next}><div className={styles.review}>
         <span><small>Full name</small><b>{user?.fullName}</b></span><span><small>Email</small><b>{user?.email}</b></span>
@@ -172,8 +214,8 @@ export function VendorOnboarding() {
   </main>;
 }
 
-function Nav({ back, busy = false, final = false }: { back: () => void; busy?: boolean; final?: boolean }) {
-  return <div className={styles.nav}><button type="button" onClick={back}>Back</button><button disabled={busy}>{busy ? 'Please wait…' : final ? 'Submit for review' : 'Next'}</button></div>;
+function Nav({ back, busy = false, final = false, disabled = false, disabledLabel = 'Continue unavailable' }: { back: () => void; busy?: boolean; final?: boolean; disabled?: boolean; disabledLabel?: string }) {
+  return <div className={styles.nav}><button type="button" onClick={back}>Back</button><button disabled={busy || disabled}>{busy ? 'Please wait…' : disabled ? disabledLabel : final ? 'Submit for review' : 'Next'}</button></div>;
 }
 
 const statusContent: Record<string, { title: string; detail: string; action: string; href: string }> = {

@@ -4,6 +4,17 @@ import { config as applicationConfig } from '../../src/lib/server/config.ts';
 import { database } from '../../src/lib/server/database.ts';
 import { runWorker } from '../../src/lib/server/worker.ts';
 
+function smtpFailure(error: unknown) {
+  const value = typeof error === 'object' && error ? error as Record<string, unknown> : {};
+  const safe = (field: string) => typeof value[field] === 'string' ? String(value[field]).slice(0, 80) : undefined;
+  return {
+    event: 'smtp_delivery_failed',
+    code: safe('code'),
+    command: safe('command'),
+    responseCode: typeof value.responseCode === 'number' ? value.responseCode : undefined,
+  };
+}
+
 export default async function operationsWorker() {
   if (!process.env.SMTP_URL || !process.env.MAIL_FROM) {
     throw new Error('SMTP_URL and MAIL_FROM are required.');
@@ -25,7 +36,15 @@ export default async function operationsWorker() {
       database(),
       settings.outboxKey,
       settings.origin,
-      (mail) => transport.sendMail(mail),
+      async (mail) => {
+        try { return await transport.sendMail(mail); }
+        catch (error) {
+          // Log only SMTP protocol metadata. Never log the recipient, message,
+          // provider response text or credentials.
+          console.error(JSON.stringify(smtpFailure(error)));
+          throw error;
+        }
+      },
       5,
     );
     console.log(JSON.stringify({ event: 'scheduled_worker_cycle', ...result }));
