@@ -4,10 +4,22 @@ import {randomUUID} from 'node:crypto';
 import {fixture} from './order-fixture.ts';
 import {notify} from '../src/lib/server/notifications.ts';
 import {seal} from '../src/lib/server/security.ts';
-import {deliverOne,isPlaceholderEmail} from '../src/lib/server/mail.ts';
+import {deliverOne,drainMail,isPlaceholderEmail} from '../src/lib/server/mail.ts';
 test('reserved recipients are recognised without blocking genuine domains',()=>{
  for(const address of ['customer.localcheckout@example.com','vendor@EXAMPLE.ORG','admin@sub.example.net','user@localhost','user@app.test','user@bad.invalid','dashboard-demo@fendor.local','admin@FENDOR.LOCAL','user@sub.fendor.local','user@fendor.local.'])assert.equal(isPlaceholderEmail(address),true);
  for(const address of ['officialfendora@gmail.com','customer@examplecompany.com','user@localbusiness.com'])assert.equal(isPlaceholderEmail(address),false);
+});
+
+test('the immediate fast path drains newly queued messages without waiting for the scheduled worker',async()=>{
+ const f=await fixture(),key='ab'.repeat(32);try{
+  await f.db.query('DELETE FROM email_outbox');
+  for(const subject of ['Verify now','Admin action'])await f.db.query('INSERT INTO email_outbox(id,payload) VALUES($1,$2)',[randomUUID(),seal({to:'officialfendora@gmail.com',purpose:'notification',subject,text:'Open Fendora.'},key)]);
+  const delivered:string[]=[];
+  const result=await drainMail(f.db,key,async mail=>{delivered.push(mail.subject);},5);
+  assert.deepEqual(result,{sent:2,failures:0,suppressed:0});
+  assert.deepEqual(delivered,['Verify now','Admin action']);
+  assert.equal((await f.db.query('SELECT id FROM email_outbox WHERE sent_at IS NULL')).rows.length,0);
+ }finally{await f.db.close();}
 });
 test('SMTP policy suppresses placeholders without claiming delivery and continues to real recipients',async()=>{
  const f=await fixture(),key='ab'.repeat(32);try{

@@ -3,10 +3,10 @@ import { catalogue } from './catalogue.ts';
 import { body } from './http-input.ts';
 import { fail } from './identity.ts';
 const fields=['title','description','category','imagePath','sku','priceKobo','stockQuantity'];
-export async function catalogueResponse(req:Request,path:string[],db:Database,secret:string|undefined,headers:Headers):Promise<Response|null> {
+export async function catalogueResponse(req:Request,path:string[],db:Database,secret:string|undefined,headers:Headers,settings?:{outboxKey:string;origin:string}):Promise<Response|null> {
   const scope=path[0]==='products'?'public':path[1]==='products' && ['vendor','admin'].includes(path[0])?path[0] as 'vendor'|'admin':null;
   if(!scope) return null;
-  const rest=path.slice(scope==='public'?1:2), service=catalogue(db);
+  const rest=path.slice(scope==='public'?1:2), service=catalogue(db,settings);
   if(req.method==='GET') {
     if(rest.length===0) return Response.json(await service.list(new URL(req.url).searchParams,secret,scope),{headers});
     if(rest.length===1) return Response.json({product:await service.detail(rest[0],secret,scope)},{headers});

@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import type { Database, Sql } from './database.ts';
 import { token, digest, hashPassword, checkPassword, seal } from './security.ts';
-import { notify } from './notifications.ts';
+import { notify, notifyAdmins } from './notifications.ts';
 export class ApiError extends Error {
   status: number; code: string;
   constructor(status: number, code: string, message: string) { super(message); this.status = status; this.code = code; }
@@ -138,7 +138,9 @@ export function identity(db: Database, config: Config) {
         const row = (await tx.query(`INSERT INTO vendor_applications(id,user_id,business_name,business_location,country,registration_number,account_type,status)
           VALUES($1,$2,$3,$4,$5,$6,$7,'submitted') ON CONFLICT(user_id) DO UPDATE SET business_name=$3,business_location=$4,country=$5,registration_number=$6,account_type=$7,status='submitted',reviewed_by=NULL,reviewed_at=NULL,review_note=NULL RETURNING id,status`, [id, u.id, businessName, location, country, registration,accountType])).rows[0];
         await tx.query("UPDATE users SET onboarding_intent='vendor' WHERE id=$1", [u.id]);
-        await tx.query('INSERT INTO vendor_review_events(id,application_id,actor_id,from_status,to_status,note) VALUES($1,$2,$3,$4,$5,$6)', [randomUUID(), id, u.id, old?.status ?? 'draft', 'submitted', 'Application submitted']);
+        const eventId = randomUUID();
+        await tx.query('INSERT INTO vendor_review_events(id,application_id,actor_id,from_status,to_status,note) VALUES($1,$2,$3,$4,$5,$6)', [eventId, id, u.id, old?.status ?? 'draft', 'submitted', 'Application submitted']);
+        await notifyAdmins(tx, `vendor-application:${eventId}`, 'Vendor application awaiting review', `Vendor application ${id} has been submitted and needs a Fendora review.`, config.outboxKey, config.origin, '/admin/vendors');
         return row;
       });
     },
@@ -172,7 +174,7 @@ export function identity(db: Database, config: Config) {
         else await tx.query("DELETE FROM user_roles WHERE user_id=$1 AND role='vendor'", [old.user_id]);
         const eventId = randomUUID();
         await tx.query('INSERT INTO vendor_review_events(id,application_id,actor_id,from_status,to_status,note) VALUES($1,$2,$3,$4,$5,$6)', [eventId, id, u.id, old.status, decision, note]);
-        await notify(tx, old.user_id, `vendor-review:${eventId}`, 'Fendor vendor application update', `Your vendor application is ${decision.replaceAll('_', ' ')}. Open Vendor onboarding in Fendor for the decision and next steps.`, config.outboxKey, config.origin);
+        await notify(tx, old.user_id, `vendor-review:${eventId}`, 'Fendora vendor application update', `Your vendor application is ${decision.replaceAll('_', ' ')}. Open Vendor onboarding in Fendora for the decision and next steps.`, config.outboxKey, config.origin, true, '/vendor/onboarding');
         return { id, status: decision };
       });
     }

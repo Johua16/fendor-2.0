@@ -45,6 +45,9 @@ test('database-backed identity and vendor lifecycle', async () => {
     await db.query("INSERT INTO user_roles(user_id,role) VALUES($1,'admin')",[admin.user.id]);
     await api.review(admin.secret,String(submitted.id),{decision:'changes_requested',note:'Clarify location'});
     await api.apply(vendor.secret,application);
+    const adminAlert=(await db.query<{title:string;message:string}>('SELECT title,message FROM notifications WHERE user_id=$1 AND title=$2',[admin.user.id,'Vendor application awaiting review'])).rows;
+    assert.equal(adminAlert.length,1);
+    assert.match(adminAlert[0].message,/needs a Fendora review/);
     await api.review(admin.secret,String(submitted.id),{decision:'approved',note:'Reviewed documents manually'});
     assert.equal((await api.vendorAccess(vendor.secret)).allowed,true);
     await assert.rejects(api.review(admin.secret,String(submitted.id),{decision:'approved',note:'Again'}),{code:'INVALID_STATE'});
@@ -124,6 +127,6 @@ test('customer becoming a vendor retains application identity across sessions an
     assert.equal((await db.query('SELECT id FROM notifications WHERE user_id=$1', [applicant.user.id])).rows.length, 2);
     const mail = (await db.query<{payload:string}>('SELECT payload FROM email_outbox')).rows.map(row => unseal(row.payload, 'ef'.repeat(32)) as {text:string});
     assert.equal(mail.length, 2);
-    assert.ok(mail.every(item => item.text.includes('/notifications') && !item.text.includes('/account/notifications')));
+    assert.ok(mail.every(item => item.text.includes('/vendor/onboarding') && !item.text.includes('/account/notifications')));
   } finally { await db.close(); }
 });

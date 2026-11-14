@@ -8,7 +8,7 @@ All POST requests require `Content-Type: application/json` and an Origin matchin
 
 | Method/path | Body | Success |
 |---|---|---|
-| POST /api/auth/signup | email, password, fullName | 202 generic message; email queued |
+| POST /api/auth/signup | email, password, fullName | 202 generic message; email durably queued and immediate delivery requested |
 | POST /api/auth/login | email, password | 200 `{user}` and session cookie |
 | GET /api/auth/me | — | 200 `{user}` |
 | POST /api/auth/logout | {} | 200 message; cookie cleared |
@@ -21,7 +21,7 @@ User: `{id,email,fullName,verified,roles}`. Signup always creates a customer, ne
 
 Build `/verify-email` and `/reset-password` pages. Read `#token=...`, remove it from browser history, and POST it to the matching endpoint. Do not log it or send it to analytics. After success direct the user to login. Preserve an intended destination only if it is a validated local path. Account creation and email verification do not automatically sign the user in.
 
-Show field errors (400), sign-in prompt (401), permission/verification states (403), conflicts (409), retry message (429; Retry-After seconds), and service error (503). Never claim delivery just because an email was queued. Duplicate signup and unknown recovery addresses return the same generic message.
+Show field errors (400), sign-in prompt (401), permission/verification states (403), conflicts (409), retry message (429; Retry-After seconds), and service error (503). Never claim inbox delivery just because an email was queued or accepted by SMTP. Successful account/recovery writes trigger an immediate background delivery pass; the scheduled worker retains the durable retry path. Duplicate signup and unknown recovery addresses return the same generic message.
 
 ## Vendor endpoints
 
@@ -36,5 +36,7 @@ Show field errors (400), sign-in prompt (401), permission/verification states (4
 Application reads use database field names: `business_name,business_location,country,registration_number,status,review_note`. Country currently NG only; registrationNumber is required in this first backend contract, not independently verified against a registry. Confirm this onboarding requirement against approved screens before connecting the form. Admin list includes submitted application details for manual review; pagination and secure document uploads are future increments.
 
 States: submitted → changes_requested → submitted; submitted → approved or rejected; approved → suspended. Resubmission allowed only from draft/changes_requested. Rejected/suspended reopening is not implemented. Vendor access is denied immediately on suspension, even for an existing session. Approval grants the vendor role atomically with an audit entry. Admin cannot review their own application. Every review requires a note. This is application approval, not product verification or order approval.
+
+Every new or resubmitted vendor application creates an in-app notification and email job for each verified administrator, linked to `/admin/vendors`. Review decisions notify the applicant and link back to vendor onboarding. Notifications are deduplicated by immutable review-event ID.
 
 Frontend developer owns authentication and vendor-facing screens. Backend/admin work stays with our side. No catalogue, order persistence, payment or delivery endpoints are included yet.

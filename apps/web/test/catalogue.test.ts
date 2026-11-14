@@ -50,6 +50,20 @@ test('catalogue moderation, ownership, edit invalidation and vendor suspension',
     assert.equal((await db.query('SELECT * FROM product_events')).rows.length,6);
   } finally {await db.close();}
 });
+test('product submissions alert administrators and review decisions alert the vendor',async()=>{
+  const {db,vendor,admin}=await fixture();
+  const api=catalogue(db,{outboxKey:'ab'.repeat(32),origin:'http://localhost:3000'});
+  try {
+    const product=await api.create(vendor.secret,{...input,sku:'ALERT-1'});
+    await api.mutate(vendor.secret,product.id,{version:0},'submit');
+    const adminAlerts=(await db.query<{title:string}>('SELECT title FROM notifications WHERE user_id=$1',[admin.id])).rows;
+    assert.deepEqual(adminAlerts.map(x=>x.title),['Product listing awaiting review']);
+    await api.mutate(admin.secret,product.id,{version:1,decision:'approved',note:'Listing and image checked'},'review');
+    const vendorAlerts=(await db.query<{title:string}>('SELECT title FROM notifications WHERE user_id=$1',[vendor.id])).rows;
+    assert.deepEqual(vendorAlerts.map(x=>x.title),['Fendora product review update']);
+    assert.equal((await db.query('SELECT id FROM email_outbox')).rows.length,2);
+  } finally {await db.close();}
+});
 test('catalogue conflicts, invalid data, rollback, reservations and concurrent updates',async()=>{
   const {db,api,vendor,admin}=await fixture();
   try {

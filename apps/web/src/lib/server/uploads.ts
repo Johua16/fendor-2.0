@@ -5,6 +5,7 @@ import {identity,fail,text} from './identity.ts';
 import {actor,uuid} from './catalogue.ts';
 import {seal,unseal} from './security.ts';
 import {audit} from './operations-common.ts';
+import {notify,notifyAdmins} from './notifications.ts';
 export function uploads(db:Database,key:string,origin:string) {
  async function user(secret?:string) {const u=await identity(db,{origin,outboxKey:key}).me(secret);if(!u.verified) fail(403,'EMAIL_UNVERIFIED','Verify your email.');return u;}
  return {
@@ -25,14 +26,17 @@ export function uploads(db:Database,key:string,origin:string) {
     const id=randomUUID(),status=purpose==='proof'?'approved':'pending';
     await tx.query('INSERT INTO uploads(id,owner_id,purpose,payload,bytes,status) VALUES($1,$2,$3,$4,$5,$6)',[id,u.id,purpose,seal(clean.toString('base64'),key),clean.length,status]);
     if(purpose==='proof') await audit(tx,u.id,id,'proof_uploaded','Delivery or return evidence uploaded by the assigned operator.');
+    else await notifyAdmins(tx,`upload-review:${id}`,'Secure upload awaiting review',`${purpose==='product'?'A product image':'A vendor verification document'} has been uploaded and needs review.`,key,origin,'/admin/operations');
     return {id,purpose,status,imagePath:`/api/media/${id}`};
    });
   },
   async review(secret:string|undefined,id:string,input:Record<string,unknown>) {
    uuid(id);const note=text(input.note,'review note',5,1000);if(!['approved','rejected'].includes(String(input.status))) fail(400,'INVALID_INPUT','Invalid review status.');
-   return db.transaction(async tx=>{const by=await actor(tx,secret,'admin');const row=(await tx.query<{owner_id:string}>('SELECT owner_id FROM uploads WHERE id=$1 FOR UPDATE',[id])).rows[0];if(!row) fail(404,'NOT_FOUND','Upload not found.');
+   return db.transaction(async tx=>{const by=await actor(tx,secret,'admin');const row=(await tx.query<{owner_id:string;purpose:string}>('SELECT owner_id,purpose FROM uploads WHERE id=$1 FOR UPDATE',[id])).rows[0];if(!row) fail(404,'NOT_FOUND','Upload not found.');
     if(row.owner_id===by) fail(403,'SELF_REVIEW','Another operator must review the image.');
-    await tx.query('UPDATE uploads SET status=$2 WHERE id=$1',[id,input.status]);await audit(tx,by,id,'upload_review',note);return {id,status:input.status};});
+    await tx.query('UPDATE uploads SET status=$2 WHERE id=$1',[id,input.status]);await audit(tx,by,id,'upload_review',note);
+    await notify(tx,row.owner_id,`upload-review:${id}:${input.status}`,'Fendora upload review update',`Your ${row.purpose==='product'?'product image':'verification document'} was ${String(input.status)}. Open Fendora to continue.`,key,origin,true,row.purpose==='product'?'/vendor/products':'/vendor/settings');
+    return {id,status:input.status};});
   },
   async read(secret:string|undefined,id:string) {
    uuid(id);const row=(await db.query<{owner_id:string;purpose:string;payload:string;status:string}>('SELECT owner_id,purpose,payload,status FROM uploads WHERE id=$1',[id])).rows[0];if(!row) fail(404,'NOT_FOUND','Image not found.');
