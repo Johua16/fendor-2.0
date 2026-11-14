@@ -3,7 +3,8 @@ import type {Database} from './database.ts';
 import {orders} from './orders.ts';
 import {produceNotifications} from './notifications.ts';
 import {deliverOne} from './mail.ts';
-export async function runWorker(db:Database,key:string,origin:string,send:(mail:{to:string;subject:string;text:string})=>Promise<unknown>,deliveryLimit=20,blockTestRecipients=true) {
+import type {OutgoingMail} from './mail.ts';
+export async function runWorker(db:Database,key:string,origin:string,send:(mail:OutgoingMail)=>Promise<unknown>,deliveryLimit=20,blockTestRecipients=true) {
  const lease=randomUUID();
  const acquired=(await db.query("INSERT INTO worker_health(name,last_started,lease_until,lease_token) VALUES('operations',now(),now()+interval '5 minutes',$1) ON CONFLICT(name) DO UPDATE SET last_started=now(),lease_until=now()+interval '5 minutes',lease_token=$1 WHERE worker_health.lease_until IS NULL OR worker_health.lease_until<now() RETURNING name",[lease])).rows.length;
  if(!acquired)return {busy:true};

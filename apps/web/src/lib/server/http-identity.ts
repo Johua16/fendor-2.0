@@ -68,7 +68,7 @@ export async function handleIdentity(req: Request, path: string[], dependencies?
     return Response.json(data, { status, headers });
   } catch (error) {
     if (error instanceof ApiError) {
-      if (error.status === 429) headers.set('Retry-After', '900');
+      if (error.status === 429) headers.set('Retry-After', String(error.retryAfter??900));
       return Response.json({ error: { code: error.code, message: error.message } }, { status: error.status, headers });
     }
     console.error('Identity request failed; verify database and server configuration.');
