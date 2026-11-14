@@ -3,8 +3,8 @@ import type { Database, Sql } from './database.ts';
 import { token, digest, hashPassword, checkPassword, seal } from './security.ts';
 import { notify, notifyAdmins } from './notifications.ts';
 export class ApiError extends Error {
-  status: number; code: string;
-  constructor(status: number, code: string, message: string) { super(message); this.status = status; this.code = code; }
+  status: number; code: string; retryAfter?: number;
+  constructor(status: number, code: string, message: string, retryAfter?:number) { super(message); this.status = status; this.code = code; this.retryAfter=retryAfter; }
 }
 export function fail(status: number, code: string, message: string): never { throw new ApiError(status, code, message); }
 export function text(value: unknown, field: string, min = 1, max = 200): string {
@@ -22,16 +22,30 @@ function password(value: unknown) {
 }
 export type User = { id: string; email: string; fullName: string; verified: boolean; roles: string[]; onboardingIntent: 'customer'|'vendor'; dateOfBirth: string|null; phone: string|null };
 type Config = { origin: string; outboxKey: string; reviewMode?: boolean; now?: () => number };
-const generic = { message: 'If eligible, an email will be sent with the next step.' };
+const generic = { message: 'If eligible, Fendora has queued an email. It should arrive shortly; check Spam if it is not in your inbox after a few minutes.' };
 export function identity(db: Database, config: Config) {
   const now = config.now ?? Date.now;
   const instant = () => new Date(now());
-  async function limit(bucket: string, max = 5) {
-    const result = await db.query<{ count: number }>(`INSERT INTO auth_limits(bucket,count,expires_at) VALUES($1,1,$2)
+  async function limit(bucket: string, max = 5, windowMs=15*60_000, message='Too many attempts. Try again later.') {
+    const result = await db.query<{ count: number; expires_at:Date }>(`INSERT INTO auth_limits(bucket,count,expires_at) VALUES($1,1,$2)
       ON CONFLICT(bucket) DO UPDATE SET count=CASE WHEN auth_limits.expires_at <= $3 THEN 1 ELSE auth_limits.count+1 END,
-      expires_at=CASE WHEN auth_limits.expires_at <= $3 THEN $2 ELSE auth_limits.expires_at END RETURNING count`,
-      [digest(bucket), new Date(now() + 15 * 60_000), instant()]);
-    if (result.rows[0].count > max) fail(429, 'RATE_LIMITED', 'Too many attempts. Try again in 15 minutes.');
+      expires_at=CASE WHEN auth_limits.expires_at <= $3 THEN $2 ELSE auth_limits.expires_at END RETURNING count,expires_at`,
+      [digest(bucket), new Date(now() + windowMs), instant()]);
+    if (result.rows[0].count > max) {
+      const retryAfter=Math.max(1,Math.ceil((new Date(result.rows[0].expires_at).valueOf()-now())/1000));
+      throw new ApiError(429,'RATE_LIMITED',message,retryAfter);
+    }
+  }
+  async function emailLimits(address:string,purpose:'verify'|'reset') {
+    await limit(`email-cooldown:${purpose}:${address}`,1,60_000,'Please wait 60 seconds before requesting another email.');
+    await limit(`email-hourly:${purpose}:${address}`,5,60*60_000,'Too many email requests. Try again in one hour.');
+  }
+  function identityOutboxId(userId:string,purpose:'verify'|'reset') {
+    const hash=digest(`identity-email:${purpose}:${userId}`).slice(0,32).split('');
+    hash[12]='5';
+    hash[16]=((Number.parseInt(hash[16],16)&3)|8).toString(16);
+    const value=hash.join('');
+    return `${value.slice(0,8)}-${value.slice(8,12)}-${value.slice(12,16)}-${value.slice(16,20)}-${value.slice(20)}`;
   }
   async function queue(tx: Sql, userId: string, address: string, purpose: 'verify' | 'reset') {
     const secret = token();
@@ -41,7 +55,11 @@ export function identity(db: Database, config: Config) {
     const pathname = purpose === 'verify' ? '/verify-email' : '/reset-password';
     // Fragment avoids leaking tokens in request logs. Frontend reads it and POSTs the token.
     const url = `${config.origin}${pathname}#token=${secret}`;
-    await tx.query('INSERT INTO email_outbox(id,payload) VALUES($1,$2)', [randomUUID(), seal({ to: address, purpose, url }, config.outboxKey)]);
+    // Each account/purpose has one stable outbox row. Resends replace only
+    // that row in constant time, without scanning or locking unrelated mail.
+    await tx.query(`INSERT INTO email_outbox(id,payload) VALUES($1,$2)
+      ON CONFLICT(id) DO UPDATE SET payload=$2,created_at=now(),sent_at=NULL,attempts=0,next_attempt_at=now()`,
+      [identityOutboxId(userId,purpose),seal({to:address,purpose,url},config.outboxKey)]);
   }
   async function userFor(tx: Sql, id: string): Promise<User> {
     const u = (await tx.query<{ id: string; email: string; full_name: string; email_verified_at: Date | null; onboarding_intent:'customer'|'vendor'; date_of_birth:string|null; phone_e164:string|null }>(`SELECT id,email,full_name,email_verified_at,CASE WHEN EXISTS (SELECT 1 FROM vendor_applications WHERE user_id=users.id) THEN 'vendor' ELSE onboarding_intent END AS onboarding_intent,date_of_birth,phone_e164 FROM users WHERE id=$1`, [id])).rows[0];
@@ -62,7 +80,7 @@ export function identity(db: Database, config: Config) {
     async signup(input: Record<string, unknown>) {
       const address = email(input.email), pass = password(input.password), name = text(input.fullName, 'full name', 2, 100);
       const intent = input.accountType === 'vendor' ? 'vendor' : input.accountType === 'customer' ? 'customer' : fail(400,'INVALID_INPUT','Choose customer or vendor.');
-      await limit(`email:${address}`); const encoded = await hashPassword(pass);
+      await emailLimits(address,'verify'); const encoded = await hashPassword(pass);
       await db.transaction(async tx => {
         const id = randomUUID();
         const result = await tx.query<{ id: string }>('INSERT INTO users(id,email,password_hash,full_name,onboarding_intent,email_verified_at) VALUES($1,$2,$3,$4,$5,$6) ON CONFLICT(email) DO NOTHING RETURNING id', [id, address, encoded, name, intent, config.reviewMode ? instant() : null]);
@@ -102,7 +120,7 @@ export function identity(db: Database, config: Config) {
     },
     async logout(secret?: string) { if (secret) await db.query('DELETE FROM sessions WHERE token_hash=$1', [digest(secret)]); },
     async requestEmail(input: Record<string, unknown>, purpose: 'verify' | 'reset') {
-      const address = email(input.email); await limit(`email:${address}`);
+      const address = email(input.email); await emailLimits(address,purpose);
       await db.transaction(async tx => {
         const row = (await tx.query<{ id: string; email_verified_at: Date | null }>('SELECT id,email_verified_at FROM users WHERE email=$1 FOR UPDATE', [address])).rows[0];
         if (row && (purpose === 'reset' || !row.email_verified_at)) await queue(tx, row.id, address, purpose);
