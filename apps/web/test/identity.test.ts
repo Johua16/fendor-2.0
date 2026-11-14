@@ -130,3 +130,24 @@ test('customer becoming a vendor retains application identity across sessions an
     assert.ok(mail.every(item => item.text.includes('/vendor/onboarding') && !item.text.includes('/account/notifications')));
   } finally { await db.close(); }
 });
+
+test('verification email requests enforce cooldown, hourly limits and keep only the newest unsent link', async () => {
+  const db=await testDatabase();
+  let time=Date.now();
+  const key='12'.repeat(32),address='cooldown@examplecompany.com';
+  const api=identity(db,{origin:'https://fendor-beta.netlify.app',outboxKey:key,now:()=>time});
+  try {
+    await migrate(db,resolve('../../server/db'));
+    await api.signup({email:address,password:'A long secure passphrase!',fullName:'Cooldown Tester',accountType:'vendor'});
+    await assert.rejects(api.requestEmail({email:address},'verify'),(error:unknown)=>error instanceof Error && 'retryAfter' in error && Number(error.retryAfter)===60);
+    time+=60_000;
+    await api.requestEmail({email:address},'verify');
+    const queued=(await db.query<{payload:string}>('SELECT payload FROM email_outbox WHERE sent_at IS NULL')).rows;
+    assert.equal(queued.length,1);
+    const payload=unseal(queued[0].payload,key) as {url:string};
+    assert.match(payload.url,/^https:\/\/fendor-beta\.netlify\.app\/verify-email#token=/);
+    for(let request=0;request<3;request++){time+=60_000;await api.requestEmail({email:address},'verify');}
+    time+=60_000;
+    await assert.rejects(api.requestEmail({email:address},'verify'),(error:unknown)=>error instanceof Error && 'retryAfter' in error && Number(error.retryAfter)>0);
+  } finally {await db.close();}
+});

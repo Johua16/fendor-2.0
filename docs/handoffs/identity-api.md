@@ -12,8 +12,8 @@ All POST requests require `Content-Type: application/json` and an Origin matchin
 | POST /api/auth/login | email, password | 200 `{user}` and session cookie |
 | GET /api/auth/me | — | 200 `{user}` |
 | POST /api/auth/logout | {} | 200 message; cookie cleared |
-| POST /api/auth/resend-verification | email | 202 generic message |
-| POST /api/auth/forgot-password | email | 202 generic message |
+| POST /api/auth/resend-verification | email | 202 generic queued message; 60-second resend cooldown |
+| POST /api/auth/forgot-password | email | 202 generic queued message; 60-second resend cooldown |
 | POST /api/auth/verify-email | token | 200 message |
 | POST /api/auth/reset-password | token, password | 200 message; all sessions revoked |
 
@@ -22,6 +22,8 @@ User: `{id,email,fullName,verified,roles}`. Signup always creates a customer, ne
 Build `/verify-email` and `/reset-password` pages. Read `#token=...`, remove it from browser history, and POST it to the matching endpoint. Do not log it or send it to analytics. After success direct the user to login. Preserve an intended destination only if it is a validated local path. Account creation and email verification do not automatically sign the user in.
 
 Show field errors (400), sign-in prompt (401), permission/verification states (403), conflicts (409), retry message (429; Retry-After seconds), and service error (503). Never claim inbox delivery just because an email was queued or accepted by SMTP. Successful account/recovery writes trigger an immediate background delivery pass; the scheduled worker retains the durable retry path. Duplicate signup and unknown recovery addresses return the same generic message.
+
+Verification and reset requests have a 60-second per-address/per-purpose cooldown and a maximum of five accepted requests per hour. A resend replaces any older unsent message for the same address and purpose, so a delayed worker cannot deliver several stale links. Only the newest token remains valid. Verification tokens expire after 24 hours; password-reset tokens expire after one hour; both are stored only as hashes and consumed once.
 
 ## Vendor endpoints
 
