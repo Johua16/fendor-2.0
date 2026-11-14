@@ -1,11 +1,16 @@
 import {randomUUID} from 'node:crypto';
 import type {Database,Sql} from './database.ts';
 import {seal} from './security.ts';
-export async function notify(tx:Sql,userId:string,dedupe:string,title:string,message:string,key:string,origin:string,email=true) {
+export async function notify(tx:Sql,userId:string,dedupe:string,title:string,message:string,key:string,origin:string,email=true,path='/notifications') {
  const id=randomUUID();const inserted=(await tx.query('INSERT INTO notifications(id,user_id,dedupe_key,title,message) VALUES($1,$2,$3,$4,$5) ON CONFLICT(user_id,dedupe_key) DO NOTHING RETURNING id',[id,userId,dedupe,title,message])).rows;
  if(!inserted.length)return;
  const user=(await tx.query<{email:string}>('SELECT email FROM users WHERE id=$1 AND email_verified_at IS NOT NULL',[userId])).rows[0];
- if(user&&email)await tx.query('INSERT INTO email_outbox(id,payload) VALUES($1,$2)',[randomUUID(),seal({to:user.email,purpose:'notification',subject:title,text:`${message}\nOpen Fendora to view the update: ${origin}/notifications`},key)]);
+ if(user&&email)await tx.query('INSERT INTO email_outbox(id,payload) VALUES($1,$2)',[randomUUID(),seal({to:user.email,purpose:'notification',subject:title,text:`${message}\nOpen Fendora to view the update: ${origin}${path}`},key)]);
+}
+export async function notifyAdmins(tx:Sql,dedupe:string,title:string,message:string,key:string,origin:string,path='/admin') {
+ const admins=(await tx.query<{user_id:string}>("SELECT user_id FROM user_roles WHERE role='admin'")).rows;
+ for(const admin of admins)await notify(tx,admin.user_id,dedupe,title,message,key,origin,true,path);
+ return admins.length;
 }
 export async function produceNotifications(db:Database,key:string,origin:string,now:Date=new Date()) {
  return db.transaction(async tx=>{
@@ -16,7 +21,7 @@ export async function produceNotifications(db:Database,key:string,origin:string,
    const vendorMessages:Record<string,string>={request_created:'Confirm and reserve the requested stock, or decline if unavailable.',reservation_expired:'The stock hold expired. Check the request before acting.',payment_verified:'Payment is verified. Open Orders and start preparation.',online_payment_verified:'Payment is verified. Open Orders and start preparation.',online_payment_review_required:'Fendora is reviewing this payment. Do not start preparation.',prepare:'Preparation started. Mark ready when the product is ready for collection.',ready:'The order is ready. Fendora will coordinate dispatch.',dispatch:'Fendora has marked the order out for delivery.','delivery-failed':'Delivery needs Fendora follow-up.',delivered:'Fendora has recorded delivery.',returned:'Fendora has recorded a return. Check the order for instructions.',remedy_closed:'The order review has been resolved. Check the current permitted action.'};
    if(vendorMessages[e.event_type])await notify(tx,e.vendor_id,`order:${e.id}`,'Fendora vendor update',`Assigned request ${e.order_id}: ${vendorMessages[e.event_type]}`,key,origin);
    const adminMessages:Record<string,string>={payment_verified:'Payment verified; monitor preparation and coordinate fulfilment.',online_payment_verified:'Payment verified; monitor preparation and coordinate fulfilment.',online_payment_review_required:'Payment requires financial review. Resolve before fulfilment.',prepare:'Vendor preparation has started.',ready:'Vendor marked the product ready. Arrange packaging, collection and dispatch.',dispatch:'Order marked out for delivery. Monitor delivery progress.','delivery-failed':'Delivery failed. Coordinate another attempt or the appropriate resolution.',delivered:'Delivery recorded with evidence.',returned:'Return recorded. Review any outstanding financial resolution.'};
-   if(adminMessages[e.event_type])for(const admin of (await tx.query<{user_id:string}>("SELECT user_id FROM user_roles WHERE role='admin'")).rows)await notify(tx,admin.user_id,`order:${e.id}`,'Fendora operations update',`Order ${e.order_id}: ${adminMessages[e.event_type]}`,key,origin);
+   if(adminMessages[e.event_type])await notifyAdmins(tx,`order:${e.id}`,'Fendora operations update',`Order ${e.order_id}: ${adminMessages[e.event_type]}`,key,origin,'/admin/orders');
    await tx.query('UPDATE order_events SET notified_at=$2 WHERE id=$1',[e.id,now]);
   }
   const pending=(await tx.query<{id:string;vendor_id:string;customer_id:string;availability_deadline:Date;reminder_sent:boolean;escalated_at:Date|null}>(`SELECT id,vendor_id,customer_id,availability_deadline,reminder_sent,escalated_at FROM order_requests WHERE state='checking_availability' AND availability_deadline IS NOT NULL AND (NOT reminder_sent OR escalated_at IS NULL) ORDER BY availability_deadline LIMIT 100 FOR UPDATE SKIP LOCKED`)).rows;
@@ -24,7 +29,7 @@ export async function produceNotifications(db:Database,key:string,origin:string,
   for(const row of pending) {
    const deadline=new Date(row.availability_deadline).getTime();
    if(deadline<=now.getTime()) {
-    if(!row.escalated_at){for(const admin of admins)await notify(tx,admin.user_id,`deadline:${row.id}:${deadline}`,'Vendor response overdue',`Request ${row.id} needs operator follow-up. Do not promise availability without confirmation.`,key,origin);
+    if(!row.escalated_at){for(const admin of admins)await notify(tx,admin.user_id,`deadline:${row.id}:${deadline}`,'Vendor response overdue',`Request ${row.id} needs operator follow-up. Do not promise availability without confirmation.`,key,origin,true,'/admin/orders');
      await notify(tx,row.customer_id,`deadline:${row.id}:${deadline}`,'Fendora is checking availability',`Request ${row.id} is taking longer than expected. Fendora has been alerted; you may review or cancel the pending request.`,key,origin);
      await tx.query('UPDATE order_requests SET escalated_at=$2,reminder_sent=true WHERE id=$1',[row.id,now]);}
    } else if(!row.reminder_sent && deadline-now.getTime()<=5*60000) {

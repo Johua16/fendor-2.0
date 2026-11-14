@@ -6,6 +6,8 @@ Branch: `codex/vendor-catalogue`, dependent on the accounts/vendor approval PR. 
 
 Approved vendor creates a draft → submits → Fendor administrator approves or rejects → only approved products of currently approved vendors appear publicly. A vendor can pause an approved or pending listing. Admin can pause an approved listing. Editing any listing returns it to draft and removes public visibility until a fresh approval. Rejected/paused listings can be resubmitted. Suspension hides all that vendor's products immediately, including direct detail requests. Reviewers cannot approve their own products.
 
+Submitting or resubmitting a listing creates an in-app notification and email job for every verified administrator, linked to `/admin/products`. Approval and rejection notify the vendor and link to `/vendor/products`. Draft creation alone does not alert administrators because a draft is not ready for moderation.
+
 This first slice has one purchasable variant per listing. Do not build a multiple-size/colour editor against these endpoints yet. Category keys are `flowers`, `cakes`, `hampers`, `personalised-gifts`, `fashion`, `home`, `other`; confirm display labels against the approved designs.
 
 ## Routes

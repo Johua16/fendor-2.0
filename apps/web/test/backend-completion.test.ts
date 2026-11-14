@@ -104,8 +104,10 @@ test('sanitised uploads, private documents, vendor profile review and upload HTT
   await assert.rejects(f.files.create(f.vendor.secret,'product',Buffer.from('<svg><script>alert(1)</script></svg>')),{code:'INVALID_IMAGE'});
   await assert.rejects(f.files.create(f.vendor.secret,'product',Buffer.alloc(5242881)),{code:'UPLOAD_TOO_LARGE'});
   const doc=await f.files.create(f.vendor.secret,'document',await image());
+  assert.equal((await f.db.query("SELECT id FROM notifications WHERE title='Secure upload awaiting review'")).rows.length,2);
   await assert.rejects(f.files.read(f.customer.secret,doc.id),{code:'NOT_FOUND'});
   await f.files.review(f.admin.secret,doc.id,{status:'approved',note:reason});
+  assert.equal((await f.db.query("SELECT id FROM notifications WHERE user_id=$1 AND title='Fendora upload review update'",[f.vendor.id])).rows.length,1);
   const profile=vendorProfile(f.db,key,origin);
   const result=await profile.save(f.vendor.secret,{version:0,documentId:doc.id,phone:'+2348012345678',backupPhone:'+2348098765432',pickupAddress:'Updated pickup point in Abuja',windowStart:new Date().toISOString(),windowEnd:new Date(Date.now()+86400000).toISOString()});
   assert.equal(result.reviewRequired,true);

@@ -20,3 +20,14 @@ export async function deliverOne(db: Database, key: string, send: (mail: {to:str
     return 'sent';
   });
 }
+export async function drainMail(db:Database,key:string,send:(mail:{to:string;subject:string;text:string})=>Promise<unknown>,limit=5,blockTestRecipients=true) {
+ let sent=0,failures=0,suppressed=0;
+ for(let i=0;i<limit;i++) {
+  const outcome=await deliverOne(db,key,send,blockTestRecipients);
+  if(outcome==='empty')break;
+  if(outcome==='failed')failures++;
+  else if(outcome==='suppressed')suppressed++;
+  else sent++;
+ }
+ return {sent,failures,suppressed};
+}

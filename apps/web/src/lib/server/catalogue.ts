@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import type { Database, Sql } from './database.ts';
 import { fail, text } from './identity.ts';
 import { digest } from './security.ts';
+import { notify, notifyAdmins } from './notifications.ts';
 
 export function uuid(value: unknown): string {
   if(typeof value!=='string' || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value)) fail(400,'INVALID_INPUT','Invalid ID.');
@@ -56,9 +57,12 @@ async function get(tx:Sql,id:string):Promise<Row> {
   if(!row) fail(404,'NOT_FOUND','Product not found.');
   return row;
 }
-export function catalogue(db:Database) {
+type NotificationSettings={outboxKey:string;origin:string};
+export function catalogue(db:Database,notifications?:NotificationSettings) {
   async function audit(tx:Sql,id:string,by:string,from:string|null,to:string,version:number,note:string) {
-    await tx.query('INSERT INTO product_events(id,product_id,actor_id,from_status,to_status,product_version,note) VALUES($1,$2,$3,$4,$5,$6,$7)',[randomUUID(),id,by,from,to,version,note]);
+    const eventId=randomUUID();
+    await tx.query('INSERT INTO product_events(id,product_id,actor_id,from_status,to_status,product_version,note) VALUES($1,$2,$3,$4,$5,$6,$7)',[eventId,id,by,from,to,version,note]);
+    return eventId;
   }
   async function mutate(secret:string|undefined,id:string,input:Record<string,unknown>,action:'edit'|'submit'|'pause'|'review') {
     uuid(id); const version=integer(input.version,'version');
@@ -101,7 +105,9 @@ export function catalogue(db:Database) {
         status=decision;
       }
       await tx.query('UPDATE products SET status=$2,version=version+1,review_note=$3,updated_at=now() WHERE id=$1',[id,status,action==='review'?note:null]);
-      await audit(tx,id,by,old.status,status,version+1,note);
+      const eventId=await audit(tx,id,by,old.status,status,version+1,note);
+      if(notifications&&action==='submit')await notifyAdmins(tx,`product-review:${eventId}`,'Product listing awaiting review',`Product ${id} has been submitted and needs marketplace moderation.`,notifications.outboxKey,notifications.origin,'/admin/products');
+      if(notifications&&action==='review')await notify(tx,old.vendor_user_id,`product-review:${eventId}`,'Fendora product review update',`Your product listing is ${status.replaceAll('_',' ')}. Open Products to review the decision and any note.`,notifications.outboxKey,notifications.origin,true,'/vendor/products');
       return present(await get(tx,id),true);
     });
   }

@@ -25,7 +25,7 @@ export async function handleIdentity(req: Request, path: string[], dependencies?
     if(operationsResult)return operationsResult;
     const orderResult=await orderResponse(req,path,dependencies?.db ?? database(),secret,headers);
     if(orderResult) return orderResult;
-    const catalogueResult = await catalogueResponse(req,path,dependencies?.db ?? database(),secret,headers);
+    const catalogueResult = await catalogueResponse(req,path,dependencies?.db ?? database(),secret,headers,settings);
     if(catalogueResult) return catalogueResult;
     if (req.method === 'GET') {
       let data: unknown;
