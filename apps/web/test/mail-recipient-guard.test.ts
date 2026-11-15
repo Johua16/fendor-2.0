@@ -46,3 +46,32 @@ test('routine updates stay in-app while important updates queue exactly one emai
  assert.equal((await f.db.query('SELECT id FROM email_outbox')).rows.length,1);
  }finally{await f.db.close();}
 });
+
+test('identity mail contains matching branded HTML and plain text without exposing tokens in logs',async()=>{
+ const f=await fixture(),key='ab'.repeat(32);try{
+  await f.db.query('DELETE FROM email_outbox');
+  const link='https://fendor-beta.netlify.app/verify-email#token='+ 'a'.repeat(43);
+  await f.db.query('INSERT INTO email_outbox(id,payload) VALUES($1,$2)',[randomUUID(),seal({to:'customer@examplecompany.com',purpose:'verify',url:link},key)]);
+  let delivered:{subject:string;text:string;html?:string}|undefined;
+  assert.equal(await deliverOne(f.db,key,async mail=>{delivered=mail;},false),'sent');
+  assert.equal(delivered?.subject,'Verify your Fendora email');
+  assert.match(delivered?.text??'',/single-use link expires in 24 hours/);
+  assert.match(delivered?.text??'',/Fendora Innovations Limited/);
+  assert.match(delivered?.html??'',/>Verify my email</);
+  assert.match(delivered?.html??'',/fendor-beta\.netlify\.app\/verify-email#token=/);
+  assert.match(delivered?.html??'',/Security notice/);
+  assert.doesNotMatch(delivered?.html??'',/localhost/);
+ }finally{await f.db.close();}
+});
+
+test('password reset mail states its shorter expiry and security consequence',async()=>{
+ const f=await fixture(),key='ab'.repeat(32);try{
+  await f.db.query('DELETE FROM email_outbox');
+  await f.db.query('INSERT INTO email_outbox(id,payload) VALUES($1,$2)',[randomUUID(),seal({to:'customer@examplecompany.com',purpose:'reset',url:'https://fendor-beta.netlify.app/reset-password#token='+ 'b'.repeat(43)},key)]);
+  let delivered:{text:string;html?:string}|undefined;
+  await deliverOne(f.db,key,async mail=>{delivered=mail;},false);
+  assert.match(delivered?.text??'',/expires in 1 hour/);
+  assert.match(delivered?.text??'',/Your password will not change/);
+  assert.match(delivered?.html??'',/>Reset my password</);
+ }finally{await f.db.close();}
+});
