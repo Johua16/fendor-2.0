@@ -25,6 +25,12 @@ export async function operationsResponse(req:Request,path:string[],db:Database,s
   if(key==='admin/operations'){await actor(db,secret,'admin');return result({orders:(await db.query('SELECT state,count(*)::int AS count FROM order_requests GROUP BY state')).rows,
    overdue:(await db.query("SELECT id,version,availability_deadline FROM order_requests WHERE state='checking_availability' AND availability_deadline<now() ORDER BY availability_deadline LIMIT 100")).rows,
    finance:(await db.query('SELECT id,state,version FROM order_requests WHERE financial_hold ORDER BY id LIMIT 100')).rows,
+   paymentExceptions:(await db.query(`SELECT pa.id,pa.order_id,pa.provider,pa.reference,pa.status,pa.failure_reason,pa.expires_at,pa.last_checked_at,pa.updated_at
+    FROM payment_attempts pa WHERE pa.status IN ('failed','cancelled') OR (pa.status IN ('initializing','pending') AND pa.expires_at<=now())
+    ORDER BY pa.updated_at DESC LIMIT 100`)).rows,
+   webhookFailures:(await db.query("SELECT id,provider,event_type,reference,attempts,last_error,next_attempt_at,received_at FROM payment_webhook_events WHERE status='failed' ORDER BY received_at LIMIT 100")).rows,
+   refunds:(await db.query(`SELECT r.id,p.order_id,p.provider,r.bank_reference,r.amount_kobo::text,r.created_at
+    FROM payment_refunds r JOIN payment_records p ON p.id=r.payment_id ORDER BY r.created_at DESC LIMIT 100`)).rows,
    remedies:(await db.query("SELECT id,order_id,status,kind FROM order_remedies WHERE status IN ('requested','approved') ORDER BY created_at LIMIT 100")).rows,
    workers:(await db.query('SELECT name,last_started,last_succeeded,last_failed,lease_until FROM worker_health')).rows,
    mail:(await db.query("SELECT count(*) FILTER(WHERE next_attempt_at<>'infinity'::timestamptz)::int AS pending,count(*) FILTER(WHERE attempts>=5 AND next_attempt_at<>'infinity'::timestamptz)::int AS failed,count(*) FILTER(WHERE next_attempt_at='infinity'::timestamptz)::int AS suppressed FROM email_outbox WHERE sent_at IS NULL")).rows[0]});}
