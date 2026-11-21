@@ -12,7 +12,7 @@ export async function orderResponse(req:Request,path:string[],db:Database,secret
   const payments=checkout(db,Date.now,{reviewMode:false});
   const online=onlinePayments(db,process.env.APP_ORIGIN!);
   if(req.method==='GET') {
-    if(rest.length===2 && rest[1]==='checkout' && scope!=='vendor') return Response.json({...await payments.summary(secret,rest[0],scope==='admin'),paymentProviders:online.providers()},{headers});
+    if(rest.length===2 && rest[1]==='checkout' && scope!=='vendor') return Response.json({...await payments.summary(secret,rest[0],scope==='admin'),paymentProviders:scope==='customer'?await online.providers(secret):[]},{headers});
     if(rest.length===0) return Response.json(await service.list(secret,scope,new URL(req.url).searchParams),{headers});
     if(rest.length===1) return Response.json({order:await service.detail(secret,rest[0],scope)},{headers});
   } else if(req.method==='POST') {
