@@ -5,6 +5,7 @@ import {fixture} from './order-fixture.ts';
 import {notify} from '../src/lib/server/notifications.ts';
 import {seal} from '../src/lib/server/security.ts';
 import {deliverOne,drainMail,isPlaceholderEmail} from '../src/lib/server/mail.ts';
+import {mailReplyContacts} from '../src/lib/server/mail-config.ts';
 test('reserved recipients are recognised without blocking genuine domains',()=>{
  for(const address of ['customer.localcheckout@example.com','vendor@EXAMPLE.ORG','admin@sub.example.net','user@localhost','user@app.test','user@bad.invalid','dashboard-demo@fendor.local','admin@FENDOR.LOCAL','user@sub.fendor.local','user@fendor.local.'])assert.equal(isPlaceholderEmail(address),true);
  for(const address of ['officialfendora@gmail.com','customer@examplecompany.com','user@localbusiness.com'])assert.equal(isPlaceholderEmail(address),false);
@@ -47,21 +48,42 @@ test('routine updates stay in-app while important updates queue exactly one emai
  }finally{await f.db.close();}
 });
 
-test('identity mail contains matching branded HTML and plain text without exposing tokens in logs',async()=>{
+test('identity mail contains matching branded HTML and plain text and routes replies to support',async()=>{
  const f=await fixture(),key='ab'.repeat(32);try{
   await f.db.query('DELETE FROM email_outbox');
   const link='https://fendor-beta.netlify.app/verify-email#token='+ 'a'.repeat(43);
   await f.db.query('INSERT INTO email_outbox(id,payload) VALUES($1,$2)',[randomUUID(),seal({to:'customer@examplecompany.com',purpose:'verify',url:link},key)]);
   let delivered:{subject:string;text:string;html?:string}|undefined;
-  assert.equal(await deliverOne(f.db,key,async mail=>{delivered=mail;},false),'sent');
+  assert.equal(await deliverOne(f.db,key,async mail=>{delivered=mail;},false,{general:'hello@fendoraworld.com',support:'support@fendoraworld.com'}),'sent');
   assert.equal(delivered?.subject,'Verify your Fendora email');
   assert.match(delivered?.text??'',/single-use link expires in 24 hours/);
   assert.match(delivered?.text??'',/Fendora Innovations Limited/);
   assert.match(delivered?.html??'',/>Verify my email</);
   assert.match(delivered?.html??'',/fendor-beta\.netlify\.app\/verify-email#token=/);
   assert.match(delivered?.html??'',/Security notice/);
+  assert.equal((delivered as {replyTo?:string}|undefined)?.replyTo,'support@fendoraworld.com');
   assert.doesNotMatch(delivered?.html??'',/localhost/);
  }finally{await f.db.close();}
+});
+
+test('general and support notifications use their configured reply addresses',async()=>{
+ const f=await fixture(),key='ab'.repeat(32);try{
+  await f.db.query('DELETE FROM email_outbox');
+  await f.db.query('INSERT INTO email_outbox(id,payload) VALUES($1,$2)',[randomUUID(),seal({to:'customer@examplecompany.com',purpose:'notification',subject:'Order update',text:'Your order changed.',replyChannel:'general'},key)]);
+  await f.db.query('INSERT INTO email_outbox(id,payload) VALUES($1,$2)',[randomUUID(),seal({to:'customer@examplecompany.com',purpose:'notification',subject:'Support update',text:'Your case changed.',replyChannel:'support'},key)]);
+  const delivered:{subject:string;replyTo?:string}[]=[];
+  await drainMail(f.db,key,async mail=>{delivered.push(mail);},5,false,{general:'hello@fendoraworld.com',support:'support@fendoraworld.com'});
+  assert.deepEqual(delivered.map(mail=>[mail.subject,mail.replyTo]),[
+   ['Order update','hello@fendoraworld.com'],
+   ['Support update','support@fendoraworld.com'],
+  ]);
+ }finally{await f.db.close();}
+});
+
+test('mail reply contacts are optional for Gmail rollback and reject malformed values',()=>{
+ assert.deepEqual(mailReplyContacts({}),{general:undefined,support:undefined});
+ assert.deepEqual(mailReplyContacts({MAIL_REPLY_TO:' hello@fendoraworld.com ',MAIL_SUPPORT_REPLY_TO:'support@fendoraworld.com'}),{general:'hello@fendoraworld.com',support:'support@fendoraworld.com'});
+ assert.throws(()=>mailReplyContacts({MAIL_REPLY_TO:'Fendora <hello@fendoraworld.com>'}),/single email address/);
 });
 
 test('password reset mail states its shorter expiry and security consequence',async()=>{

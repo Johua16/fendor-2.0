@@ -3,6 +3,7 @@ import nodemailer from 'nodemailer';
 import { config as applicationConfig } from '../../src/lib/server/config.ts';
 import { database } from '../../src/lib/server/database.ts';
 import { runWorker } from '../../src/lib/server/worker.ts';
+import { mailReplyContacts } from '../../src/lib/server/mail-config.ts';
 
 function smtpFailure(error: unknown) {
   const value = typeof error === 'object' && error ? error as Record<string, unknown> : {};
@@ -51,6 +52,8 @@ export default async function operationsWorker() {
         }
       },
       5,
+      true,
+      mailReplyContacts(),
     );
     console.log(JSON.stringify({ event: 'scheduled_worker_cycle', ...result }));
   } catch {

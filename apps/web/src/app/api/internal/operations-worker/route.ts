@@ -4,6 +4,7 @@ import nodemailer from 'nodemailer';
 import { config } from '@/lib/server/config';
 import { database } from '@/lib/server/database';
 import { runWorker } from '@/lib/server/worker';
+import { mailReplyContacts } from '@/lib/server/mail-config';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -49,6 +50,9 @@ export async function GET(request: Request) {
       settings.outboxKey,
       settings.origin,
       (mail) => transport.sendMail(mail),
+      20,
+      true,
+      mailReplyContacts(),
     );
 
     return Response.json(result, {
