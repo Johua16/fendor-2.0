@@ -3,6 +3,7 @@ import nodemailer from 'nodemailer';
 import { config } from './config.ts';
 import { database } from './database.ts';
 import { drainMail } from './mail.ts';
+import { mailReplyContacts } from './mail-config.ts';
 import { produceNotifications } from './notifications.ts';
 
 /**
@@ -20,7 +21,7 @@ export async function flushPendingCommunications(limit=5) {
   const transport = nodemailer.createTransport(smtpUrl.toString(), { from: process.env.MAIL_FROM });
   try {
     const notifications = await produceNotifications(db, settings.outboxKey, settings.origin);
-    const delivery = await drainMail(db, settings.outboxKey, mail => transport.sendMail(mail), limit);
+    const delivery = await drainMail(db, settings.outboxKey, mail => transport.sendMail(mail), limit, true, mailReplyContacts());
     if (delivery.failures) console.error(JSON.stringify({ event: 'immediate_mail_retry_scheduled', failures: delivery.failures }));
     return { skipped: false as const, notifications, ...delivery };
   } catch {

@@ -28,16 +28,22 @@ Configure these in Netlify. Keep secrets out of Git.
 
 ```text
 DATABASE_URL=
-APP_ORIGIN=https://<netlify-or-custom-domain>
+APP_ORIGIN=https://fendoraworld.com
 OUTBOX_KEY=<64-hex-character-random-key>
 RESERVATION_MINUTES=60
 VENDOR_RESPONSE_MINUTES=30
 SMTP_URL=smtps://resend:<resend-api-key>@smtp.resend.com:465
-MAIL_FROM=Fendor <notifications@<verified-domain>>
+MAIL_FROM=Fendora <notifications@fendoraworld.com>
+MAIL_REPLY_TO=hello@fendoraworld.com
+MAIL_SUPPORT_REPLY_TO=support@fendoraworld.com
 BETA_REVIEW_MODE=false
 PUBLIC_CHECKOUT_ENABLED=false
 ALLOW_SANDBOX_PAYMENTS=false
 ```
+
+Do not configure the Resend values until its dashboard reports
+`fendoraworld.com` verified. Follow [the domain-email rollout](resend-domain-email.md)
+and retain the working Gmail SMTP values for rollback.
 
 Add the approved bank details only when payment testing begins. Leaving any value unset keeps payment instructions closed.
 

@@ -1,11 +1,11 @@
 import {randomUUID} from 'node:crypto';
 import type {Database,Sql} from './database.ts';
 import {seal} from './security.ts';
-export async function notify(tx:Sql,userId:string,dedupe:string,title:string,message:string,key:string,origin:string,email=true,path='/notifications') {
+export async function notify(tx:Sql,userId:string,dedupe:string,title:string,message:string,key:string,origin:string,email=true,path='/notifications',replyChannel:'general'|'support'='general') {
  const id=randomUUID();const inserted=(await tx.query('INSERT INTO notifications(id,user_id,dedupe_key,title,message) VALUES($1,$2,$3,$4,$5) ON CONFLICT(user_id,dedupe_key) DO NOTHING RETURNING id',[id,userId,dedupe,title,message])).rows;
  if(!inserted.length)return;
  const user=(await tx.query<{email:string}>('SELECT email FROM users WHERE id=$1 AND email_verified_at IS NOT NULL',[userId])).rows[0];
- if(user&&email)await tx.query('INSERT INTO email_outbox(id,payload) VALUES($1,$2)',[randomUUID(),seal({to:user.email,purpose:'notification',subject:title,text:`${message}\nOpen Fendora to view the update: ${origin}${path}`},key)]);
+ if(user&&email)await tx.query('INSERT INTO email_outbox(id,payload) VALUES($1,$2)',[randomUUID(),seal({to:user.email,purpose:'notification',subject:title,text:`${message}\nOpen Fendora to view the update: ${origin}${path}`,replyChannel},key)]);
 }
 export async function notifyAdmins(tx:Sql,dedupe:string,title:string,message:string,key:string,origin:string,path='/admin') {
  const admins=(await tx.query<{user_id:string}>("SELECT user_id FROM user_roles WHERE role='admin'")).rows;
