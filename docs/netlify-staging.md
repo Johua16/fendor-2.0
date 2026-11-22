@@ -6,7 +6,7 @@ This setup runs the Fendor beta on Netlify Free while GitHub remains the source-
 
 - **Application, API, domain and HTTPS:** Netlify project connected to `Johua16/fendor-2.0`. The repository's `netlify.toml` selects `apps/web`, builds Next.js and deploys the scheduled operations worker.
 - **PostgreSQL and encrypted uploads:** Neon Postgres using its pooled `DATABASE_URL`. Fendor sanitises, re-encodes and encrypts uploaded files before storing them in PostgreSQL.
-- **Transactional email:** Resend SMTP with a verified Fendor sending domain.
+- **Transactional email:** Brevo Transactional Email API after Brevo verifies `fendoraworld.com`; Gmail SMTP remains the rollback transport.
 - **Scheduled operations:** Netlify invokes `operations-worker` every five minutes. Each run expires reservations, escalates vendor deadlines, creates notifications, sends a bounded email batch and cleans up expired sessions and tokens.
 - **Code review:** Pull requests use Netlify Deploy Previews. Publish to production only after the preview has been accepted because production deploys consume plan credits.
 
@@ -28,16 +28,25 @@ Configure these in Netlify. Keep secrets out of Git.
 
 ```text
 DATABASE_URL=
-APP_ORIGIN=https://<netlify-or-custom-domain>
+APP_ORIGIN=https://fendoraworld.com
 OUTBOX_KEY=<64-hex-character-random-key>
 RESERVATION_MINUTES=60
 VENDOR_RESPONSE_MINUTES=30
-SMTP_URL=smtps://resend:<resend-api-key>@smtp.resend.com:465
-MAIL_FROM=Fendor <notifications@<verified-domain>>
+EMAIL_PROVIDER=brevo
+BREVO_API_KEY=<server-side-key>
+EMAIL_FROM_ADDRESS=notifications@fendoraworld.com
+EMAIL_FROM_NAME=Fendora
+EMAIL_DAILY_LIMIT=300
+EMAIL_DAILY_RESERVE=30
+BREVO_WEBHOOK_SECRET=<32-or-more-random-characters>
+MAIL_REPLY_TO=hello@fendoraworld.com
+MAIL_SUPPORT_REPLY_TO=support@fendoraworld.com
 BETA_REVIEW_MODE=false
 PUBLIC_CHECKOUT_ENABLED=false
 ALLOW_SANDBOX_PAYMENTS=false
 ```
+
+Do not switch `EMAIL_PROVIDER` until Brevo reports `fendoraworld.com` authenticated and controlled delivery tests pass. Follow [the Brevo domain-email rollout](brevo-domain-email.md), configure the webhook custom header, and retain the working Gmail `SMTP_URL` and `MAIL_FROM` values for rollback.
 
 Add the approved bank details only when payment testing begins. Leaving any value unset keeps payment instructions closed.
 
