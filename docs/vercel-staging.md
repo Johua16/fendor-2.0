@@ -6,7 +6,7 @@ This setup runs the Fendor web application on Vercel and uses managed services f
 
 - **Application, domain and HTTPS:** Vercel project connected to `Johua16/fendor-2.0`, with the root directory set to `apps/web`.
 - **PostgreSQL and encrypted uploads:** Neon Postgres through the Vercel Marketplace. Use its pooled `DATABASE_URL`. Fendor sanitises, re-encodes and encrypts uploaded files before storing them in PostgreSQL, so a separate object-storage account is not required for the private beta.
-- **Transactional email:** Resend SMTP with a verified Fendor sending domain.
+- **Transactional email:** Brevo Transactional Email API with an authenticated Fendora domain; Gmail SMTP remains available for rollback.
 - **Scheduled operations:** Call `GET /api/internal/operations-worker` every five minutes with `Authorization: Bearer <CRON_SECRET>`. This runs reservation expiry, vendor deadlines, notifications, email delivery and cleanup. Vercel Pro cron can run this schedule. On Vercel Hobby, use a reliable external scheduler because Hobby cron is limited to once per day.
 - **Private access:** Enable Vercel Authentication under Deployment Protection for the staging environment.
 
@@ -21,8 +21,15 @@ OUTBOX_KEY=<32-or-more-random-characters>
 CRON_SECRET=<32-or-more-random-characters>
 RESERVATION_MINUTES=60
 VENDOR_RESPONSE_MINUTES=30
-SMTP_URL=smtps://resend:<resend-api-key>@smtp.resend.com:465
-MAIL_FROM=Fendor <notifications@<verified-domain>>
+EMAIL_PROVIDER=brevo
+BREVO_API_KEY=<server-side-key>
+EMAIL_FROM_ADDRESS=notifications@fendoraworld.com
+EMAIL_FROM_NAME=Fendora
+EMAIL_DAILY_LIMIT=300
+EMAIL_DAILY_RESERVE=30
+BREVO_WEBHOOK_SECRET=<32-or-more-random-characters>
+MAIL_REPLY_TO=hello@fendoraworld.com
+MAIL_SUPPORT_REPLY_TO=support@fendoraworld.com
 ```
 
 Add the following only after Fendor's bank details have been approved. Leaving them unset keeps payment instructions hidden.
