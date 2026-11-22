@@ -23,7 +23,7 @@ The web container serves HTTP only. Put it behind a trusted HTTPS reverse proxy 
 - Node.js 24 runtime for the web and worker processes.
 - PostgreSQL 17 with encrypted storage, restricted network access and TLS for hosted connections.
 - A persistent web process and exactly one active operations-worker lease. Multiple worker processes are safe, but only one performs a cycle at a time.
-- `DATABASE_URL`, `APP_ORIGIN`, `OUTBOX_KEY`, `RESERVATION_MINUTES`, `VENDOR_RESPONSE_MINUTES`, `SMTP_URL` and `MAIL_FROM`.
+- `DATABASE_URL`, `APP_ORIGIN`, `OUTBOX_KEY`, `RESERVATION_MINUTES`, `VENDOR_RESPONSE_MINUTES`, `EMAIL_PROVIDER`, `MAIL_REPLY_TO` and `MAIL_SUPPORT_REPLY_TO`. Brevo additionally requires `BREVO_API_KEY`, `EMAIL_FROM_ADDRESS`, `EMAIL_FROM_NAME`, `EMAIL_DAILY_LIMIT`, `EMAIL_DAILY_RESERVE` and `BREVO_WEBHOOK_SECRET`. Preserve `SMTP_URL` and `MAIL_FROM` for the tested Gmail rollback.
 - `PAYMENT_BANK_NAME`, `PAYMENT_ACCOUNT_NAME` and `PAYMENT_ACCOUNT_NUMBER`. These are shown only to the owning customer after that customer accepts the current quote. Leave any one unset to keep payment instructions closed.
 - A reverse proxy or platform gateway that enforces HTTPS and limits request body size to at most 5 MB.
 
@@ -33,7 +33,7 @@ Run migrations as a one-off release step before starting the new web and worker 
 
 - Liveness: `GET /api/health`.
 - Readiness: `GET /api/ready` checks configuration, database access, migrations and both timing policies.
-- Worker: `GET /api/admin/operations` exposes last start/success/failure, current lease, overdue availability requests, financial holds, open remedies and queued/failed mail.
+- Worker: `GET /api/admin/operations` exposes last start/success/failure, current lease, overdue availability requests, financial holds, open remedies, queued/failed mail, provider usage and delivery exceptions.
 - Failed email: `GET /api/admin/mail-failures`; retry an investigated item with `POST /api/admin/mail-failures/:id/retry` and an empty JSON object.
 
 Alert when readiness fails for two checks, no worker cycle succeeds for two expected intervals, failed mail increases, availability requests are overdue, or financial holds remain unresolved. Logs contain event names and identifiers; private delivery fields and email bodies remain encrypted and are not logged.

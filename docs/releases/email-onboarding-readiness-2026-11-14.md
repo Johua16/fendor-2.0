@@ -4,9 +4,9 @@
 
 - Customer and vendor signup share the same protected identity-email implementation; vendor intent does not weaken verification.
 - Branded HTML and plain-text verification and password-reset messages are covered by automated tests.
-- Production links are derived from the validated `APP_ORIGIN`; the intended production value is `https://fendor-beta.netlify.app`.
+- Production links are derived from the validated `APP_ORIGIN`; the custom-domain release value is `https://fendoraworld.com`.
 - Verification expiry: 24 hours. Password-reset expiry: one hour. Tokens are hashed, single-use and replaced on resend.
-- Resend protection: 60-second cooldown and five accepted requests per address and purpose per hour.
+- Repeat-send protection: 60-second cooldown and five accepted requests per address and purpose per hour.
 - Each account/purpose uses one stable outbox record. Resends replace it in constant time without scanning or locking unrelated mail, preventing a delayed worker from delivering several stale links.
 - Delivery logs exclude recipient addresses, message contents, passwords and tokens. Exhausted failures remain visible in the administrator operations view.
 
@@ -23,4 +23,7 @@ Do not mark the rows below as passed until a human has inspected the received me
 
 ## Release boundary
 
-These improvements support a small, monitored vendor-onboarding pilot. They do not provide a Fendora-owned sender reputation. Purchasing a domain and moving to an authenticated transactional provider remains the long-term deliverability fix.
+These improvements support a small, monitored vendor-onboarding pilot. The
+domain has been purchased, but Brevo authentication and received-message header
+checks remain required. Follow `docs/brevo-domain-email.md`; do not claim SPF,
+DKIM, DMARC or Inbox placement has passed before those checks are recorded.

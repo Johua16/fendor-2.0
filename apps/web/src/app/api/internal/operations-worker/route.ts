@@ -1,9 +1,9 @@
 import { timingSafeEqual } from 'node:crypto';
-import nodemailer from 'nodemailer';
-
 import { config } from '@/lib/server/config';
 import { database } from '@/lib/server/database';
 import { runWorker } from '@/lib/server/worker';
+import { mailReplyContacts } from '@/lib/server/mail-config';
+import {createEmailTransport,emailProviderConfigured} from '@/lib/server/email-provider';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -28,7 +28,7 @@ export async function GET(request: Request) {
     );
   }
 
-  if (!process.env.SMTP_URL || !process.env.MAIL_FROM) {
+  if (!emailProviderConfigured()) {
     return Response.json(
       { error: { code: 'MAIL_NOT_CONFIGURED', message: 'Email delivery is not configured.' } },
       { status: 503 },
@@ -36,19 +36,18 @@ export async function GET(request: Request) {
   }
 
   const settings = config();
-  const smtpUrl = new URL(process.env.SMTP_URL);
-  smtpUrl.searchParams.set('connectionTimeout', '10000');
-  smtpUrl.searchParams.set('socketTimeout', '15000');
-  const transport = nodemailer.createTransport(smtpUrl.toString(), {
-    from: process.env.MAIL_FROM,
-  });
+  const transport = createEmailTransport();
 
   try {
     const result = await runWorker(
       database(),
       settings.outboxKey,
       settings.origin,
-      (mail) => transport.sendMail(mail),
+      (mail) => transport.send(mail),
+      20,
+      true,
+      mailReplyContacts(),
+      transport.policy,
     );
 
     return Response.json(result, {
