@@ -2,7 +2,7 @@ import type { MetadataRoute } from 'next';
 
 const origin = process.env.APP_ORIGIN?.startsWith('https://')
   ? process.env.APP_ORIGIN.replace(/\/$/, '')
-  : 'https://fendor-beta.netlify.app';
+  : 'https://fendoraworld.com';
 
 export default function robots(): MetadataRoute.Robots {
   return {

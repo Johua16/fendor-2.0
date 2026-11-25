@@ -4,7 +4,7 @@
 
 - Customer and vendor signup share the same protected identity-email implementation; vendor intent does not weaken verification.
 - Branded HTML and plain-text verification and password-reset messages are covered by automated tests.
-- Production links are derived from the validated `APP_ORIGIN`; the intended production value is `https://fendor-beta.netlify.app`.
+- Production links are derived from the validated `APP_ORIGIN`; the production value is `https://fendoraworld.com`.
 - Verification expiry: 24 hours. Password-reset expiry: one hour. Tokens are hashed, single-use and replaced on resend.
 - Resend protection: 60-second cooldown and five accepted requests per address and purpose per hour.
 - Each account/purpose uses one stable outbox record. Resends replace it in constant time without scanning or locking unrelated mail, preventing a delayed worker from delivering several stale links.

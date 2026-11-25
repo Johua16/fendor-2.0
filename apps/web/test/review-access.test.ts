@@ -22,7 +22,7 @@ test('private review entry starts with the onboarding choice', () => {
 });
 
 test('review redirects use the configured canonical application origin', () => {
-  assert.equal(canonicalReviewOrigin('https://fendor-beta.netlify.app', 'https://deploy-id--fendor-beta.netlify.app/signup'), 'https://fendor-beta.netlify.app');
+  assert.equal(canonicalReviewOrigin('https://fendoraworld.com', 'https://deploy-id--fendor-beta.netlify.app/signup'), 'https://fendoraworld.com');
   assert.equal(canonicalReviewOrigin(undefined, 'http://localhost:3000/signup'), 'http://localhost:3000');
-  assert.equal(canonicalReviewOrigin('not a url', 'https://fendor-beta.netlify.app/signup'), 'https://fendor-beta.netlify.app');
+  assert.equal(canonicalReviewOrigin('not a url', 'https://fendoraworld.com/signup'), 'https://fendoraworld.com');
 });
