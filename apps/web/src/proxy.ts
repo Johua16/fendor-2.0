@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { canonicalReviewOrigin, REVIEW_ACCESS_COOKIE, reviewAccessEnabled, reviewAccessToken } from '@/lib/review-access';
+import { officialRedirectUrl } from '@/lib/official-origin';
 
 const OPEN_PATHS = new Set(['/review-access', '/api/review-access', '/api/health', '/api/ready']);
 
 export async function proxy(request: NextRequest) {
+  const officialUrl = officialRedirectUrl(request.url);
+  if (officialUrl) return NextResponse.redirect(officialUrl, 308);
+
   if (!reviewAccessEnabled()) return NextResponse.next();
 
   const canonicalOrigin = canonicalReviewOrigin(process.env.APP_ORIGIN, request.url);

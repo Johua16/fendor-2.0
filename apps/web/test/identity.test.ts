@@ -135,7 +135,7 @@ test('verification email requests enforce cooldown, hourly limits and keep only 
   const db=await testDatabase();
   let time=Date.now();
   const key='12'.repeat(32),address='cooldown@examplecompany.com';
-  const api=identity(db,{origin:'https://fendor-beta.netlify.app',outboxKey:key,now:()=>time});
+  const api=identity(db,{origin:'https://fendoraworld.com',outboxKey:key,now:()=>time});
   try {
     await migrate(db,resolve('../../server/db'));
     await api.signup({email:address,password:'A long secure passphrase!',fullName:'Cooldown Tester',accountType:'vendor'});
@@ -146,7 +146,7 @@ test('verification email requests enforce cooldown, hourly limits and keep only 
     assert.equal(queued.length,1);
     const stableOutboxId=queued[0].id;
     const payload=unseal(queued[0].payload,key) as {url:string};
-    assert.match(payload.url,/^https:\/\/fendor-beta\.netlify\.app\/verify-email#token=/);
+    assert.match(payload.url,/^https:\/\/fendoraworld\.com\/verify-email#token=/);
     for(let request=0;request<3;request++){
       time+=60_000;
       await api.requestEmail({email:address},'verify');
