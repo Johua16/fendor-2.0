@@ -7,8 +7,27 @@ export interface Database extends Sql {
   transaction<T>(fn: (tx: Sql) => Promise<T>): Promise<T>;
   close(): Promise<void>;
 }
+function verifiedSsl() {
+  const encoded = process.env.DATABASE_SSL_CA_BASE64?.trim();
+  if (!encoded) return undefined;
+  const ca = Buffer.from(encoded, 'base64').toString('utf8');
+  if (!ca.includes('-----BEGIN CERTIFICATE-----') || !ca.includes('-----END CERTIFICATE-----')) {
+    throw new Error('DATABASE_SSL_CA_BASE64 must contain a base64-encoded PEM certificate.');
+  }
+  return { ca, rejectUnauthorized: true };
+}
 export function postgres(connectionString: string, options?: string): Database {
-  const pool = new Pool({ connectionString, options, max: 5, connectionTimeoutMillis: 5000, statement_timeout: 10000 });
+  const pool = new Pool({
+    connectionString,
+    options,
+    ssl: verifiedSsl(),
+    max: 5,
+    connectionTimeoutMillis: 5000,
+    idleTimeoutMillis: 10000,
+    maxLifetimeSeconds: 300,
+    statement_timeout: 10000,
+    query_timeout: 12000,
+  });
   pool.on('error', () => console.error('Database connection interrupted.'));
   return {
     query: async <T extends Record<string, unknown>>(q: string, values?: unknown[]) => ({ rows: (await pool.query<T>(q, values)).rows }),
