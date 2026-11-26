@@ -4,11 +4,6 @@ on:
   schedule:
     - cron: '17 2 * * *'
   workflow_dispatch:
-  # Temporary validation path for PR #46. The job-level condition restricts
-  # secret use to this exact same-repository pilot branch.
-  pull_request:
-    branches: [main]
-    types: [synchronize]
 
 permissions:
   contents: read
@@ -16,7 +11,6 @@ permissions:
 
 jobs:
   backup-and-restore:
-    if: github.event_name != 'pull_request' || github.head_ref == 'codex/supabase-pilot-release'
     runs-on: ubuntu-latest
     services:
       postgres:
