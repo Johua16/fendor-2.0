@@ -1,33 +1,16 @@
-import nodemailer from 'nodemailer';
-
 import { config as applicationConfig } from '../../src/lib/server/config.ts';
 import { database } from '../../src/lib/server/database.ts';
 import { runWorker } from '../../src/lib/server/worker.ts';
-
-function smtpFailure(error: unknown) {
-  const value = typeof error === 'object' && error ? error as Record<string, unknown> : {};
-  const safe = (field: string) => typeof value[field] === 'string' ? String(value[field]).slice(0, 80) : undefined;
-  return {
-    event: 'smtp_delivery_failed',
-    code: safe('code'),
-    command: safe('command'),
-    responseCode: typeof value.responseCode === 'number' ? value.responseCode : undefined,
-  };
-}
+import { mailReplyContacts } from '../../src/lib/server/mail-config.ts';
+import {createEmailTransport,emailProviderConfigured} from '../../src/lib/server/email-provider.ts';
 
 export default async function operationsWorker() {
-  if (!process.env.SMTP_URL || !process.env.MAIL_FROM) {
-    throw new Error('SMTP_URL and MAIL_FROM are required.');
+  if (!emailProviderConfigured()) {
+    throw new Error('Email delivery provider is not configured.');
   }
 
   const settings = applicationConfig();
-  const smtpUrl = new URL(process.env.SMTP_URL);
-  const senderDomain = process.env.MAIL_FROM.match(/@([^>\s]+)/)?.[1]?.toLowerCase();
-  smtpUrl.searchParams.set('connectionTimeout', '5000');
-  smtpUrl.searchParams.set('socketTimeout', '3000');
-  const transport = nodemailer.createTransport(smtpUrl.toString(), {
-    from: process.env.MAIL_FROM,
-  });
+  const transport = createEmailTransport();
 
   try {
     // Netlify scheduled functions have a 30-second limit. Five deliveries per
@@ -37,20 +20,11 @@ export default async function operationsWorker() {
       database(),
       settings.outboxKey,
       settings.origin,
-      async (mail) => {
-        try { return await transport.sendMail(mail); }
-        catch (error) {
-          // Log only SMTP protocol metadata. Never log the recipient, message,
-          // provider response text or credentials.
-          console.error(JSON.stringify({
-            ...smtpFailure(error),
-            smtpHost: smtpUrl.hostname,
-            senderDomain,
-          }));
-          throw error;
-        }
-      },
+      async (mail) => transport.send(mail),
       5,
+      true,
+      mailReplyContacts(),
+      transport.policy,
     );
     console.log(JSON.stringify({ event: 'scheduled_worker_cycle', ...result }));
   } catch {
