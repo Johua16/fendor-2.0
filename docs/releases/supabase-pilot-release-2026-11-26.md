@@ -2,7 +2,7 @@
 
 Date: 26 November 2026
 
-Status: **release candidate prepared; production database cutover blocked**
+Status: **private pilot verified; production database cutover blocked**
 
 ## Reconciled release contents
 
@@ -65,17 +65,31 @@ The Supabase Free network endpoint cannot be restricted to one Netlify `/32` bec
 - restores into stock PostgreSQL 18;
 - requires at least 13 migrations and reports users, order requests, and payment records.
 
-The scheduled GitHub Actions workflow runs daily, retains encrypted artifacts for 14 days, performs a complete restore before upload, and opens or updates a GitHub issue when backup or restore verification fails. Two protected repository secrets are required before it can run:
+The scheduled GitHub Actions workflow runs daily, retains encrypted artifacts for 14 days, performs a complete restore before upload, and opens or updates a GitHub issue when backup or restore verification fails. It uses two protected repository secrets:
 
 - `SUPABASE_BACKUP_DATABASE_URL`: certificate-verified least-privilege session-pool URL.
 - `SUPABASE_BACKUP_PASSPHRASE`: independent high-entropy encryption passphrase.
 
-Local validation passed with 13 migrations, 7 users, 0 order requests, and 0 payment records. The protected GitHub secrets have not yet been transmitted because that requires explicit approval of the destination and data.
+The protected secrets were configured after explicit founder approval. GitHub Actions run `45774490702` completed successfully on 26 November 2026: it created an encrypted portable artifact, restored it into isolated PostgreSQL 18, and verified 13 migrations, 7 users, 0 order requests, and 0 payment records. The encrypted artifact `fendora-supabase-backup-45774490702` is retained through 10 December 2026. The temporary PR-only workflow trigger was removed after validation, so pull requests cannot access these secrets. The recurring schedule becomes active only after the reviewed workflow reaches the default branch.
+
+## Private Netlify pilot
+
+- Private alias: `https://supabase-pilot--fendor-beta.netlify.app`.
+- Verified deploy: `6b0887fc12d7148f37245b5d`.
+- Anonymous access: HTTP 401; the pilot does not expose restored data publicly.
+- Authenticated `/api/ready`: HTTP 200 with `status=ready`.
+- Database: DML-only Supabase transaction-pool role with the official Supabase 2021 CA pinned and `rejectUnauthorized=true`.
+- Catalogue: database-backed and empty; the storefront displays the honest catalogue-preparation message rather than sample products.
+- Email: deliberately disabled with a non-routable local SMTP target for this pilot.
+- Payments: `PUBLIC_CHECKOUT_ENABLED=false`, sandbox payments disabled, and no controlled live-payment tester is configured.
+- Production: unchanged on commit `a4951a7` and deploy `6b06999f9f11e9c54ff08f02`; Neon and production environment variables were not modified.
+
+The pilot exposed and corrected an SSL precedence issue in `pg`: URL-level `sslmode` options were discarding the explicitly pinned CA. The database adapter now removes connection-string TLS options only when a pinned CA is configured, preserves unrelated query parameters, and supplies the verified CA object directly. The regression is covered by an automated test, and a live read-only probe through the corrected adapter returned all 13 migrations.
 
 ## Release validation
 
 - Type checking: passed.
-- Complete local automated suite: 98 tests passed, 0 failed.
+- Complete local automated suite: 99 tests passed, 0 failed.
 - Production build with `PUBLIC_CHECKOUT_ENABLED=false`: passed; all application routes compiled.
 - Isolated Supabase integration suite: 53 tests passed, 0 failed. This covered identity and vendor lifecycle, catalogue moderation, order/stock concurrency, fulfilment, email outbox retry, signed payment webhooks, checkout initialization races, quote mutation, exceptional payments, and refunds.
 - Portable backup and isolated stock-PostgreSQL-18 restore: passed with 13 migrations, 7 users, 0 order requests, and 0 payment records.
