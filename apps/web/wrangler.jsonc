@@ -34,7 +34,11 @@
     ],
     "vars": {
       "DATABASE_PROVIDER": "cloudflare_hyperdrive",
-      "PUBLIC_CHECKOUT_ENABLED": "false"
+      "PUBLIC_CHECKOUT_ENABLED": "false",
+      // Pilot-only operational timings. Production remains intentionally unset
+      // until Fendora approves its live operating policy.
+      "RESERVATION_MINUTES": "60",
+      "VENDOR_RESPONSE_MINUTES": "60"
     }
   }
 }
