@@ -26,6 +26,12 @@
     "crons": ["*/5 * * * *"]
   },
   "previews": {
+    "hyperdrive": [
+      {
+        "binding": "HYPERDRIVE",
+        "id": "6c070e20ded74f60aea77811db1b4324"
+      }
+    ],
     "vars": {
       "DATABASE_PROVIDER": "cloudflare_hyperdrive",
       "PUBLIC_CHECKOUT_ENABLED": "false"
