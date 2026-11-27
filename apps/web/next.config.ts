@@ -1,10 +1,21 @@
 import type { NextConfig } from 'next';
 import { fileURLToPath } from 'node:url';
+
 const repositoryRoot = fileURLToPath(new URL('../../', import.meta.url));
+const cloudflarePackaging = process.env.NEXT_PRIVATE_STANDALONE === 'true';
+
 const config: NextConfig = {
+  // OpenNext packages the traced server files from this standard Next output.
+  // Netlify ignores it, so this remains compatible with the current host.
+  output: 'standalone',
   poweredByHeader: false,
-  outputFileTracingRoot: repositoryRoot,
-  turbopack: { root: repositoryRoot },
+  // OpenNext supplies its own app-root tracing mode.  Keeping the historical
+  // repository root for normal Next/Netlify builds preserves shared server
+  // module tracing without triggering the adapter's monorepo packaging bug.
+  ...(cloudflarePackaging ? {} : {
+    outputFileTracingRoot: repositoryRoot,
+    turbopack: { root: repositoryRoot },
+  }),
   async headers() {
     return [{ source: '/:path*', headers: [
       { key: 'X-Content-Type-Options', value: 'nosniff' },

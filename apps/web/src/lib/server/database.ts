@@ -1,4 +1,5 @@
 import { Pool, type PoolConfig } from 'pg';
+import { getCloudflareContext } from '@opennextjs/cloudflare';
 export interface Sql {
   query<T extends Record<string, unknown> = Record<string, unknown>>(text: string, values?: unknown[]): Promise<{ rows: T[] }>;
   exec(text: string): Promise<unknown>;
@@ -57,7 +58,31 @@ export function postgres(connectionString: string, options?: string): Database {
   };
 }
 let cached: Database | undefined;
-export function database(): Database {
+
+/**
+ * Resolves the database endpoint without making a browser-visible secret part
+ * of the Worker configuration.  Local development, scripts and the existing
+ * hosts continue to use DATABASE_URL.  The Cloudflare pilot deliberately
+ * requires a Hyperdrive binding instead of falling back to a public RDS URL.
+ */
+function connectionString(): string {
+  const provider = process.env.DATABASE_PROVIDER?.trim();
+  if (provider === 'cloudflare_hyperdrive') {
+    try {
+      const context = getCloudflareContext();
+      const hyperdrive = (context.env as { HYPERDRIVE?: { connectionString?: unknown } }).HYPERDRIVE;
+      if (typeof hyperdrive?.connectionString === 'string' && hyperdrive.connectionString) {
+        return hyperdrive.connectionString;
+      }
+    } catch {
+      // A missing Worker request context is handled by the safe error below.
+    }
+    throw new Error('Cloudflare Hyperdrive is required when DATABASE_PROVIDER=cloudflare_hyperdrive.');
+  }
   if (!process.env.DATABASE_URL) throw new Error('DATABASE_URL is required.');
-  return cached ??= postgres(process.env.DATABASE_URL);
+  return process.env.DATABASE_URL;
+}
+
+export function database(): Database {
+  return cached ??= postgres(connectionString());
 }
