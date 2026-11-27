@@ -4,7 +4,7 @@
   "main": "cloudflare/worker.ts",
   "compatibility_date": "2026-11-27",
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
-  "workers_dev": true,
+  "workers_dev": false,
   "assets": {
     "directory": ".open-next/assets",
     "binding": "ASSETS"
@@ -13,6 +13,12 @@
     {
       "binding": "WORKER_SELF_REFERENCE",
       "service": "fendora-pilot"
+    }
+  ],
+  "hyperdrive": [
+    {
+      "binding": "HYPERDRIVE",
+      "id": "6c070e20ded74f60aea77811db1b4324"
     }
   ],
   "triggers": {
