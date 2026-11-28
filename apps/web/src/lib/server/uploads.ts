@@ -75,6 +75,9 @@ export function uploads(db:Database,key:string,origin:string) {
   async create(secret:string|undefined,purpose:string,bytes:Buffer) {
    const u=await user(secret);
    if(!['product','document','proof'].includes(purpose)) fail(400,'INVALID_INPUT','Invalid purpose.');
+   // Product media is accepted only from an approved vendor. Check before
+   // decoding so ordinary customers cannot consume image-processing capacity.
+   if(purpose==='product') await actor(db,secret,'vendor');
    if(purpose==='proof'&&!u.roles.includes('admin')) fail(403,'FORBIDDEN','Operator required.');
    if(!bytes.length||bytes.length>MAX_INPUT_BYTES) fail(413,'UPLOAD_TOO_LARGE','Maximum image size is 5 MB.');
    // Decode only raster formats, then re-encode: strips metadata, embedded payloads, animation and filenames.
@@ -83,6 +86,9 @@ export function uploads(db:Database,key:string,origin:string) {
    catch(error) {if(error instanceof ApiError) throw error;fail(400,'INVALID_IMAGE','Upload a valid JPEG, PNG or WebP image within the supported dimensions.');}
    if(clean.length>MAX_INPUT_BYTES) fail(413,'UPLOAD_TOO_LARGE','Decoded image too large.');
    return db.transaction(async tx=>{
+    // Recheck under the transaction so an intervening vendor suspension cannot
+    // leave a new product asset behind.
+    if(purpose==='product') await actor(tx,secret,'vendor');
     await tx.query('SELECT id FROM users WHERE id=$1 FOR UPDATE',[u.id]);
     const total=(await tx.query<{total:string}>('SELECT COALESCE(sum(bytes),0)::text AS total FROM uploads WHERE owner_id=$1',[u.id])).rows[0];
     if(Number(total.total)+clean.length>100*1024*1024) fail(409,'UPLOAD_QUOTA','Account upload quota reached.');

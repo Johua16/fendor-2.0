@@ -112,8 +112,10 @@ test('sanitised uploads, private documents, vendor profile review and upload HTT
   const result=await profile.save(f.vendor.secret,{version:0,documentId:doc.id,phone:'+2348012345678',backupPhone:'+2348098765432',pickupAddress:'Updated pickup point in Abuja',windowStart:new Date().toISOString(),windowEnd:new Date(Date.now()+86400000).toISOString()});
   assert.equal(result.reviewRequired,true);
   assert.equal((await f.db.query('SELECT status FROM vendor_applications WHERE user_id=$1',[f.vendor.id])).rows[0].status,'changes_requested');
-  const response=await handleIdentity(new Request(`${origin}/api/uploads?purpose=product`,{method:'POST',headers:{origin,cookie:`fendor_session=${f.customer.secret}`},body:new Uint8Array(await image())}),['uploads'],{db:f.db,settings:{origin,outboxKey:key,secure:false}});
+  const response=await handleIdentity(new Request(`${origin}/api/uploads?purpose=product`,{method:'POST',headers:{origin,cookie:`fendor_session=${f.outsider.secret}`},body:new Uint8Array(await image())}),['uploads'],{db:f.db,settings:{origin,outboxKey:key,secure:false}});
   assert.equal(response.status,201);
+  const customer=await handleIdentity(new Request(`${origin}/api/uploads?purpose=product`,{method:'POST',headers:{origin,cookie:`fendor_session=${f.customer.secret}`},body:new Uint8Array(await image())}),['uploads'],{db:f.db,settings:{origin,outboxKey:key,secure:false}});
+  assert.equal(customer.status,403);
  }finally{await f.db.close();}
 });
 test('Cloudflare image pipeline validates decoded image information and stores only WebP output',async()=>{
