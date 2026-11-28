@@ -1,0 +1,50 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "fendora-pilot",
+  "main": "cloudflare/worker.ts",
+  "compatibility_date": "2026-11-27",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "workers_dev": false,
+  "preview_urls": true,
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  "services": [
+    {
+      "binding": "WORKER_SELF_REFERENCE",
+      "service": "fendora-pilot"
+    }
+  ],
+  "hyperdrive": [
+    {
+      "binding": "HYPERDRIVE",
+      "id": "6c070e20ded74f60aea77811db1b4324"
+    }
+  ],
+  "images": {
+    "binding": "IMAGES"
+  },
+  "triggers": {
+    "crons": ["*/5 * * * *"]
+  },
+  "previews": {
+    "hyperdrive": [
+      {
+        "binding": "HYPERDRIVE",
+        "id": "6c070e20ded74f60aea77811db1b4324"
+      }
+    ],
+    "images": {
+      "binding": "IMAGES"
+    },
+    "vars": {
+      "DATABASE_PROVIDER": "cloudflare_hyperdrive",
+      "PUBLIC_CHECKOUT_ENABLED": "false",
+      // Pilot-only operational timings. Production remains intentionally unset
+      // until Fendora approves its live operating policy.
+      "RESERVATION_MINUTES": "60",
+      "VENDOR_RESPONSE_MINUTES": "60"
+    }
+  }
+}

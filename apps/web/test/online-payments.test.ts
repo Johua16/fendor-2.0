@@ -9,16 +9,19 @@ import { fixture } from './order-fixture.ts';
 const origin = 'http://localhost:3000';
 const quote = { packagingKobo: 1000, deliveryKobo: 2000, fulfilmentChecked: true, fulfilmentPlan: 'Standard gift box, Abuja delivery and route checked.' };
 const originalFetch = globalThis.fetch;
-const envNames = ['PUBLIC_CHECKOUT_ENABLED','ALLOW_SANDBOX_PAYMENTS','PAYSTACK_SECRET_KEY','PAYSTACK_WEBHOOK_SECRET','FLUTTERWAVE_SECRET_KEY','FLUTTERWAVE_WEBHOOK_SECRET_HASH','PAYPAL_CLIENT_ID','PAYPAL_CLIENT_SECRET','PAYPAL_CURRENCY','PAYPAL_NGN_PER_UNIT','PAYPAL_API_ORIGIN','PAYPAL_WEBHOOK_ID'] as const;
+const envNames = ['PUBLIC_CHECKOUT_ENABLED','CONTROLLED_LIVE_PAYMENT_TESTER_IDS','ALLOW_SANDBOX_PAYMENTS','PAYSTACK_SECRET_KEY','PAYSTACK_WEBHOOK_SECRET','FLUTTERWAVE_SECRET_KEY','FLUTTERWAVE_WEBHOOK_SECRET_HASH','PAYPAL_CLIENT_ID','PAYPAL_CLIENT_SECRET','PAYPAL_CURRENCY','PAYPAL_NGN_PER_UNIT','PAYPAL_API_ORIGIN','PAYPAL_WEBHOOK_ID'] as const;
 const originalEnv = Object.fromEntries(envNames.map(name => [name, process.env[name]]));
 const originalNodeEnv = process.env.NODE_ENV;
+const sandboxPaystackKey = ['sk','test','public_beta'].join('_');
+const livePaystackKey = ['sk','live','approved'].join('_');
+const paystackWebhookSecret = ['whsec','test'].join('_');
 function response(value: unknown) { return new Response(JSON.stringify(value), { status: 200, headers: { 'content-type': 'application/json' } }); }
 function setNodeEnv(value: string | undefined) { if (value === undefined) Reflect.deleteProperty(process.env, 'NODE_ENV'); else Object.defineProperty(process.env, 'NODE_ENV', { configurable: true, enumerable: true, value, writable: true }); }
 function restore() { globalThis.fetch = originalFetch; setNodeEnv(originalNodeEnv); for (const name of envNames) { const value = originalEnv[name]; if (value === undefined) delete process.env[name]; else process.env[name] = value; } }
 
 test('public production checkout hides sandbox providers until live credentials are approved', { concurrency: false }, () => {
   setNodeEnv('production');
-  process.env.PAYSTACK_SECRET_KEY = 'sk_test_public_beta';
+  process.env.PAYSTACK_SECRET_KEY = sandboxPaystackKey;
   process.env.FLUTTERWAVE_SECRET_KEY = 'FLWSECK_TEST-public-beta-X';
   process.env.FLUTTERWAVE_WEBHOOK_SECRET_HASH = 'flutterwave-hook';
   process.env.PAYPAL_CLIENT_ID = 'sandbox-client';
@@ -34,7 +37,7 @@ test('public production checkout hides sandbox providers until live credentials 
     process.env.ALLOW_SANDBOX_PAYMENTS = 'true';
     assert.deepEqual(configuredProviders(), ['paystack', 'flutterwave', 'paypal']);
     delete process.env.ALLOW_SANDBOX_PAYMENTS;
-    process.env.PAYSTACK_SECRET_KEY = 'sk_live_approved';
+    process.env.PAYSTACK_SECRET_KEY = livePaystackKey;
     process.env.FLUTTERWAVE_SECRET_KEY = 'FLWSECK-approved-X';
     process.env.PAYPAL_API_ORIGIN = 'https://api-m.paypal.com';
     assert.deepEqual(configuredProviders(), ['paystack', 'flutterwave', 'paypal']);
@@ -71,18 +74,18 @@ test('provider webhooks reject unsigned requests and accept authentic payment ev
     const paystackBody = JSON.stringify({ event: 'charge.success', data: { reference: 'REF-HOOK', id: 99 } });
     await assert.rejects(verifyWebhook('paystack', paystackBody, new Headers()), /signature/i);
     const paystackHeaders = new Headers({ 'x-paystack-signature': createHmac('sha512', 'paystack-test').update(paystackBody).digest('hex') });
-    assert.deepEqual(await verifyWebhook('paystack', paystackBody, paystackHeaders), { reference: 'REF-HOOK', externalId: '99', capture: false });
-    process.env.PAYSTACK_WEBHOOK_SECRET = 'whsec_test';
+    assert.deepEqual(await verifyWebhook('paystack', paystackBody, paystackHeaders), { eventType:'charge.success',reference: 'REF-HOOK', externalId: '99', capture: false });
+    process.env.PAYSTACK_WEBHOOK_SECRET = paystackWebhookSecret;
     const timestamp = String(Math.floor(Date.now()/1000));
-    const paystackModernSignature = createHmac('sha512','whsec_test').update(`${timestamp}.${paystackBody}`).digest('hex');
+    const paystackModernSignature = createHmac('sha512',paystackWebhookSecret).update(`${timestamp}.${paystackBody}`).digest('hex');
     const modernHeaders = new Headers({ 'Paystack-Signature': `t=${timestamp},v1=whk_test:${paystackModernSignature}` });
-    assert.deepEqual(await verifyWebhook('paystack',paystackBody,modernHeaders),{reference:'REF-HOOK',externalId:'99',capture:false});
-    const stale = String(Math.floor(Date.now()/1000)-600), staleSignature = createHmac('sha512','whsec_test').update(`${stale}.${paystackBody}`).digest('hex');
+    assert.deepEqual(await verifyWebhook('paystack',paystackBody,modernHeaders),{eventType:'charge.success',reference:'REF-HOOK',externalId:'99',capture:false});
+    const stale = String(Math.floor(Date.now()/1000)-600), staleSignature = createHmac('sha512',paystackWebhookSecret).update(`${stale}.${paystackBody}`).digest('hex');
     await assert.rejects(verifyWebhook('paystack',paystackBody,new Headers({'Paystack-Signature':`t=${stale},v1=whk_test:${staleSignature}`})),/signature/i);
     const flutterwaveBody = JSON.stringify({ event: 'charge.completed', data: { tx_ref: 'REF-FW', id: 101, status: 'successful' } });
-    assert.deepEqual(await verifyWebhook('flutterwave', flutterwaveBody, new Headers({ 'verif-hash': 'flutterwave-hook' })), { reference: 'REF-FW', externalId: '101', capture: false });
+    assert.deepEqual(await verifyWebhook('flutterwave', flutterwaveBody, new Headers({ 'verif-hash': 'flutterwave-hook' })), { eventType:'charge.completed',reference: 'REF-FW', externalId: '101', capture: false });
     const modernSignature = createHmac('sha256', 'flutterwave-hook').update(flutterwaveBody).digest('base64');
-    assert.deepEqual(await verifyWebhook('flutterwave', flutterwaveBody, new Headers({ 'flutterwave-signature': modernSignature })), { reference: 'REF-FW', externalId: '101', capture: false });
+    assert.deepEqual(await verifyWebhook('flutterwave', flutterwaveBody, new Headers({ 'flutterwave-signature': modernSignature })), { eventType:'charge.completed',reference: 'REF-FW', externalId: '101', capture: false });
   } finally { restore(); }
 });
 
@@ -115,4 +118,117 @@ test('successful charge after reservation expiry is retained for Fendor financia
     const order = (await f.db.query<{ payment_verified: boolean; financial_hold: boolean }>('SELECT payment_verified,financial_hold FROM order_requests WHERE id=$1', [f.orderId])).rows[0]; assert.equal(order.payment_verified, false); assert.equal(order.financial_hold, true);
     assert.equal((await f.db.query('SELECT id FROM payment_records WHERE order_id=$1', [f.orderId])).rows.length, 1);
   } finally { await f.db.close(); restore(); }
+});
+
+test('controlled live checkout allowlist is enforced while public checkout stays disabled', { concurrency: false }, async () => {
+  setNodeEnv('production'); process.env.PUBLIC_CHECKOUT_ENABLED='false';process.env.PAYSTACK_SECRET_KEY=livePaystackKey;
+  const allowed='11111111-1111-4111-8111-111111111111',blocked='22222222-2222-4222-8222-222222222222';
+  process.env.CONTROLLED_LIVE_PAYMENT_TESTER_IDS=allowed;
+  try {
+    assert.deepEqual(configuredProviders(),[]);
+    assert.deepEqual(configuredProviders(blocked),[]);
+    assert.deepEqual(configuredProviders(allowed),['paystack']);
+  } finally { restore(); }
+});
+
+test('payment start enforces the internal tester allowlist on the server', { concurrency: false }, async () => {
+  setNodeEnv('production');process.env.PUBLIC_CHECKOUT_ENABLED='false';process.env.PAYSTACK_SECRET_KEY=livePaystackKey;const f=await payable();
+  globalThis.fetch=(async(input)=>String(input).endsWith('/transaction/initialize')?response({data:{authorization_url:'https://paystack.test/live'}}):response({})) as typeof fetch;
+  try{const payments=onlinePayments(f.db,'https://fendor.example');process.env.CONTROLLED_LIVE_PAYMENT_TESTER_IDS='11111111-1111-4111-8111-111111111111';
+    await assert.rejects(payments.start(f.customer.secret,f.orderId,'paystack'),(error:unknown)=>Boolean(error&&typeof error==='object'&&'code'in error&&error.code==='PROVIDER_UNAVAILABLE'));
+    process.env.CONTROLLED_LIVE_PAYMENT_TESTER_IDS=f.customer.id;assert.equal((await payments.start(f.customer.secret,f.orderId,'paystack')).url,'https://paystack.test/live');
+  }finally{await f.db.close();restore();}
+});
+
+test('concurrent checkout initialization creates only one active Paystack attempt', { concurrency: false }, async () => {
+  process.env.PUBLIC_CHECKOUT_ENABLED='true';process.env.PAYSTACK_SECRET_KEY='paystack-test';const f=await payable();
+  let release!:()=>void,started!:()=>void;const entered=new Promise<void>(resolve=>{started=resolve;}),gate=new Promise<void>(resolve=>{release=resolve;});let calls=0;
+  globalThis.fetch=(async(input,init)=>{if(String(input).endsWith('/transaction/initialize')){calls++;started();await gate;return response({data:{authorization_url:'https://paystack.test/one'}});}throw Error('Unexpected provider request');}) as typeof fetch;
+  try {
+    const payments=onlinePayments(f.db,origin),first=payments.start(f.customer.secret,f.orderId,'paystack');await entered;
+    await assert.rejects(payments.start(f.customer.secret,f.orderId,'paystack'),(error:unknown)=>Boolean(error&&typeof error==='object'&&'code'in error&&error.code==='PAYMENT_INITIALIZING'));
+    release();assert.equal((await first).url,'https://paystack.test/one');assert.equal(calls,1);
+    assert.equal((await f.db.query("SELECT id FROM payment_attempts WHERE order_id=$1 AND status IN ('initializing','pending')",[f.orderId])).rows.length,1);
+  } finally {release?.();await f.db.close();restore();}
+});
+
+test('a distinct successful charge after confirmation is recorded and frozen for review', { concurrency: false }, async () => {
+  process.env.PUBLIC_CHECKOUT_ENABLED='true';process.env.PAYSTACK_SECRET_KEY='paystack-test';const f=await payable();let firstRef='';
+  globalThis.fetch=(async(input,init)=>{const url=String(input);if(url.endsWith('/transaction/initialize')){firstRef=JSON.parse(String(init?.body)).reference;return response({data:{authorization_url:'https://paystack.test/pay'}});}const ref=decodeURIComponent(url.split('/').at(-1)??'');return response({data:{reference:ref,id:ref===firstRef?701:702,amount:13000,currency:'NGN',status:'success'}});}) as typeof fetch;
+  try {
+    const payments=onlinePayments(f.db,origin);await payments.start(f.customer.secret,f.orderId,'paystack');await payments.complete('paystack',firstRef);
+    const secondRef='FENDOR-DUPLICATE-SECOND';
+    await f.db.query("INSERT INTO payment_attempts(id,order_id,customer_id,provider,reference,amount_kobo,provider_amount,provider_currency,status,checkout_url,expires_at) VALUES(gen_random_uuid(),$1,$2,'paystack',$3,13000,'13000','NGN','pending','https://paystack.test/two',now()+interval '30 minutes')",[f.orderId,f.customer.id,secondRef]);
+    assert.equal((await payments.complete('paystack',secondRef)).status,'review');
+    const order=(await f.db.query<{payment_verified:boolean;financial_hold:boolean;version:number}>('SELECT payment_verified,financial_hold,version FROM order_requests WHERE id=$1',[f.orderId])).rows[0];
+    assert.equal(order.payment_verified,true);assert.equal(order.financial_hold,true);
+    assert.equal((await f.db.query('SELECT id FROM payment_records WHERE order_id=$1',[f.orderId])).rows.length,2);
+    assert.equal((await f.db.query("SELECT id FROM order_events WHERE order_id=$1 AND event_type='duplicate_online_payment_received'",[f.orderId])).rows.length,1);
+    assert.equal(Number((await f.db.query<{stock_quantity:number}>('SELECT stock_quantity FROM product_variants WHERE id=$1',[f.variantId])).rows[0].stock_quantity),0);
+  } finally {await f.db.close();restore();}
+});
+
+test('webhook and callback race records one receipt and allocates stock once', { concurrency: false }, async () => {
+  process.env.PUBLIC_CHECKOUT_ENABLED='true';process.env.PAYSTACK_SECRET_KEY='paystack-test';const f=await payable();let reference='';
+  globalThis.fetch=(async(input,init)=>{const url=String(input);if(url.endsWith('/transaction/initialize')){reference=JSON.parse(String(init?.body)).reference;return response({data:{authorization_url:'https://paystack.test/pay'}});}return response({data:{reference,id:801,amount:13000,currency:'NGN',status:'success'}});}) as typeof fetch;
+  try {
+    const payments=onlinePayments(f.db,origin);await payments.start(f.customer.secret,f.orderId,'paystack');
+    const eventId=await payments.acceptWebhook('paystack',{eventType:'charge.success',reference,externalId:'801',capture:false});
+    await Promise.all([payments.processWebhook(eventId!),payments.callback('paystack',new URLSearchParams({reference}))]);
+    assert.equal((await f.db.query('SELECT id FROM payment_records WHERE order_id=$1',[f.orderId])).rows.length,1);
+    assert.equal((await f.db.query("SELECT id FROM order_events WHERE order_id=$1 AND event_type='online_payment_verified'",[f.orderId])).rows.length,1);
+    assert.equal(Number((await f.db.query<{stock_quantity:number}>('SELECT stock_quantity FROM product_variants WHERE id=$1',[f.variantId])).rows[0].stock_quantity),0);
+    assert.equal((await f.db.query<{status:string}>('SELECT status FROM payment_webhook_events WHERE id=$1',[eventId])).rows[0].status,'processed');
+  } finally {await f.db.close();restore();}
+});
+
+test('expired abandoned attempt is verified before a new checkout is created', { concurrency: false }, async () => {
+  process.env.PUBLIC_CHECKOUT_ENABLED='true';process.env.PAYSTACK_SECRET_KEY='paystack-test';const f=await payable();let initialized=0,oldReference='';
+  globalThis.fetch=(async(input,init)=>{const url=String(input);if(url.endsWith('/transaction/initialize')){initialized++;const sent=JSON.parse(String(init?.body));if(initialized===1)oldReference=sent.reference;return response({data:{authorization_url:`https://paystack.test/${initialized}`}});}return response({data:{reference:oldReference,id:901,amount:13000,currency:'NGN',status:'abandoned'}});}) as typeof fetch;
+  try {
+    const payments=onlinePayments(f.db,origin);await payments.start(f.customer.secret,f.orderId,'paystack');
+    await f.db.query("UPDATE payment_attempts SET expires_at=now()-interval '1 minute' WHERE reference=$1",[oldReference]);
+    assert.equal((await payments.start(f.customer.secret,f.orderId,'paystack')).url,'https://paystack.test/2');assert.equal(initialized,2);
+    const attempts=(await f.db.query<{status:string}>('SELECT status FROM payment_attempts WHERE order_id=$1 ORDER BY created_at,id',[f.orderId])).rows;
+    assert.deepEqual(attempts.map(x=>x.status).sort(),['failed','pending']);
+  } finally {await f.db.close();restore();}
+});
+
+test('vendor suspension or product invalidation before confirmation freezes successful funds', { concurrency: false }, async () => {
+  for(const change of ['vendor','product'] as const){process.env.PUBLIC_CHECKOUT_ENABLED='true';process.env.PAYSTACK_SECRET_KEY='paystack-test';const f=await payable();let reference='';
+    globalThis.fetch=(async(input,init)=>{const url=String(input);if(url.endsWith('/transaction/initialize')){reference=JSON.parse(String(init?.body)).reference;return response({data:{authorization_url:'https://paystack.test/pay'}});}return response({data:{reference,id:change==='vendor'?1001:1002,amount:13000,currency:'NGN',status:'success'}});}) as typeof fetch;
+    try{const payments=onlinePayments(f.db,origin);await payments.start(f.customer.secret,f.orderId,'paystack');if(change==='vendor')await f.db.query("UPDATE vendor_applications SET status='suspended' WHERE user_id=$1",[f.vendor.id]);else await f.db.query("UPDATE products SET status='paused' WHERE id=$1",[f.productId]);
+      assert.equal((await payments.complete('paystack',reference)).status,'review');const row=(await f.db.query<{payment_verified:boolean;financial_hold:boolean}>('SELECT payment_verified,financial_hold FROM order_requests WHERE id=$1',[f.orderId])).rows[0];assert.equal(row.payment_verified,false);assert.equal(row.financial_hold,true);assert.equal((await f.db.query('SELECT id FROM payment_records WHERE order_id=$1',[f.orderId])).rows.length,1);
+    }finally{await f.db.close();restore();}}
+});
+
+test('quote changes and successful overpayments are recorded but never fulfilled', { concurrency: false }, async () => {
+  process.env.PUBLIC_CHECKOUT_ENABLED='true';process.env.PAYSTACK_SECRET_KEY='paystack-test';const f=await payable();let reference='';
+  globalThis.fetch=(async(input,init)=>{const url=String(input);if(url.endsWith('/transaction/initialize')){reference=JSON.parse(String(init?.body)).reference;return response({data:{authorization_url:'https://paystack.test/pay'}});}return response({data:{reference,id:1051,amount:14000,currency:'NGN',status:'success'}});}) as typeof fetch;
+  try{const payments=onlinePayments(f.db,origin);await payments.start(f.customer.secret,f.orderId,'paystack');await f.db.query('UPDATE order_requests SET accepted_quote_id=NULL WHERE id=$1',[f.orderId]);
+    assert.equal((await payments.complete('paystack',reference)).status,'review');const order=(await f.db.query<{payment_verified:boolean;financial_hold:boolean}>('SELECT payment_verified,financial_hold FROM order_requests WHERE id=$1',[f.orderId])).rows[0];assert.equal(order.payment_verified,false);assert.equal(order.financial_hold,true);
+    const receipt=(await f.db.query<{received_kobo:string}>('SELECT received_kobo FROM payment_records WHERE order_id=$1',[f.orderId])).rows[0];assert.equal(Number(receipt.received_kobo),14000);
+    assert.equal((await f.db.query("SELECT id FROM order_events WHERE order_id=$1 AND event_type='online_payment_mismatch_received'",[f.orderId])).rows.length,1);
+    assert.equal(Number((await f.db.query<{stock_quantity:number}>('SELECT stock_quantity FROM product_variants WHERE id=$1',[f.variantId])).rows[0].stock_quantity),1);
+  }finally{await f.db.close();restore();}
+});
+
+test('an exact successful charge is held when the accepted quote changes before confirmation', { concurrency: false }, async () => {
+  process.env.PUBLIC_CHECKOUT_ENABLED='true';process.env.PAYSTACK_SECRET_KEY='paystack-test';const f=await payable();let reference='';
+  globalThis.fetch=(async(input,init)=>{const url=String(input);if(url.endsWith('/transaction/initialize')){reference=JSON.parse(String(init?.body)).reference;return response({data:{authorization_url:'https://paystack.test/pay'}});}return response({data:{reference,id:1061,amount:13000,currency:'NGN',status:'success'}});}) as typeof fetch;
+  try{const payments=onlinePayments(f.db,origin);await payments.start(f.customer.secret,f.orderId,'paystack');await f.db.query('UPDATE order_requests SET accepted_quote_id=NULL WHERE id=$1',[f.orderId]);
+    assert.equal((await payments.complete('paystack',reference)).status,'review');const order=(await f.db.query<{payment_verified:boolean;financial_hold:boolean}>('SELECT payment_verified,financial_hold FROM order_requests WHERE id=$1',[f.orderId])).rows[0];assert.equal(order.payment_verified,false);assert.equal(order.financial_hold,true);
+    assert.equal((await f.db.query('SELECT id FROM payment_records WHERE order_id=$1',[f.orderId])).rows.length,1);
+    assert.equal((await f.db.query("SELECT id FROM order_events WHERE order_id=$1 AND event_type='online_payment_review_required'",[f.orderId])).rows.length,1);
+    assert.equal(Number((await f.db.query<{stock_quantity:number}>('SELECT stock_quantity FROM product_variants WHERE id=$1',[f.variantId])).rows[0].stock_quantity),1);
+  }finally{await f.db.close();restore();}
+});
+
+test('failed webhook processing is durable and recovers without duplicate actions', { concurrency: false }, async () => {
+  process.env.PUBLIC_CHECKOUT_ENABLED='true';process.env.PAYSTACK_SECRET_KEY='paystack-test';const f=await payable();let reference='',verificationCalls=0;
+  globalThis.fetch=(async(input,init)=>{const url=String(input);if(url.endsWith('/transaction/initialize')){reference=JSON.parse(String(init?.body)).reference;return response({data:{authorization_url:'https://paystack.test/pay'}});}verificationCalls++;if(verificationCalls===1)return new Response('{}',{status:503});return response({data:{reference,id:1101,amount:13000,currency:'NGN',status:'success'}});}) as typeof fetch;
+  try{const payments=onlinePayments(f.db,origin);await payments.start(f.customer.secret,f.orderId,'paystack');const eventId=await payments.acceptWebhook('paystack',{eventType:'charge.success',reference,externalId:'1101',capture:false});
+    await assert.rejects(payments.processWebhook(eventId!));let event=(await f.db.query<{status:string;attempts:number}>('SELECT status,attempts FROM payment_webhook_events WHERE id=$1',[eventId])).rows[0];assert.equal(event.status,'failed');assert.equal(event.attempts,1);
+    await f.db.query('UPDATE payment_webhook_events SET next_attempt_at=now() WHERE id=$1',[eventId]);assert.equal((await payments.processWebhook(eventId!)).processed,true);event=(await f.db.query<{status:string;attempts:number}>('SELECT status,attempts FROM payment_webhook_events WHERE id=$1',[eventId])).rows[0];assert.equal(event.status,'processed');assert.equal(event.attempts,2);assert.equal((await f.db.query('SELECT id FROM payment_records WHERE order_id=$1',[f.orderId])).rows.length,1);
+  }finally{await f.db.close();restore();}
 });

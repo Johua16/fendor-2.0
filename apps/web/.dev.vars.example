@@ -1,0 +1,8 @@
+# Copy to .dev.vars only for a local Cloudflare Worker smoke test.
+# Do not put production database, mail, payment, or authentication secrets in
+# this file.  Wrangler loads it locally and it is intentionally Git-ignored.
+DATABASE_PROVIDER=cloudflare_hyperdrive
+PUBLIC_CHECKOUT_ENABLED=false
+APP_ORIGIN=http://127.0.0.1:8787
+OUTBOX_KEY=replace-with-a-local-64-character-hex-key
+CRON_SECRET=replace-with-a-local-random-secret-of-at-least-32-characters

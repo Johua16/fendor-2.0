@@ -57,8 +57,8 @@ export function identity(db: Database, config: Config) {
     const url = `${config.origin}${pathname}#token=${secret}`;
     // Each account/purpose has one stable outbox row. Resends replace only
     // that row in constant time, without scanning or locking unrelated mail.
-    await tx.query(`INSERT INTO email_outbox(id,payload) VALUES($1,$2)
-      ON CONFLICT(id) DO UPDATE SET payload=$2,created_at=now(),sent_at=NULL,attempts=0,next_attempt_at=now()`,
+    await tx.query(`INSERT INTO email_outbox(id,payload,priority) VALUES($1,$2,100)
+      ON CONFLICT(id) DO UPDATE SET payload=$2,priority=100,created_at=now(),sent_at=NULL,attempts=0,next_attempt_at=now(),provider=NULL,provider_message_id=NULL,provider_status=NULL,provider_status_at=NULL,last_error_code=NULL`,
       [identityOutboxId(userId,purpose),seal({to:address,purpose,url},config.outboxKey)]);
   }
   async function userFor(tx: Sql, id: string): Promise<User> {

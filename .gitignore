@@ -12,6 +12,9 @@ yarn-error.log*
 **/node_modules/
 **/.next/
 **/.netlify/
+**/.open-next/
+**/.wrangler/
+**/.dev.vars
 **/*.tsbuildinfo
 .env.*
 !.env.example
