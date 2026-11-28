@@ -1,11 +1,22 @@
 import {randomUUID} from 'node:crypto';
-import sharp from 'sharp';
 import type {Database} from './database.ts';
 import {identity,fail,text} from './identity.ts';
 import {actor,uuid} from './catalogue.ts';
 import {seal,unseal} from './security.ts';
 import {audit} from './operations-common.ts';
 import {notify,notifyAdmins} from './notifications.ts';
+
+async function sanitiseImage(bytes: Buffer): Promise<Buffer> {
+ // `sharp` is native Node code. Loading it while the catch-all API route is
+ // initialised makes unrelated Cloudflare Worker requests (such as the public
+ // catalogue) fail before their handler can run. Load it only for an upload,
+ // where it is actually needed to strip untrusted image metadata.
+ const { default: sharp } = await import('sharp');
+ const decoder=sharp(bytes,{limitInputPixels:20000000,animated:false,failOn:'warning'});
+ const meta=await decoder.metadata();
+ if(!['jpeg','png','webp'].includes(meta.format??'')||(meta.pages??1)>1) throw Error('format');
+ return decoder.rotate().resize({width:2400,height:2400,fit:'inside',withoutEnlargement:true}).webp({quality:85}).toBuffer();
+}
 export function uploads(db:Database,key:string,origin:string) {
  async function user(secret?:string) {const u=await identity(db,{origin,outboxKey:key}).me(secret);if(!u.verified) fail(403,'EMAIL_UNVERIFIED','Verify your email.');return u;}
  return {
@@ -16,7 +27,7 @@ export function uploads(db:Database,key:string,origin:string) {
    if(!bytes.length||bytes.length>5*1024*1024) fail(413,'UPLOAD_TOO_LARGE','Maximum image size is 5 MB.');
    // Decode only raster formats, then re-encode: strips metadata, embedded payloads, animation and filenames.
    let clean:Buffer;
-   try {const decoder=sharp(bytes,{limitInputPixels:20000000,animated:false,failOn:'warning'});const meta=await decoder.metadata();if(!['jpeg','png','webp'].includes(meta.format??'')||(meta.pages??1)>1) throw Error('format');clean=await decoder.rotate().resize({width:2400,height:2400,fit:'inside',withoutEnlargement:true}).webp({quality:85}).toBuffer();}
+   try {clean=await sanitiseImage(bytes);}
    catch {fail(400,'INVALID_IMAGE','Upload a valid non-animated JPEG, PNG or WebP image.');}
    if(clean.length>5*1024*1024) fail(413,'UPLOAD_TOO_LARGE','Decoded image too large.');
    return db.transaction(async tx=>{

@@ -41,7 +41,8 @@ export function postgresPoolConfig(connectionString: string, options?: string): 
 }
 export function postgres(connectionString: string, options?: string): Database {
   const pool = new Pool(postgresPoolConfig(connectionString, options));
-  pool.on('error', () => console.error('Database connection interrupted.'));
+  let closing = false;
+  pool.on('error', () => { if (!closing) console.error('Database connection interrupted.'); });
   return {
     query: async <T extends Record<string, unknown>>(q: string, values?: unknown[]) => ({ rows: (await pool.query<T>(q, values)).rows }),
     exec: (q) => pool.query(q),
@@ -54,7 +55,7 @@ export function postgres(connectionString: string, options?: string): Database {
       } catch (error) { await client.query('ROLLBACK'); throw error; }
       finally { client.release(); }
     },
-    close: () => pool.end()
+    async close() { closing = true; await pool.end(); }
   };
 }
 let cached: Database | undefined;
@@ -84,5 +85,10 @@ function connectionString(): string {
 }
 
 export function database(): Database {
+  const provider = process.env.DATABASE_PROVIDER?.trim();
+  // A Node `pg` pool retained globally can outlive the Worker request that
+  // created its promises. Hyperdrive already provides connection pooling, so
+  // use a short-lived client pool for each Worker request instead.
+  if (provider === 'cloudflare_hyperdrive') return postgres(connectionString());
   return cached ??= postgres(connectionString());
 }

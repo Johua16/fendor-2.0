@@ -15,17 +15,19 @@ function cookie(value: string, secure: boolean, clear = false) {
 type IdentitySettings = Omit<ReturnType<typeof config>, 'reviewMode'> & { reviewMode?: boolean };
 export async function handleIdentity(req: Request, path: string[], dependencies?: {db: Database; settings: IdentitySettings}) {
   const headers = new Headers({ 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' });
+  const ownedDatabase = dependencies ? undefined : database();
   try {
     const settings = dependencies?.settings ?? config();
     if (!['GET', 'POST'].includes(req.method)) fail(405, 'METHOD_NOT_ALLOWED', 'Method not allowed.');
     if (req.method === 'POST' && req.headers.get('origin') !== settings.origin) fail(403, 'INVALID_ORIGIN', 'Request origin is not allowed.');
-    const service = identity(dependencies?.db ?? database(), settings), secret = sessionCookie(req), key = path.join('/');
+    const db = dependencies?.db ?? ownedDatabase!;
+    const service = identity(db, settings), secret = sessionCookie(req), key = path.join('/');
     if(req.method==='POST') await service.throttleWrites();
-    const operationsResult=await operationsResponse(req,path,dependencies?.db ?? database(),secret,headers,settings);
+    const operationsResult=await operationsResponse(req,path,db,secret,headers,settings);
     if(operationsResult)return operationsResult;
-    const orderResult=await orderResponse(req,path,dependencies?.db ?? database(),secret,headers);
+    const orderResult=await orderResponse(req,path,db,secret,headers);
     if(orderResult) return orderResult;
-    const catalogueResult = await catalogueResponse(req,path,dependencies?.db ?? database(),secret,headers,settings);
+    const catalogueResult = await catalogueResponse(req,path,db,secret,headers,settings);
     if(catalogueResult) return catalogueResult;
     if (req.method === 'GET') {
       let data: unknown;
@@ -71,7 +73,11 @@ export async function handleIdentity(req: Request, path: string[], dependencies?
       if (error.status === 429) headers.set('Retry-After', String(error.retryAfter??900));
       return Response.json({ error: { code: error.code, message: error.message } }, { status: error.status, headers });
     }
-    console.error('Identity request failed; verify database and server configuration.');
+    // Keep the client response intentionally generic, while preserving enough
+    // server-side evidence to diagnose a protected deployment. Do not log
+    // requests, SQL, tokens, or configuration values here.
+    const detail = error instanceof Error ? `${error.name}: ${error.message}` : 'Unknown non-Error exception';
+    console.error(`Identity request failed: ${detail}`);
     return Response.json({ error: { code: 'SERVICE_UNAVAILABLE', message: 'Service temporarily unavailable.' } }, { status: 503, headers });
-  }
+  } finally { if (ownedDatabase) await ownedDatabase.close(); }
 }

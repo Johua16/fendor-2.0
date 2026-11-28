@@ -9,6 +9,10 @@ const config: NextConfig = {
   // Netlify ignores it, so this remains compatible with the current host.
   output: 'standalone',
   poweredByHeader: false,
+  // Workers cannot load Sharp's native image-processing binary. Keep normal
+  // Next image optimisation for the existing Node/Netlify host, while serving
+  // the approved static and API media paths directly in the Cloudflare pilot.
+  ...(cloudflarePackaging ? { images: { unoptimized: true } } : {}),
   // OpenNext supplies its own app-root tracing mode.  Keeping the historical
   // repository root for normal Next/Netlify builds preserves shared server
   // module tracing without triggering the adapter's monorepo packaging bug.

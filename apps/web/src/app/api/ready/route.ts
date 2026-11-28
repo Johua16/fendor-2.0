@@ -10,8 +10,9 @@ function diagnostic(error: unknown) {
 }
 export async function GET() {
   const headers = { 'Cache-Control': 'no-store' };
+  const db = database();
   try {
-    config(); await checkDatabase(database());
+    config(); await checkDatabase(db);
     const minutes=Number(process.env.RESERVATION_MINUTES);
     if(!Number.isInteger(minutes)||minutes<1||minutes>1440) throw Error('Reservation policy required');
     const responseMinutes=Number(process.env.VENDOR_RESPONSE_MINUTES);
@@ -20,5 +21,5 @@ export async function GET() {
   } catch (error) {
     console.error('Readiness check failed.', diagnostic(error));
     return Response.json({ status: 'not_ready', reason: 'Database, migrations, identity configuration or order timing policies unavailable.' }, { status: 503, headers });
-  }
+  } finally { await db.close(); }
 }
