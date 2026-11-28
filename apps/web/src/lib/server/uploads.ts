@@ -1,12 +1,63 @@
 import {randomUUID} from 'node:crypto';
+import {getCloudflareContext} from '@opennextjs/cloudflare';
 import type {Database} from './database.ts';
-import {identity,fail,text} from './identity.ts';
+import {ApiError,identity,fail,text} from './identity.ts';
 import {actor,uuid} from './catalogue.ts';
 import {seal,unseal} from './security.ts';
 import {audit} from './operations-common.ts';
 import {notify,notifyAdmins} from './notifications.ts';
 
+type CloudflareImageInfo = {format?: unknown; fileSize?: unknown; width?: unknown; height?: unknown};
+type CloudflareImagesBinding = {
+ info(stream: ReadableStream<Uint8Array>): Promise<CloudflareImageInfo>;
+ input(stream: ReadableStream<Uint8Array>): {
+  transform(options: {width: number; height: number; fit: 'scale-down'}): {
+   output(options: {format: 'image/webp'; quality: number; anim: false}): {response(): Promise<Response>};
+  };
+ };
+};
+const MAX_INPUT_BYTES=5*1024*1024;
+const MAX_INPUT_PIXELS=20_000_000;
+const MAX_INPUT_DIMENSION=10_000;
+function stream(bytes: Buffer) {
+ const body=new Response(new Uint8Array(bytes)).body;
+ if(!body) throw Error('Image stream unavailable.');
+ return body;
+}
+function supportedFormat(value: unknown) {
+ const format=String(value??'').toLowerCase().replace(/^image\//,'');
+ return ['jpeg','jpg','png','webp'].includes(format);
+}
+function integer(value: unknown) { return typeof value==='number'&&Number.isSafeInteger(value)&&value>0 ? value : 0; }
+function cloudflareImages(): CloudflareImagesBinding|undefined {
+ if(process.env.DATABASE_PROVIDER!=='cloudflare_hyperdrive') return undefined;
+ try {
+  const images=(getCloudflareContext().env as {IMAGES?: unknown}).IMAGES;
+  if(images&&typeof (images as {info?:unknown}).info==='function'&&typeof (images as {input?:unknown}).input==='function') return images as CloudflareImagesBinding;
+ } catch { /* A Worker request context is required below. */ }
+ fail(503,'IMAGE_PROCESSING_UNAVAILABLE','Image processing is temporarily unavailable. Please try again shortly.');
+}
+
+/**
+ * The Worker path validates the decoded image with Images.info(), then stores
+ * only a freshly encoded still WebP. This deliberately discards EXIF, ICC,
+ * animation frames, embedded payloads and the untrusted original bytes.
+ */
+export async function sanitiseCloudflareImage(bytes: Buffer, images: CloudflareImagesBinding): Promise<Buffer> {
+ const info=await images.info(stream(bytes));
+ const width=integer(info.width),height=integer(info.height);
+ if(!supportedFormat(info.format)||!width||!height||width>MAX_INPUT_DIMENSION||height>MAX_INPUT_DIMENSION||width*height>MAX_INPUT_PIXELS) throw Error('format');
+ if(typeof info.fileSize==='number'&&(!Number.isSafeInteger(info.fileSize)||info.fileSize<1||info.fileSize>MAX_INPUT_BYTES)) throw Error('size');
+ const response=await images.input(stream(bytes)).transform({width:2400,height:2400,fit:'scale-down'}).output({format:'image/webp',quality:85,anim:false}).response();
+ if(!response.ok||!response.headers.get('content-type')?.toLowerCase().startsWith('image/webp')) throw Error('transform');
+ const clean=Buffer.from(await response.arrayBuffer());
+ if(!clean.length||clean.length>MAX_INPUT_BYTES) throw Error('output');
+ return clean;
+}
+
 async function sanitiseImage(bytes: Buffer): Promise<Buffer> {
+ const images=cloudflareImages();
+ if(images) return sanitiseCloudflareImage(bytes,images);
  // `sharp` is native Node code. Loading it while the catch-all API route is
  // initialised makes unrelated Cloudflare Worker requests (such as the public
  // catalogue) fail before their handler can run. Load it only for an upload,
@@ -14,7 +65,8 @@ async function sanitiseImage(bytes: Buffer): Promise<Buffer> {
  const { default: sharp } = await import('sharp');
  const decoder=sharp(bytes,{limitInputPixels:20000000,animated:false,failOn:'warning'});
  const meta=await decoder.metadata();
- if(!['jpeg','png','webp'].includes(meta.format??'')||(meta.pages??1)>1) throw Error('format');
+ const width=meta.width??0,height=meta.height??0;
+ if(!['jpeg','png','webp'].includes(meta.format??'')||(meta.pages??1)>1||width>MAX_INPUT_DIMENSION||height>MAX_INPUT_DIMENSION||width*height>MAX_INPUT_PIXELS) throw Error('format');
  return decoder.rotate().resize({width:2400,height:2400,fit:'inside',withoutEnlargement:true}).webp({quality:85}).toBuffer();
 }
 export function uploads(db:Database,key:string,origin:string) {
@@ -24,12 +76,12 @@ export function uploads(db:Database,key:string,origin:string) {
    const u=await user(secret);
    if(!['product','document','proof'].includes(purpose)) fail(400,'INVALID_INPUT','Invalid purpose.');
    if(purpose==='proof'&&!u.roles.includes('admin')) fail(403,'FORBIDDEN','Operator required.');
-   if(!bytes.length||bytes.length>5*1024*1024) fail(413,'UPLOAD_TOO_LARGE','Maximum image size is 5 MB.');
+   if(!bytes.length||bytes.length>MAX_INPUT_BYTES) fail(413,'UPLOAD_TOO_LARGE','Maximum image size is 5 MB.');
    // Decode only raster formats, then re-encode: strips metadata, embedded payloads, animation and filenames.
    let clean:Buffer;
    try {clean=await sanitiseImage(bytes);}
-   catch {fail(400,'INVALID_IMAGE','Upload a valid non-animated JPEG, PNG or WebP image.');}
-   if(clean.length>5*1024*1024) fail(413,'UPLOAD_TOO_LARGE','Decoded image too large.');
+   catch(error) {if(error instanceof ApiError) throw error;fail(400,'INVALID_IMAGE','Upload a valid JPEG, PNG or WebP image within the supported dimensions.');}
+   if(clean.length>MAX_INPUT_BYTES) fail(413,'UPLOAD_TOO_LARGE','Decoded image too large.');
    return db.transaction(async tx=>{
     await tx.query('SELECT id FROM users WHERE id=$1 FOR UPDATE',[u.id]);
     const total=(await tx.query<{total:string}>('SELECT COALESCE(sum(bytes),0)::text AS total FROM uploads WHERE owner_id=$1',[u.id])).rows[0];

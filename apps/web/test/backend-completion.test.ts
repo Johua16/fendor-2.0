@@ -5,7 +5,7 @@ import sharp from 'sharp';
 import {fixture} from './order-fixture.ts';
 import {checkout} from '../src/lib/server/checkout.ts';
 import {fulfilment} from '../src/lib/server/fulfilment.ts';
-import {uploads} from '../src/lib/server/uploads.ts';
+import {sanitiseCloudflareImage,uploads} from '../src/lib/server/uploads.ts';
 import {remedies} from '../src/lib/server/remedies.ts';
 import {refunds} from '../src/lib/server/refunds.ts';
 import {support} from '../src/lib/server/support.ts';
@@ -115,6 +115,30 @@ test('sanitised uploads, private documents, vendor profile review and upload HTT
   const response=await handleIdentity(new Request(`${origin}/api/uploads?purpose=product`,{method:'POST',headers:{origin,cookie:`fendor_session=${f.customer.secret}`},body:new Uint8Array(await image())}),['uploads'],{db:f.db,settings:{origin,outboxKey:key,secure:false}});
   assert.equal(response.status,201);
  }finally{await f.db.close();}
+});
+test('Cloudflare image pipeline validates decoded image information and stores only WebP output',async()=>{
+ const source=await image(),output=await sharp({create:{width:8,height:8,channels:3,background:'#00aa44'}}).webp().toBuffer();
+ let inspected=0,transformed=0;
+ const binding={
+  async info(body:ReadableStream<Uint8Array>){inspected++;await new Response(body).arrayBuffer();return {format:'image/png',fileSize:source.length,width:8,height:8};},
+  input(body:ReadableStream<Uint8Array>) {
+   return {
+    transform(options:{width:number;height:number;fit:'scale-down'}) {
+     assert.deepEqual(options,{width:2400,height:2400,fit:'scale-down'});
+     return {
+      output(options:{format:'image/webp';quality:number;anim:false}) {
+       assert.deepEqual(options,{format:'image/webp',quality:85,anim:false});
+       return {async response(){transformed++;await new Response(body).arrayBuffer();return new Response(output,{headers:{'content-type':'image/webp'}});}};
+      }
+     };
+    }
+   };
+  }
+ };
+ const clean=await sanitiseCloudflareImage(source,binding);
+ assert.deepEqual(clean,output);assert.equal(inspected,1);assert.equal(transformed,1);
+ await assert.rejects(sanitiseCloudflareImage(source,{...binding,async info(){return {format:'image/svg+xml',fileSize:source.length,width:8,height:8};}}),/format/);
+ await assert.rejects(sanitiseCloudflareImage(source,{...binding,async info(){return {format:'image/png',fileSize:source.length,width:10000,height:10000};}}),/format/);
 });
 test('support isolation, internal notes, replies and idempotent case creation',async()=>{
  const f=await setup();try {

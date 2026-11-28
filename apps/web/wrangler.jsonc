@@ -22,6 +22,9 @@
       "id": "6c070e20ded74f60aea77811db1b4324"
     }
   ],
+  "images": {
+    "binding": "IMAGES"
+  },
   "triggers": {
     "crons": ["*/5 * * * *"]
   },
@@ -32,6 +35,9 @@
         "id": "6c070e20ded74f60aea77811db1b4324"
       }
     ],
+    "images": {
+      "binding": "IMAGES"
+    },
     "vars": {
       "DATABASE_PROVIDER": "cloudflare_hyperdrive",
       "PUBLIC_CHECKOUT_ENABLED": "false",
