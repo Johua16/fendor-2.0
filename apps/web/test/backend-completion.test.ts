@@ -116,10 +116,13 @@ test('sanitised uploads, private documents, vendor profile review and upload HTT
   assert.equal(response.status,201);
   const customer=await handleIdentity(new Request(`${origin}/api/uploads?purpose=product`,{method:'POST',headers:{origin,cookie:`fendor_session=${f.customer.secret}`},body:new Uint8Array(await image())}),['uploads'],{db:f.db,settings:{origin,outboxKey:key,secure:false}});
   assert.equal(customer.status,403);
+  const tooLarge=await handleIdentity(new Request(`${origin}/api/uploads?purpose=product`,{method:'POST',headers:{origin,cookie:`fendor_session=${f.outsider.secret}`},body:new Uint8Array(5*1024*1024+1)}),['uploads'],{db:f.db,settings:{origin,outboxKey:key,secure:false}});
+  assert.equal(tooLarge.status,413);
  }finally{await f.db.close();}
 });
 test('Cloudflare image pipeline validates decoded image information and stores only WebP output',async()=>{
- const source=await image(),output=await sharp({create:{width:8,height:8,channels:3,background:'#00aa44'}}).webp().toBuffer();
+ const source=await image(),output=await sharp({create:{width:8,height:8,channels:3,background:'#00aa44'}}).withMetadata({exif:{IFD0:{Artist:'Fendora test metadata'}}}).webp().toBuffer();
+ assert.ok((await sharp(output).metadata()).exif);
  let inspected=0,transformed=0;
  const binding={
   async info(body:ReadableStream<Uint8Array>){inspected++;await new Response(body).arrayBuffer();return {format:'image/png',fileSize:source.length,width:8,height:8};},
@@ -130,7 +133,7 @@ test('Cloudflare image pipeline validates decoded image information and stores o
      return {
       output(options:{format:'image/webp';quality:number;anim:false}) {
        assert.deepEqual(options,{format:'image/webp',quality:85,anim:false});
-       return {async response(){transformed++;await new Response(body).arrayBuffer();return new Response(output,{headers:{'content-type':'image/webp'}});}};
+       return Promise.resolve({response(){transformed++;return new Response(output,{headers:{'content-type':'image/webp'}});}});
       }
      };
     }
@@ -138,7 +141,8 @@ test('Cloudflare image pipeline validates decoded image information and stores o
   }
  };
  const clean=await sanitiseCloudflareImage(source,binding);
- assert.deepEqual(clean,output);assert.equal(inspected,1);assert.equal(transformed,1);
+ const cleanedMetadata=await sharp(clean).metadata();
+ assert.equal(cleanedMetadata.exif,undefined);assert.equal(cleanedMetadata.xmp,undefined);assert.equal(cleanedMetadata.icc,undefined);assert.equal(inspected,1);assert.equal(transformed,1);
  await assert.rejects(sanitiseCloudflareImage(source,{...binding,async info(){return {format:'image/svg+xml',fileSize:source.length,width:8,height:8};}}),/format/);
  await assert.rejects(sanitiseCloudflareImage(source,{...binding,async info(){return {format:'image/png',fileSize:source.length,width:10000,height:10000};}}),/format/);
 });

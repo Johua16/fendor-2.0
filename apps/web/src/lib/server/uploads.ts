@@ -6,13 +6,14 @@ import {actor,uuid} from './catalogue.ts';
 import {seal,unseal} from './security.ts';
 import {audit} from './operations-common.ts';
 import {notify,notifyAdmins} from './notifications.ts';
+import {stripWebpMetadata} from './webp-sanitizer.ts';
 
 type CloudflareImageInfo = {format?: unknown; fileSize?: unknown; width?: unknown; height?: unknown};
 type CloudflareImagesBinding = {
  info(stream: ReadableStream<Uint8Array>): Promise<CloudflareImageInfo>;
  input(stream: ReadableStream<Uint8Array>): {
   transform(options: {width: number; height: number; fit: 'scale-down'}): {
-   output(options: {format: 'image/webp'; quality: number; anim: false}): {response(): Promise<Response>};
+   output(options: {format: 'image/webp'; quality: number; anim: false}): Promise<{response(): Response}>;
   };
  };
 };
@@ -40,17 +41,23 @@ function cloudflareImages(): CloudflareImagesBinding|undefined {
 
 /**
  * The Worker path validates the decoded image with Images.info(), then stores
- * only a freshly encoded still WebP. This deliberately discards EXIF, ICC,
- * animation frames, embedded payloads and the untrusted original bytes.
+ * only a freshly encoded still WebP. Cloudflare's Images binding deliberately
+ * preserves a copyright metadata tag by default and its binding API cannot set
+ * `metadata: none`. We therefore pass its constrained WebP output through a
+ * strict WebP container rebuild. It retains only image-pixel chunks and clears
+ * metadata/animation flags, so EXIF, XMP, IPTC, ICC, C2PA and unknown payloads
+ * cannot reach storage.
  */
 export async function sanitiseCloudflareImage(bytes: Buffer, images: CloudflareImagesBinding): Promise<Buffer> {
  const info=await images.info(stream(bytes));
  const width=integer(info.width),height=integer(info.height);
  if(!supportedFormat(info.format)||!width||!height||width>MAX_INPUT_DIMENSION||height>MAX_INPUT_DIMENSION||width*height>MAX_INPUT_PIXELS) throw Error('format');
  if(typeof info.fileSize==='number'&&(!Number.isSafeInteger(info.fileSize)||info.fileSize<1||info.fileSize>MAX_INPUT_BYTES)) throw Error('size');
- const response=await images.input(stream(bytes)).transform({width:2400,height:2400,fit:'scale-down'}).output({format:'image/webp',quality:85,anim:false}).response();
+ const transformed=await images.input(stream(bytes)).transform({width:2400,height:2400,fit:'scale-down'}).output({format:'image/webp',quality:85,anim:false});
+ const response=transformed.response();
  if(!response.ok||!response.headers.get('content-type')?.toLowerCase().startsWith('image/webp')) throw Error('transform');
- const clean=Buffer.from(await response.arrayBuffer());
+ const intermediate=Buffer.from(await response.arrayBuffer());
+ const clean=stripWebpMetadata(intermediate);
  if(!clean.length||clean.length>MAX_INPUT_BYTES) throw Error('output');
  return clean;
 }
@@ -83,7 +90,10 @@ export function uploads(db:Database,key:string,origin:string) {
    // Decode only raster formats, then re-encode: strips metadata, embedded payloads, animation and filenames.
    let clean:Buffer;
    try {clean=await sanitiseImage(bytes);}
-   catch(error) {if(error instanceof ApiError) throw error;fail(400,'INVALID_IMAGE','Upload a valid JPEG, PNG or WebP image within the supported dimensions.');}
+   catch(error) {
+    if(error instanceof ApiError) throw error;
+    fail(400,'INVALID_IMAGE','Upload a valid JPEG, PNG or WebP image within the supported dimensions.');
+   }
    if(clean.length>MAX_INPUT_BYTES) fail(413,'UPLOAD_TOO_LARGE','Decoded image too large.');
    return db.transaction(async tx=>{
     // Recheck under the transaction so an intervening vendor suspension cannot

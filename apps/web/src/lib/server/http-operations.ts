@@ -64,7 +64,7 @@ export async function operationsResponse(req:Request,path:string[],db:Database,s
   if(key==='uploads') {
    await identity(db,settings).me(secret);
    const reader=req.body?.getReader();if(!reader)fail(400,'INVALID_IMAGE','Image required.');let size=0;const chunks:Uint8Array[]=[];
-   while(true){const part=await reader.read();if(part.done)break;size+=part.value.length;if(size>5*1024*1024){await reader.cancel();fail(413,'UPLOAD_TOO_LARGE','Maximum 5 MB.');}chunks.push(part.value);}
+   while(true){const part=await reader.read();if(part.done)break;size+=part.value.length;if(size>5*1024*1024){void reader.cancel();fail(413,'UPLOAD_TOO_LARGE','Maximum 5 MB.');}chunks.push(part.value);}
    return result(await files.create(secret,query.get('purpose')??'',Buffer.concat(chunks)),201);
   }
   if(admin&&path[1]==='uploads'&&path.length===4&&path[3]==='review'){const input=await body(req);fields(input,['status','note']);return result(await files.review(secret,path[2],input));}
